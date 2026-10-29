@@ -1,0 +1,50 @@
+---
+description: Árvore de artefatos spec-driven do projeto (PRD, ADR, specs, tarefas, changes, progresso). Use ao criar ou atualizar documentação de produto, arquitetura ou spec.
+alwaysApply: false
+---
+
+# Artefatos do projeto
+
+Crie esta árvore no repositório do trabalho, não no perfil do usuário. Não crie arquivo vazio sem conteúdo útil. Em mudança trivial, não crie a árvore.
+
+```
+docs/
+├── product/PRD.md
+├── architecture/ARCHITECTURE.md
+├── architecture/ADR/
+├── specs/
+├── tests/
+├── tasks/
+├── changes/
+└── progress/
+    ├── CURRENT.md
+    └── ROADMAP.md
+```
+
+- `docs/product/PRD.md` — problema, resultado, requisitos, fora de escopo
+- `docs/architecture/ARCHITECTURE.md` — visão atual do sistema
+- `docs/architecture/ADR/NNNN-titulo.md` — uma decisão; ADR novo substitui o antigo
+- `docs/specs/` — o que o sistema deve fazer, ligado aos requisitos
+- `docs/tests/` — estratégia de verificação; testes executáveis ficam na suíte do projeto
+- `docs/tasks/` — passos verificáveis, com dependências explícitas
+- `docs/changes/` — change requests durante a implementação
+- `docs/progress/CURRENT.md` — checkpoint atual
+- `docs/progress/ROADMAP.md` — fases e tarefas com status; só em projeto inicializado com trabalho M ou maior (skill `roadmap`)
+
+Se existir `.cursor/agent-system/layout.json`, ele é o mapa do que o projeto já usa. Grave ADR, PRD e spec novos nesses caminhos. Não mova nem reescreva os arquivos listados ali.
+
+Se o repositório já tiver outro lugar canônico para spec ou ADR, use o existente e não duplique a árvore.
+
+## Repositório fora do padrão
+
+Não reconstrua PRD, arquitetura nem tarefas do que já está pronto. Não crie arquivo vazio para "completar" a árvore.
+
+No próximo trabalho não trivial:
+
+- Grave a spec e os critérios de aceite só do que vai mudar.
+- Grave a estratégia de verificação dessa mudança.
+- Grave `docs/progress/CURRENT.md` (ou o equivalente já usado no repo) com o estado desta frente.
+- Abra ADR só se esta mudança decidir arquitetura.
+- Abra PRD ou `ARCHITECTURE.md` só se a mudança for grande o bastante para precisar deles, ou se o usuário pedir a adoção do padrão.
+
+A árvore cresce com o trabalho novo. O código antigo continua valendo como está até alguém for mudar aquele comportamento.

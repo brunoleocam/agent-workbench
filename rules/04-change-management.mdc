@@ -1,0 +1,20 @@
+---
+description: Trata ideia, bug, requisito ou dependência surgidos durante a implementação como mudança formal. Use ao descobrir escopo novo no meio de uma tarefa.
+alwaysApply: false
+---
+
+# Mudança durante a implementação
+
+Se surgir ideia, bug, requisito, melhoria ou dependência no meio da implementação, não altere o código atual no escuro.
+
+Classifique como LOCAL_CHANGE, REQUIREMENT_CHANGE, SPECIFICATION_CHANGE, ARCHITECTURE_CHANGE, BUG_DISCOVERED, NEW_DEPENDENCY ou NEW_TASK.
+
+Analise impacto em: requisitos, specs, ADRs, testes/evals, tarefas, dependências e regressões possíveis.
+
+Ajuste local pequeno: atualize o código e os testes da tarefa atual.
+
+Mudança de requisito, spec ou arquitetura: crie um Change Request em `docs/changes/` e atualize os artefatos afetados antes de continuar.
+
+Dependência ou tarefa nova: registre a tarefa e a dependência de forma explícita. Exemplo: `TASK-X: Implementar checkout` depende de `TASK-Z: Reservar estoque`. Não esconda a resolução da dependência dentro de trabalho não relacionado.
+
+Depois, retome a tarefa original.

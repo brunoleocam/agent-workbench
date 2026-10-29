@@ -1,0 +1,17 @@
+---
+description: Economia de tokens. Busca antes de leitura, saída de terminal filtrada, respostas curtas, edições mínimas, etapas pequenas e resumo para chat novo.
+alwaysApply: true
+---
+
+# Economia de tokens
+
+Tudo que entra no chat é reenviado a cada passo seguinte.
+
+- Buscar antes de ler: Grep ou busca semântica primeiro; depois ler só o trecho necessário (offset/limit), não o arquivo inteiro.
+- Não varrer pastas inteiras nem listar árvores recursivas sem filtro. Não reler arquivo que não mudou desde a última leitura.
+- Limitar saída de terminal: filtrar e cortar (PowerShell: `Select-String`, `Select-Object -First/-Last`; bash: `grep`, `head`, `tail`) e usar modo silencioso ou reporter enxuto de testes e builds. Nunca despejar log inteiro.
+- Respostas curtas: não repetir código inalterado (mostrar só o trecho mudado), sem explicação não pedida, sem recapitular o que já foi dito.
+- Edições mínimas e focadas; a solução mais simples que resolve. Sem refatoração, arquivo ou abstração fora do pedido. Não pular teste ou verificação exigida por outra regra.
+- Tarefa grande: dividir em etapas pequenas e validar cada uma antes da próxima (skill `tarefa-em-etapas`).
+- Bug sem causa óbvia: achar a causa lendo o mínimo (skill `investigacao-enxuta`).
+- Conversa longa (muitas trocas ou muitos arquivos lidos) ou mudança de assunto: avisar em uma linha e oferecer um resumo para chat novo (skill `resumo-de-contexto`).

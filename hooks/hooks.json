@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "hooks": {
+    "workspaceOpen": [{ "command": "python \"${CURSOR_PLUGIN_ROOT}/agent-system/scripts/hook.py\"", "timeout": 20 }],
+    "sessionStart": [{ "command": "python \"${CURSOR_PLUGIN_ROOT}/agent-system/scripts/hook.py\"", "timeout": 20 }],
+    "sessionEnd": [{ "command": "python \"${CURSOR_PLUGIN_ROOT}/agent-system/scripts/hook.py\"", "timeout": 20 }],
+    "subagentStart": [{ "command": "python \"${CURSOR_PLUGIN_ROOT}/agent-system/scripts/hook.py\"", "timeout": 20 }],
+    "subagentStop": [{ "command": "python \"${CURSOR_PLUGIN_ROOT}/agent-system/scripts/hook.py\"", "timeout": 20 }],
+    "afterFileEdit": [{ "command": "python \"${CURSOR_PLUGIN_ROOT}/agent-system/scripts/hook.py\"", "timeout": 20 }],
+    "postToolUseFailure": [{ "command": "python \"${CURSOR_PLUGIN_ROOT}/agent-system/scripts/hook.py\"", "timeout": 20 }],
+    "afterShellExecution": [{ "command": "python \"${CURSOR_PLUGIN_ROOT}/agent-system/scripts/hook.py\"", "timeout": 20 }],
+    "afterAgentResponse": [{ "command": "python \"${CURSOR_PLUGIN_ROOT}/agent-system/scripts/hook.py\"", "timeout": 20 }],
+    "stop": [{ "command": "python \"${CURSOR_PLUGIN_ROOT}/agent-system/scripts/hook.py\"", "timeout": 20, "loop_limit": 0 }]
+  }
+}

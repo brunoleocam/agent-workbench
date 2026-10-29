@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "agents": [
+    {
+      "name": "orchestrator",
+      "type": "custom",
+      "purpose": "Tech lead. Classifies the request and delegates specialized work.",
+      "status": "active",
+      "created_at": "2026-09-28T20:00:00+00:00",
+      "scope": "user",
+      "recommended_for": "Any non-trivial software change.",
+      "dependencies": []
+    },
+    {
+      "name": "planner",
+      "type": "custom",
+      "purpose": "Requirements, spec, ADR, and task plan. Does not implement.",
+      "status": "active",
+      "created_at": "2026-09-28T20:00:00+00:00",
+      "scope": "user",
+      "recommended_for": "GREENFIELD, FEATURE, and significant CHANGE_DURING_IMPLEMENTATION.",
+      "dependencies": ["orchestrator"]
+    },
+    {
+      "name": "implementer",
+      "type": "custom",
+      "purpose": "Implements one specified task and reports the diff.",
+      "status": "active",
+      "created_at": "2026-09-28T20:00:00+00:00",
+      "scope": "user",
+      "recommended_for": "A single task with a spec and verification.",
+      "dependencies": ["planner"]
+    },
+    {
+      "name": "tester",
+      "type": "custom",
+      "purpose": "Writes and runs tests and evals. Reports objective evidence.",
+      "status": "active",
+      "created_at": "2026-09-28T20:00:00+00:00",
+      "scope": "user",
+      "recommended_for": "Verification, regression, and AI evals.",
+      "dependencies": ["implementer"]
+    },
+    {
+      "name": "reviewer",
+      "type": "custom",
+      "purpose": "Independent review against requirements, spec, and tests.",
+      "status": "active",
+      "created_at": "2026-09-28T20:00:00+00:00",
+      "scope": "user",
+      "recommended_for": "After tests pass on a non-trivial change.",
+      "dependencies": ["tester"]
+    },
+    {
+      "name": "debugger",
+      "type": "custom",
+      "purpose": "Reproduces a failure and finds the root cause before a fix.",
+      "status": "active",
+      "created_at": "2026-09-28T20:00:00+00:00",
+      "scope": "user",
+      "recommended_for": "BUG_FIX and test failures.",
+      "dependencies": ["orchestrator"]
+    }
+  ]
+}

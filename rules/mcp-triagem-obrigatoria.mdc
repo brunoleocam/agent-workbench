@@ -1,0 +1,19 @@
+---
+description: Triagem curta antes de responder. Consultar MCP só quando a resposta depende de fonte externa ou verificação real. Tabela em uso-ferramentas-mcp.mdc.
+alwaysApply: true
+---
+# MCP – Triagem
+
+Antes de responder, decida se a resposta depende de fonte externa ou de verificação real. Se depender, faça a consulta mínima e responda com base nela. Se não, responda direto.
+
+- Docs, API, versão ou sintaxe de biblioteca: Context7.
+- PR, issue, CI ou comentário: GitHub MCP.
+- UI real, bug visual ou evidência na tela: Browser (cursor-ide-browser); fluxo repetível: Playwright.
+- Bitrix24, Postman ou Figma: o MCP correspondente, se estiver configurado.
+- Exploração ampla do codebase: busca local primeiro; subagent `explore` só se for ler muito e devolver pouco.
+
+Não chamar MCP para pergunta conceitual, para o que a busca local resolve, ou quando o custo for alto e o benefício baixo (nesse caso, peça antes um dado objetivo ao usuário).
+
+Proibido inventar endpoint, parâmetro, campo ou comportamento de API quando um MCP de docs pode confirmar.
+
+Tabela completa: `uso-ferramentas-mcp.mdc`.
