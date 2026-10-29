@@ -1,0 +1,20 @@
+---
+description: Define verificação antes ou junto da implementação e não declara pronto com teste obrigatório falhando. Use ao escrever testes, evals, TDD ou ao validar comportamento.
+alwaysApply: false
+---
+
+# Testes e verificação
+
+Para mudança relevante, defina a verificação antes ou junto da implementação. Teste é evidência de correção, não documentação.
+
+Escolha o nível que o risco pede: unidade, integração, contrato, ponta a ponta, aceite, property-based, ou eval quando o comportamento for probabilístico ou dependente de modelo.
+
+TDD preferido: Red → Green → Refactor.
+
+1. Escreva o menor teste útil que falha.
+2. Implemente o mínimo para passar.
+3. Refatore sem mudar o comportamento pretendido.
+
+Não marque o trabalho como completo enquanto um teste ou eval exigido falhar. Depois do teste alvo, rode a regressão relevante.
+
+Estratégia de verificação fica em `docs/tests/` quando o projeto usar a árvore spec-driven. Código de teste executável fica na árvore de testes do projeto, não em `docs/`.

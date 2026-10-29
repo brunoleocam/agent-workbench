@@ -1,0 +1,27 @@
+---
+description: Tabela de qual MCP, subagent ou skill usar por situação, e como tratar pedidos grandes. Use ao escolher ferramenta para uma tarefa.
+alwaysApply: false
+---
+# Uso de ferramentas e MCPs
+
+Regra sempre ativa: `mcp-triagem-obrigatoria.mdc`.
+
+## Tabela — qual ferramenta usar
+
+| Situação | Ação |
+|----------|------|
+| Docs/API de biblioteca atuais, sintaxe, exemplos oficiais | **Context7** |
+| PR, issues, CI, comentários GitHub | **GitHub MCP** |
+| UI real, reproduzir bug visual | **Browser** (cursor-ide-browser); fluxo repetível: **Playwright** |
+| Bitrix24 REST, campos, métodos | **b24-dev-mcp** (se configurado) |
+| Testar API REST ou SOAP, coleções Postman | **Postman MCP** (se configurado) |
+| Design Figma, tokens, componentes | **Figma MCP** (se configurado) |
+| Explorar codebase grande ("onde fica X") | Busca local; subagent **explore** se for ler muito |
+| Achar causa de bug | Skill `investigacao-enxuta` ou `debug` |
+| Quebrar pedido em etapas | Skill `tarefa-em-etapas` |
+| Critérios de aceite, escopo, edge cases | Skill `feature` ou `brainstorm` |
+| Trade-offs, arquitetura, comparar opções | Skill `brainstorm` |
+
+## Solicitações muito grandes
+
+Use a skill `tarefa-em-etapas`: etapas pequenas, cada uma verificada antes da próxima. Em projeto inicializado, o plano entra no roadmap (skill `roadmap`).

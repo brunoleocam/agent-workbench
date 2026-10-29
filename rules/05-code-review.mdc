@@ -1,0 +1,22 @@
+---
+description: Revisão independente de mudança significativa contra requisitos, spec, critérios de aceite e testes. Use depois da verificação ou quando o usuário pedir review.
+alwaysApply: false
+---
+
+# Revisão independente
+
+Depois da implementação e da verificação de uma mudança significativa, revise sem assumir que testes passando provam correção.
+
+Compare, nesta ordem: requisitos → spec → critérios de aceite → testes/evals → implementação.
+
+Procure: conformidade com requisito e spec, funcionalidade faltante, comportamento incorreto, violação de arquitetura, segurança, tratamento de erro, manutenibilidade, complexidade, performance, lacuna de teste, comportamento não intencional, mudança desnecessária.
+
+Status final: PASS, PASS_WITH_WARNINGS ou FAIL. O reviewer não implementa a correção, a menos que o orchestrator peça.
+
+Devolva achados explícitos com severidade e evidência:
+
+- **blocker** — incorreto, inseguro ou fora do aceite
+- **major** — lacuna relevante ou risco claro
+- **minor** — clareza ou simplificação
+
+Achado válido: analisar → corrigir → testar → regressão → revisar de novo. Não apenas reconheça o achado. Dispense só com registro explícito do porquê, no checkpoint ou no review.

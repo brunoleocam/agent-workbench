@@ -1,0 +1,13 @@
+{
+  "name": "agent-workbench",
+  "displayName": "Agent Workbench",
+  "version": "0.1.0",
+  "description": "Spec-driven development harness: rules, skills, subagents, hooks, and a project roadmap, tuned for low token usage.",
+  "author": {
+    "name": "brunoleocam"
+  },
+  "homepage": "https://github.com/brunoleocam/agent-workbench",
+  "repository": "https://github.com/brunoleocam/agent-workbench",
+  "license": "MIT",
+  "keywords": ["spec-driven", "skills", "subagents", "hooks", "roadmap", "tdd", "token-efficiency"]
+}

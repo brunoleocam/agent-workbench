@@ -1,0 +1,33 @@
+---
+description: Classifica o pedido antes de alterar código e escolhe a skill spec-driven. Não usa fluxo completo em mudança trivial.
+alwaysApply: true
+---
+
+# Classificação do pedido
+
+Antes de modificar código, classifique o pedido como um destes:
+
+| Classe | Skill |
+| --- | --- |
+| Projeto greenfield | `new-project` |
+| Feature ou mudança de comportamento em sistema existente | `feature` |
+| Correção de defeito | `bug-fix` |
+| Refatoração sem mudança de comportamento | `refactoring` |
+| Investigação, sem implementar | `investigation` |
+| Mudança descoberta durante uma implementação ativa | `change-request` |
+| Executar um passo já especificado | `implementation` |
+| Revisão independente de mudança significativa | `code-review` |
+
+Pedido para criar uma skill: use `create-skill`. Não trate isso como feature do repositório aberto.
+
+No meio do ciclo, use também: `brainstorm` antes de código ou plano quando a ideia ainda não tem design aprovado; `implementation-plan` com o design pronto; `ui-ux` ou `ui-ux-experiment` para interface; `git-worktree` para isolar; `tdd` e `test-hygiene` ao implementar; `debug` e `root-cause` ao investigar falha; `update-docs` ao atualizar spec ou ADR.
+
+Feature ou bug-fix em repositório git: siga `commit-push`. A branch é criada antes de editar código. Com testes verdes, mostre o resumo e peça uma única aprovação para commit, push, PR e merge. Sem aprovação, nada é commitado.
+
+Complexidade: XS typo ou ajuste local; S bug ou mudança pequena; M feature em vários componentes; L ou XL módulo, sistema, arquitetura, integração ou greenfield. XS e S não criam PRD, ADR, CR nem checkpoint e não delegam a subagents.
+
+Diga a classe e a complexidade em uma linha antes de agir.
+
+Repositório que ainda não segue a árvore spec-driven: não migre o histórico nem crie a árvore vazia. No próximo trabalho não trivial, documente só essa mudança. Use o lugar de spec que o repo já tiver. Se não houver, crie apenas a spec, a verificação e o checkpoint dessa frente.
+
+Trabalho M ou maior: leia a skill da classe e aplique as regras `02` a `07` conforme a fase. Em S, leia a skill da classe só se o caminho não for óbvio. Não invente o próximo passo como "continuar codando"; derive-o do grafo de tarefas, dependências e do progresso do projeto quando existir.

@@ -1,0 +1,28 @@
+---
+description: Princípio do sistema spec-driven. O agente principal atua como orchestrator e não trata o chat como única fonte de verdade.
+alwaysApply: true
+---
+
+# Engenharia rastreável
+
+Não otimize geração de código. Otimize software rastreável e verificável.
+
+Intent → Requirement → Specification → Decision → Task → Implementation → Evidence → Review → State.
+
+- O histórico da conversa não é a única fonte de verdade. Estado, spec, testes e timeline do projeto prevalecem.
+- Entenda o código existente antes de mudá-lo. Não altere requisito, arquitetura ou escopo em silêncio.
+- Não marque pronto sem evidência. Teste falhando impede conclusão. "Parece funcionar" não é verificação.
+- Incerteza de regra de negócio: registre ou pergunte. Não invente.
+- Decisão de alto impacto (arquitetura, comportamento de negócio, segurança, infraestrutura nova, remoção de comportamento) é apresentada ao usuário antes de virar decisão final.
+- Você é o orchestrator desta sessão. Não invoque outro orchestrator. Em M, L e XL, delegue trabalho especializado aos subagents `planner`, `implementer`, `tester`, `reviewer` e `debugger`. Cada subagent abre um contexto próprio: delegue só a fatia que justifique esse custo.
+- XS e S não usam o fluxo completo: sem PRD, ADR, CR, checkpoint nem subagents. Faça direto. S ainda exige o teste que prova a mudança.
+
+## Contexto
+
+Leitura, terminal e tamanho de resposta: regra `economia-de-tokens`.
+
+- Reporter enxuto do runner de testes (ex.: `vitest run --reporter=dot`, `dotnet test -v q`).
+- Delegue a subagent (`explore`, `tester`, `debugger`) só trabalho que lê muito e devolve pouco: exploração ampla, investigação de log, suíte de testes com saída longa. No prompt, peça resposta curta com achados, caminhos e linhas. Edição em arquivo que você já leu, faça direto.
+- Ao concluir tarefa M ou maior, atualize `docs/progress/CURRENT.md` (regra `06`) e sugira ao usuário continuar num chat novo a partir dele.
+- Projeto sem `.cursor/agent-system/state.json` não recebe docs vazios nem timeline. A instalação é `/init-agent-system`.
+- Se existir `.cursor/agent-system/layout.json`, novos ADR, PRD e specs entram nesses caminhos. Não mova os documentos que o init encontrou.

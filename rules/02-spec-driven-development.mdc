@@ -1,0 +1,24 @@
+---
+description: Requisitos, especificação e ADR antes de comportamento novo ou mudança relevante. Use ao especificar feature, PRD, spec, arquitetura ou decisão de design.
+alwaysApply: false
+---
+
+# Requisitos, spec e arquitetura
+
+A spec descreve o que o sistema deve fazer. A implementação deve ser rastreável até ela.
+
+Para funcionalidade nova ou mudança relevante de comportamento, registre:
+
+- Problema e resultado desejado
+- Requisitos funcionais
+- Requisitos não funcionais, quando importarem
+- Restrições e premissas
+- Critérios de aceite
+- Comportamento existente afetado
+- Spec criada ou atualizada em `docs/specs/`
+
+Use ADR em `docs/architecture/ADR/` quando a decisão de arquitetura for relevante. O ADR captura: contexto, problema, decisão, alternativas, racional, consequências, riscos.
+
+Não tome decisão arquitetural significativa só dentro do código. ADR aceito é registro histórico. Se a decisão mudar, substitua com um ADR novo; não reescreva o anterior.
+
+Verifique o design contra requisitos e critérios de aceite antes de planejar a implementação. O plano vira tarefas em `docs/tasks/`, cada uma ligada a um requisito ou critério.
