@@ -38,6 +38,7 @@ Mudança trivial não precisa de comando. Repositório antigo não é migrado in
 - `/test-hygiene` — o teste prova comportamento, é determinístico e falha pelo motivo certo.
 - `/ui-ux-experiment` — 2 ou 3 interfaces para comparar. Não implementa todas.
 - `/ui-ux` — constrói a interface escolhida, com vazio, erro, loading e sucesso, e verifica o fluxo.
+- `/apple-design` — motion interativo estilo Apple na web: drag, swipe, sheets, springs, momentum, interrupção e reduced motion; também revisa interações. Não cuida de layout nem dos estados da tela.
 - `/bug-fix` — correção mínima depois da causa confirmada, com regressão.
 - `/debug` — reproduz e acha a causa com evidência. Não chuta patch.
 - `/root-cause` — registra sintoma, mecanismo, evidência e o teste que faltou. Só com causa confirmada.
