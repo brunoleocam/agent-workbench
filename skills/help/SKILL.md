@@ -53,8 +53,8 @@ Em M ou maior com `/init-agent-system`, os gates são scripts em `.cursor/agent-
 - `/update-docs` — alinha spec, ADR novo ou progresso ao que mudou. Não reescreve ADR aceito.
 - `/commit-push` — branch antes de editar; com testes verdes, uma única aprovação sua para commit, push, PR e merge. Sem aprovação, nada sai da máquina.
 - `/roadmap` — mostra em que fase e tarefa você está, o que falta e o que está bloqueado. Também cria, atualiza ou gera a visão em Canvas (`/roadmap visual`). Só em projeto com `/init-agent-system`.
-- `/resumo-de-contexto` — resumo de até 10 linhas (objetivo, decisões, arquivos, próximos passos) para colar num chat novo. Não relê arquivos nem grava nada.
-- `/investigacao-enxuta` — acha a causa de um bug lendo o mínimo, uma hipótese por vez. Não corrige.
-- `/tarefa-em-etapas` — divide pedido grande em 3 a 7 etapas verificáveis e executa uma por vez. Não cria PRD, ADR nem plano detalhado.
+- `/context-summary` — resumo de até 10 linhas (objetivo, decisões, arquivos, próximos passos) para colar num chat novo. Não relê arquivos nem grava nada.
+- `/lean-investigation` — acha a causa de um bug lendo o mínimo, uma hipótese por vez. Não corrige.
+- `/staged-task` — divide pedido grande em 3 a 7 etapas verificáveis e executa uma por vez. Não cria PRD, ADR nem plano detalhado.
 - `/create-skill` — cria uma skill nova no perfil e inclui o comando neste guia. Não cria skill dentro do repositório, a menos que você peça.
 - `/help` — mostra este guia.

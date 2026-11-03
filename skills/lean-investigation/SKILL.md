@@ -1,5 +1,5 @@
 ---
-name: investigacao-enxuta
+name: lean-investigation
 description: Acha a causa de um bug lendo o mínimo de código e log, com busca dirigida e uma hipótese por vez. Não corrige. Use quando o ponto de falha não é óbvio ou o usuário quer achar a causa gastando pouco contexto (investigação enxuta, achar a causa, onde quebra, por que dá erro).
 ---
 

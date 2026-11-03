@@ -1,5 +1,5 @@
 ---
-name: tarefa-em-etapas
+name: staged-task
 description: Divide um pedido grande em etapas pequenas, cada uma com verificação, e executa uma por vez validando antes de seguir. Use quando o pedido toca vários arquivos ou componentes, tem várias partes ou o usuário pede para fazer por partes (etapas, dividir, por partes, passo a passo, fatiar).
 ---
 
@@ -14,4 +14,4 @@ Se o trabalho segue o fluxo spec-driven (M ou maior na regra `01-request-classif
 5. Verificação falhou: corrija dentro da etapa. Não avance com etapa vermelha. Se precisar mudar o plano, ajuste e avise em uma linha.
 6. Fechou a etapa: uma linha `Etapa N ok: <evidência>`. Não repita o plano inteiro.
 7. Pare e peça ao usuário quando a etapa exigir decisão dele ou validação que você não consegue fazer (visual, ambiente externo, credencial).
-8. No fim: lista curta das etapas com status. Se a conversa ficou longa, ofereça `/resumo-de-contexto`.
+8. No fim: lista curta das etapas com status. Se a conversa ficou longa, ofereça `/context-summary`.

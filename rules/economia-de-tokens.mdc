@@ -12,6 +12,6 @@ Tudo que entra no chat é reenviado a cada passo seguinte.
 - Limitar saída de terminal: filtrar e cortar (PowerShell: `Select-String`, `Select-Object -First/-Last`; bash: `grep`, `head`, `tail`) e usar modo silencioso ou reporter enxuto de testes e builds. Nunca despejar log inteiro.
 - Respostas curtas: não repetir código inalterado (mostrar só o trecho mudado), sem explicação não pedida, sem recapitular o que já foi dito.
 - Edições mínimas e focadas; a solução mais simples que resolve. Sem refatoração, arquivo ou abstração fora do pedido. Não pular teste ou verificação exigida por outra regra.
-- Tarefa grande: dividir em etapas pequenas e validar cada uma antes da próxima (skill `tarefa-em-etapas`).
-- Bug sem causa óbvia: achar a causa lendo o mínimo (skill `investigacao-enxuta`).
-- Conversa longa (muitas trocas ou muitos arquivos lidos) ou mudança de assunto: avisar em uma linha e oferecer um resumo para chat novo (skill `resumo-de-contexto`).
+- Tarefa grande: dividir em etapas pequenas e validar cada uma antes da próxima (skill `staged-task`).
+- Bug sem causa óbvia: achar a causa lendo o mínimo (skill `lean-investigation`).
+- Conversa longa (muitas trocas ou muitos arquivos lidos) ou mudança de assunto: avisar em uma linha e oferecer um resumo para chat novo (skill `context-summary`).

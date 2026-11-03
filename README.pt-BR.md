@@ -1,4 +1,5 @@
 <div align="right">
+  <img src="https://img.shields.io/badge/version-0.3.0-green?style=flat-square" alt="Versão 0.3.0" />
   <a href="README.md">
     <img src="https://img.shields.io/badge/README-EN-blue?style=flat-square" alt="English 🇺🇸" />
   </a>
@@ -149,25 +150,187 @@ Isso cria o estado, a timeline e o roadmap do projeto sem substituir a documenta
 
 Cloud Agents não carregam plugins locais. Use `/init-agent-system` com `--for-cloud` ao preparar um projeto para esse ambiente.
 
-### Fluxos típicos
+### Atualização
 
-Desenvolvimento de feature:
+Confira a versão instalada em `.cursor-plugin/plugin.json` (campo `version`) e compare com o selo no topo desta página no GitHub.
+
+1. Baixe a versão nova na pasta do plugin.
+
+   Windows (PowerShell):
+
+   ```powershell
+   git -C "$env:USERPROFILE\.cursor\plugins\local\agent-workbench" pull --ff-only
+   ```
+
+   Linux:
+
+   ```bash
+   git -C ~/.cursor/plugins/local/agent-workbench pull --ff-only
+   ```
+
+   Se o pull recusar por causa de alterações locais, rode `git status` na pasta do plugin e guarde (stash) ou descarte essas alterações antes de tentar de novo.
+
+2. Recarregue a janela do Cursor com `Developer: Reload Window`. Rules, skills, subagents e hooks vêm do plugin, então já ficam atualizados.
+
+3. Em cada projeto inicializado, rode `/init-agent-system` de novo. Ele atualiza os scripts gerenciados em `.cursor/agent-system/scripts/` e adiciona chaves novas ao estado, mantendo o estado, a timeline, o roadmap, a documentação e os hooks existentes.
+
+Em projetos preparados com `--for-cloud`, as cópias de rules e subagents nunca são sobrescritas. Para atualizá-las, apague as cópias que vieram do plugin (rules `00` a `08` e os subagents) e rode `/init-agent-system` com `--for-cloud` de novo.
+
+Comandos renomeados na 0.3.0: `investigacao-enxuta` agora é `/lean-investigation`, `resumo-de-contexto` agora é `/context-summary` e `tarefa-em-etapas` agora é `/staged-task`.
+
+## Como usar o Agent Workbench
+
+### Como os comandos funcionam
+
+- Digite `/` no chat do Cursor e escolha o comando. Você pode escrever o contexto depois dele, por exemplo `/feature adicionar exportação CSV no relatório de vendas`.
+- Cada comando cuida de uma fase. A próxima fase não começa sozinha, a menos que o próprio comando diga qual vem depois.
+- Mudança trivial não precisa de comando. Basta pedir; o agente classifica o pedido (classe, complexidade de XS a XL e risco de segurança) e ajusta o processo a ele.
+- Rules e subagents são aplicados automaticamente. Você não chama subagent direto: em tarefas médias ou maiores, o agente principal delega a `planner`, `implementer`, `tester`, `reviewer`, `security-reviewer` e `debugger`.
+- Em trabalhos maiores, abra um chat novo para cada fase. Em projetos inicializados, o estado atual fica em `docs/progress/CURRENT.md` e `docs/progress/ROADMAP.md`, então o chat novo continua de onde o anterior parou.
+
+### Fluxos recomendados
+
+Feature nova, da ideia ao merge:
 
 ```text
+# Amadurece a ideia com perguntas e alternativas até você aprovar um design
 /brainstorm
+# Transforma o design aprovado em plano com caminhos reais e comandos de verificação
 /implementation-plan
-/implementation
+# (Opcional) Cria uma cópia isolada do repositório para trabalhar sem mexer na principal
+/git-worktree
+# Implementa cada passo com teste primeiro: vermelho, código mínimo, refactor
+/tdd
+# Confere se os testes provam comportamento e falham pelo motivo certo
+/test-hygiene
+# Revisão independente contra requisitos, spec, critérios de aceite e testes
 /code-review
+# Alinha spec, ADR e progresso ao que mudou
+/update-docs
+# Com testes verdes, uma única aprovação sua para commit, push, PR e merge
+/commit-push
 ```
 
-Investigação de bug:
+Feature em sistema existente, num fluxo guiado único:
 
 ```text
-/investigacao-enxuta
+# Impacto, spec, tarefas, implementação, testes e review em sequência
+/feature
+```
+
+Repositório novo:
+
+```text
+# Cria PRD, arquitetura, spec, tarefas e progresso do projeto
+/new-project
+```
+
+Bug:
+
+```text
+# Acha a causa lendo o mínimo de código e log, uma hipótese por vez
+/lean-investigation
+# (Opcional) Registra sintoma, mecanismo, evidência e o teste que faltou
+/root-cause
+# Correção mínima com teste de regressão, depois da causa confirmada
 /bug-fix
 ```
 
-Use `/help` dentro do Cursor para ver os comandos e fluxos disponíveis.
+Bug difícil ou intermitente:
+
+```text
+# Reproduz a falha e prova a causa com evidência, sem chutar patch
+/debug
+# Registra sintoma, mecanismo, evidência e o teste que faltou
+/root-cause
+# Escreve o teste que falha pelo bug e só então corrige
+/tdd
+```
+
+Interface:
+
+```text
+# Gera 2 ou 3 opções de interface para você comparar e escolher
+/ui-ux-experiment
+# Constrói a opção escolhida com estados de vazio, erro, loading e sucesso
+/ui-ux
+# (Opcional) Adiciona motion interativo estilo Apple: drag, swipe, sheets e springs
+/apple-design
+```
+
+Pedido grande sem spec formal:
+
+```text
+# Divide o pedido em 3 a 7 etapas verificáveis e executa uma por vez
+/staged-task
+```
+
+Conversa longa, antes de trocar de chat:
+
+```text
+# Gera um resumo de até 10 linhas para colar no chat novo
+/context-summary
+```
+
+### Referência dos comandos
+
+Instalação e estado do projeto:
+
+- `/init-agent-system` — instala estado, timeline e roadmap no projeto atual sem substituir configuração existente nem criar documentos vazios. Rode na raiz do projeto. Use `--for-cloud` para copiar também rules e subagents para Cloud Agents.
+- `/agent-status` — mostra agentes, skills, rules, hooks e o estado atual do workflow.
+- `/roadmap` — mostra a fase e a tarefa atuais, o que falta e o que está bloqueado. Também cria ou atualiza o roadmap, e `/roadmap visual` gera a visão em Canvas. Exige `/init-agent-system`.
+- `/timeline` — mostra o histórico append-only de eventos de um projeto inicializado.
+- `/lessons` — propõe, lista, confirma ou rejeita lições do projeto. Só você confirma uma lição, e só as confirmadas entram no contexto do agente.
+- `/help` — mostra o guia de comandos dentro do Cursor.
+
+Planejamento:
+
+- `/brainstorm` — para ideia ainda crua. Faz uma pergunta por vez, propõe alternativas e termina com um design aprovado por você. Não escreve código nem plano.
+- `/new-project` — repositório novo: PRD, arquitetura, especificação, tarefas e progresso. Não cria `AGENTS.md`.
+- `/feature-development` — feature em sistema existente: análise de impacto, especificação, tarefas, implementação, testes e review.
+- `/feature` — atalho para `/feature-development`.
+- `/investigation` — entende como uma parte do sistema funciona. Não implementa.
+- `/implementation-plan` — para design já aprovado. Gera um plano com caminhos reais, exemplos de código e comandos de verificação, escrito para quem não conhece o repositório.
+- `/change-request` — escopo novo descoberto no meio da tarefa. Atualiza a especificação ou cria uma dependência antes de continuar.
+
+Implementação:
+
+- `/implementation` — executa um passo do plano, ligado a um requisito.
+- `/tdd` — escreve um teste que falha pelo motivo certo, depois o código mínimo, depois refatora. Sem código de produção antes do teste vermelho.
+- `/staged-task` — divide um pedido grande em 3 a 7 etapas verificáveis e executa uma por vez. Não cria PRD, ADR nem plano detalhado.
+- `/refactoring` — muda a estrutura mantendo o comportamento, coberto por testes.
+- `/git-worktree` — cria uma cópia isolada do repositório para trabalhar. Pede sua concordância e nunca faz push.
+
+Bugs:
+
+- `/lean-investigation` — acha a causa de um bug lendo o mínimo de código e log, uma hipótese por vez. Não corrige.
+- `/debug` — reproduz a falha e acha a causa com evidência. Não chuta patch.
+- `/root-cause` — registra sintoma, mecanismo, evidência e o teste que faltou. Só depois da causa confirmada.
+- `/bug-fix` — correção mínima depois da causa confirmada, com teste de regressão.
+
+Interface:
+
+- `/ui-ux-experiment` — constrói 2 ou 3 opções de interface para comparar. Não implementa todas.
+- `/ui-ux` — constrói a interface escolhida com os estados de vazio, erro, loading e sucesso, e verifica o fluxo.
+- `/apple-design` — motion interativo estilo Apple na web: drag, swipe, sheets, springs, momentum, interrupção e reduced motion. Também revisa interações existentes. Não cuida de layout nem dos estados da tela.
+
+Qualidade e segurança:
+
+- `/test-hygiene` — confere se os testes provam comportamento, são determinísticos e falham pelo motivo certo.
+- `/code-review` — confronta requisitos, especificação, critérios de aceite, testes e código, com Verification Audit (o teste falharia se o requisito estivesse errado?). Cada achado tem severidade e evidência.
+- `/security-review` — auditoria de segurança de uma feature ou do repositório inteiro pelo subagent `security-reviewer`, com as referências da stack. Gera relatório com achados SEC e não corrige nada sem sua autorização. Não é o subagent built-in `security-review` do Cursor.
+- `/security-best-practices` — orientação de código seguro para a stack detectada, carregando só a referência dela. Diferencia vulnerabilidade de hardening.
+
+Documentação e entrega:
+
+- `/update-docs` — alinha a especificação, um ADR novo ou o progresso ao que mudou. Não reescreve ADR aceito.
+- `/commit-push` — branch antes de editar; com testes verdes, uma única aprovação sua para commit, push, PR e merge. Sem aprovação, nada sai da sua máquina.
+- `/context-summary` — resumo de até 10 linhas (objetivo, decisões, arquivos, próximos passos) para colar num chat novo. Não relê arquivos nem grava nada.
+
+Extensão do harness:
+
+- `/create-skill` — cria uma skill nova no seu perfil e a inclui no `/help`. Não cria a skill dentro do repositório aberto, a menos que você peça.
+- `/create-agent` — cria um subagent especializado e registra quando o orchestrator deve delegar a ele.
 
 ## Aprovação humana e automação
 

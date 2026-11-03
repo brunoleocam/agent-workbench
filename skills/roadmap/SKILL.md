@@ -35,6 +35,6 @@ Legenda: [x] feito · [~] em andamento · [ ] pendente · [!] bloqueado
 Sem argumento: mostrar. Com "criar", "atualizar" ou "visual": o modo pedido.
 
 - **Mostrar**: leia só o `ROADMAP.md`. Responda com a linha "Você está aqui", a contagem por status, as tarefas em andamento e bloqueadas e as próximas 3 pendentes cujas dependências já estão feitas. Não liste as tarefas feitas.
-- **Criar**: a partir do plano aprovado ou das tarefas em `docs/tasks/`. Se não houver plano, use `/tarefa-em-etapas` ou o `planner` antes. Se já existe roadmap, estenda; não reescreva itens feitos.
+- **Criar**: a partir do plano aprovado ou das tarefas em `docs/tasks/`. Se não houver plano, use `/staged-task` ou o `planner` antes. Se já existe roadmap, estenda; não reescreva itens feitos.
 - **Atualizar**: edite só as linhas que mudaram e a linha "Você está aqui". Status `[x]` só com evidência (teste, comando ou review). Tarefa nova de change request entra na fase certa, com a dependência.
 - **Visual**: leia a skill `canvas` e gere um canvas a partir do `ROADMAP.md`, com fases como colunas ou trilhas, tarefas coloridas por status, dependências e a posição atual em destaque. O arquivo continua sendo a fonte de verdade; o canvas é só a visão.

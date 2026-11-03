@@ -1,5 +1,5 @@
 ---
-name: resumo-de-contexto
+name: context-summary
 description: Gera um resumo de até 10 linhas com objetivo, decisões, arquivos e próximos passos, pronto para colar num chat novo. Use quando a conversa ficou longa, o assunto mudou ou o usuário quer continuar em outro chat (resumo, resumir contexto, chat novo, continuar em outro chat).
 ---
 
