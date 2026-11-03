@@ -1,5 +1,5 @@
 <div align="right">
-  <img src="https://img.shields.io/badge/version-0.3.0-green?style=flat-square" alt="Version 0.3.0" />
+  <img src="https://img.shields.io/badge/version-0.4.0-green?style=flat-square" alt="Version 0.4.0" />
   <a href="README.pt-BR.md">
     <img src="https://img.shields.io/badge/README-PT--BR-blue?style=flat-square" alt="Português 🇧🇷" />
   </a>
@@ -7,7 +7,7 @@
 
 # Agent Workbench
 
-**A pragmatic AI engineering harness for Cursor.**
+**A pragmatic AI engineering harness for Cursor and Claude Code.**
 
 Agent Workbench transforms AI coding agents into a more structured, traceable, and verifiable software engineering workflow.
 
@@ -116,11 +116,13 @@ The project includes:
 
 ### Requirements
 
-- Cursor
-- Python 3
+- Cursor or Claude Code
+- Python 3, available as `python` on the PATH (the hooks call `python`)
 - Git
 
 ### Installation
+
+#### Cursor
 
 Windows (PowerShell):
 
@@ -138,6 +140,36 @@ Reload the Cursor window using `Developer: Reload Window`.
 
 Then open **Customize** and verify that the plugin's rules, skills, and subagents are available.
 
+#### Claude Code
+
+The repository is also a Claude Code marketplace. In your terminal:
+
+```bash
+claude plugin marketplace add brunoleocam/agent-workbench
+claude plugin install agent-workbench@agent-workbench
+```
+
+Inside a Claude Code session, the same steps are:
+
+```text
+/plugin marketplace add brunoleocam/agent-workbench
+/plugin install agent-workbench@agent-workbench
+```
+
+Start a new session (or run `/reload-plugins`). Check what loaded with:
+
+```bash
+claude plugin details agent-workbench
+```
+
+In Claude Code, every command has the plugin prefix: `/agent-workbench:feature` instead of `/feature`, and the subagents appear as `agent-workbench:planner`, `agent-workbench:implementer`, and so on.
+
+To work on the plugin itself, load your clone for one session without installing it:
+
+```bash
+claude --plugin-dir /path/to/agent-workbench
+```
+
 ### Initialize a project
 
 In the root directory of your project, run:
@@ -146,11 +178,17 @@ In the root directory of your project, run:
 /init-agent-system
 ```
 
+In Claude Code, run `/agent-workbench:init-agent-system`.
+
 This initializes project-specific state, timeline, and roadmap without replacing existing project documentation or unrelated hooks.
+
+In Claude Code, plugins have no always-on rules, so the init also writes a condensed version of rules `00` to `08` into the project `CLAUDE.md`, inside a managed block between the `<!-- agent-workbench:begin -->` and `<!-- agent-workbench:end -->` markers. It creates `CLAUDE.md` when missing and appends the block when the file exists. Text outside the markers is never changed. Commit `CLAUDE.md` with the project so the rules are versioned with it.
 
 Cloud Agents do not load local plugins. Use `/init-agent-system` with `--for-cloud` when preparing a project for that environment.
 
 ### Updating
+
+#### Cursor
 
 Check the installed version in `.cursor-plugin/plugin.json` (`version` field) and compare it with the badge at the top of this page on GitHub.
 
@@ -176,13 +214,35 @@ Check the installed version in `.cursor-plugin/plugin.json` (`version` field) an
 
 For projects prepared with `--for-cloud`, existing rule and subagent copies are never overwritten. To refresh them, delete the copies that came from the plugin (rules `00` to `08` and the subagents) and run `/init-agent-system` with `--for-cloud` again.
 
+#### Claude Code
+
+1. Refresh the marketplace and update the plugin:
+
+   ```bash
+   claude plugin marketplace update agent-workbench
+   claude plugin update agent-workbench@agent-workbench
+   ```
+
+2. Restart Claude Code. The update applies to new sessions.
+
+3. In each initialized project, run `/agent-workbench:init-agent-system` again. It refreshes the managed scripts and replaces only the content of the managed block in `CLAUDE.md`: edits inside the block are lost, edits outside it are kept.
+
+#### Differences in Claude Code
+
+- Rules: only rules `00` to `08` reach Claude Code, through `CLAUDE.md`. `economia-de-tokens`, `mcp-triagem-obrigatoria`, and `uso-ferramentas-mcp` are Cursor-only.
+- Hooks: Claude Code runs `hooks/claude-hooks.json`, which feeds the same timeline as the Cursor hooks.
+- State: projects keep their state in `.cursor/agent-system/` and `.cursor/timeline/` in both editors, so a project initialized in one editor continues in the other.
+- `--for-cloud` and `/roadmap visual` (Canvas) are Cursor-only.
+
+Since 0.4.0, the `implementer`, `tester`, and `debugger` subagents use `model: inherit` in both editors (before, they used a Cursor-only model). To pin a model in Cursor, change `model:` in the agent file.
+
 Commands renamed in 0.3.0: `investigacao-enxuta` is now `/lean-investigation`, `resumo-de-contexto` is now `/context-summary`, and `tarefa-em-etapas` is now `/staged-task`.
 
 ## Using Agent Workbench
 
 ### How commands work
 
-- Type `/` in the Cursor chat and pick a command. You can add context after it, for example `/feature add CSV export to the sales report`.
+- Type `/` in the chat and pick a command (in Claude Code, commands start with `/agent-workbench:`). You can add context after it, for example `/feature add CSV export to the sales report`.
 - Each command handles one phase. The next phase does not start on its own unless the command says which one comes next.
 - You do not need a command for trivial changes. Just ask; the agent classifies the request (class, complexity from XS to XL, and security risk) and scales the process to it.
 - Rules and subagents apply automatically. You do not call subagents directly: on medium and larger tasks, the main agent delegates to `planner`, `implementer`, `tester`, `reviewer`, `security-reviewer`, and `debugger`.

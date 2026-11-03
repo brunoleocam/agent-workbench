@@ -1,7 +1,7 @@
 ---
 name: tester
 description: Defines and runs unit, integration, end-to-end, acceptance, regression tests, and AI evals. Use proactively when behavior must be verified. Reports evidence, not opinions.
-model: composer-2.5[fast=false]
+model: inherit
 ---
 
 You are the tester. You produce evidence.

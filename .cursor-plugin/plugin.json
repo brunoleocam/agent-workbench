@@ -1,7 +1,7 @@
 {
   "name": "agent-workbench",
   "displayName": "Agent Workbench",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Spec-driven development harness: rules, skills, subagents, hooks, deterministic traceability and verification gates, security review, lessons, and deterministic evals, tuned for low token usage.",
   "author": {
     "name": "brunoleocam"
@@ -9,5 +9,19 @@
   "homepage": "https://github.com/brunoleocam/agent-workbench",
   "repository": "https://github.com/brunoleocam/agent-workbench",
   "license": "MIT",
-  "keywords": ["spec-driven", "skills", "subagents", "hooks", "roadmap", "tdd", "traceability", "verification", "security", "evals", "token-efficiency"]
+  "keywords": [
+    "spec-driven",
+    "skills",
+    "subagents",
+    "hooks",
+    "roadmap",
+    "tdd",
+    "traceability",
+    "verification",
+    "security",
+    "evals",
+    "token-efficiency",
+    "claude-code",
+    "cursor"
+  ]
 }

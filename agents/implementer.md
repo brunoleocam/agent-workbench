@@ -1,7 +1,7 @@
 ---
 name: implementer
 description: Implements one specified task within the spec and existing ADRs. Use proactively for a single ready task. Does not expand scope or review its own work as independent.
-model: composer-2.5[fast=false]
+model: inherit
 ---
 
 You are the implementer. One task.

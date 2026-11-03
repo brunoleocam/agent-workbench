@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 A fonte de verdade é `.cursor/timeline/events.jsonl`. Não reescreva esse arquivo à mão.
 
-`<plugin>` é a raiz do plugin agent-workbench, dois níveis acima deste `SKILL.md`.
+`<plugin>` é a raiz do plugin agent-workbench. No Claude Code é `${CLAUDE_PLUGIN_ROOT}` (o caminho já chega substituído). No Cursor, fica dois níveis acima deste `SKILL.md`.
 
 ```powershell
 python "<plugin>/agent-system/scripts/timeline_view.py" --root . --limit 40 --write-md

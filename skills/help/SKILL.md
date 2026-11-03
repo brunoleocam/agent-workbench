@@ -10,7 +10,7 @@ Responda só com o guia abaixo, em pt-BR. Não inicie nenhum fluxo.
 
 ## Como usar
 
-Chame pelo nome numa conversa nova. Um comando faz uma fase. O próximo não começa sozinho, salvo a própria skill dizer qual é o seguinte.
+Chame pelo nome numa conversa nova. No Claude Code, os comandos têm o prefixo do plugin: `/agent-workbench:feature` em vez de `/feature`. Um comando faz uma fase. O próximo não começa sozinho, salvo a própria skill dizer qual é o seguinte.
 
 Ordem típica de algo novo: `/brainstorm` → spec aprovada → `/implementation-plan` → `/git-worktree` se quiser isolar → `/tdd` ou `/implementation` → `/test-hygiene` se os testes ficarem fracos → `/code-review` → `/update-docs` → `/commit-push` só se você pedir.
 
