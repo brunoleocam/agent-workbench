@@ -220,7 +220,7 @@ def test_registry_and_new_layers_are_wired() -> None:
 def test_readmes_cite_only_existing_commands_and_scripts() -> None:
     skills = {path.parent.name for path in (PLUGIN / "skills").glob("*/SKILL.md")}
     scripts = {path.name for path in (SYSTEM / "scripts").glob("*.py")}
-    for readme in (PLUGIN / "README.md", SYSTEM / "README.md"):
+    for readme in (PLUGIN / "README.md", PLUGIN / "README.pt-BR.md", SYSTEM / "README.md"):
         text = readme.read_text(encoding="utf-8")
         for command in set(re.findall(r"`/([a-z][a-z0-9-]+)", text)) - {"nome"}:
             assert command in skills, f"{readme.name}: /{command}"
