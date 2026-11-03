@@ -6,3 +6,6 @@ __pycache__/
 *.log
 .DS_Store
 Thumbs.db
+
+# Operational evidence from check_proofs.py; regenerated locally, tied to the workspace fingerprint.
+.cursor/agent-system/proofs/

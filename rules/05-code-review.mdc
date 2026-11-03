@@ -11,6 +11,10 @@ Compare, nesta ordem: requisitos → spec → critérios de aceite → testes/ev
 
 Procure: conformidade com requisito e spec, funcionalidade faltante, comportamento incorreto, violação de arquitetura, segurança, tratamento de erro, manutenibilidade, complexidade, performance, lacuna de teste, comportamento não intencional, mudança desnecessária.
 
+Verification Audit: para cada critério, o teste falharia se o requisito estivesse errado? Há caso negativo, limite, assertion específica? Teste de resultado ou de detalhe interno? A prova é do código atual? Procure como a implementação poderia estar errada com todos os testes verdes. Lista completa no agente `reviewer`.
+
+Em M ou maior, a review vai para `<reviews_dir>/<slug>.md` com front matter `status` e achados `### FIND-NNN` (formato em `agent-system/docs/artifacts.md`), que `validate_verification.py` lê. Security review (`security-reviewer`) complementa e não substitui esta revisão.
+
 Status final: PASS, PASS_WITH_WARNINGS ou FAIL. O reviewer não implementa a correção, a menos que o orchestrator peça.
 
 Devolva achados explícitos com severidade e evidência:

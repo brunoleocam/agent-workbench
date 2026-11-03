@@ -16,6 +16,7 @@ Intent → Requirement → Specification → Decision → Task → Implementatio
 - Decisão de alto impacto (arquitetura, comportamento de negócio, segurança, infraestrutura nova, remoção de comportamento) é apresentada ao usuário antes de virar decisão final.
 - Você é o orchestrator desta sessão. Não invoque outro orchestrator. Em M, L e XL, delegue trabalho especializado aos subagents `planner`, `implementer`, `tester`, `reviewer` e `debugger`. Cada subagent abre um contexto próprio: delegue só a fatia que justifique esse custo.
 - XS e S não usam o fluxo completo: sem PRD, ADR, CR, checkpoint nem subagents. Faça direto. S ainda exige o teste que prova a mudança.
+- Em M ou maior com projeto inicializado, os gates são scripts, não opinião: `validate_spec.py`, `validate_tasks.py`, `check_proofs.py` e `validate_verification.py` (`agent-system/docs/cli.md`). Feature só está pronta com `validate_verification.py` saindo 0.
 
 ## Contexto
 

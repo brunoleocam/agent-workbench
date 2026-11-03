@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -26,7 +27,19 @@ HOOK_EVENTS = [
     "afterAgentResponse",
     "stop",
 ]
-COPY_SCRIPTS = ["lib.py", "hook.py", "record_event.py", "timeline_view.py", "status_cmd.py"]
+COPY_SCRIPTS = [
+    "lib.py",
+    "hook.py",
+    "record_event.py",
+    "timeline_view.py",
+    "status_cmd.py",
+    "artifacts.py",
+    "validate_spec.py",
+    "validate_tasks.py",
+    "check_proofs.py",
+    "validate_verification.py",
+    "lessons.py",
+]
 RULES = [
     "00-core-engineering.mdc",
     "01-request-classification.mdc",
@@ -36,6 +49,7 @@ RULES = [
     "05-code-review.mdc",
     "06-checkpoint-and-progress.mdc",
     "07-documentation.mdc",
+    "08-security-engineering.mdc",
 ]
 SKILLS = [
     "new-project",
@@ -64,6 +78,10 @@ SKILLS = [
     "timeline",
     "help",
     "create-skill",
+    "roadmap",
+    "security-best-practices",
+    "security-review",
+    "lessons",
 ]
 
 
@@ -82,8 +100,26 @@ def default_state(root: Path) -> dict:
         "review_status": None,
         "last_checkpoint": None,
         "next_step": "Classify the next request before editing code.",
+        "verification": {},
         "installed_at": utc_now(),
     }
+
+
+def migrate_state(path: Path, root: Path) -> list[str]:
+    """Add keys introduced by newer versions. Existing values are never replaced."""
+    try:
+        state = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    if not isinstance(state, dict):
+        return []
+    added = [key for key in default_state(root) if key not in state and key != "installed_at"]
+    if added:
+        defaults = default_state(root)
+        for key in added:
+            state[key] = defaults[key]
+        write_json(path, state)
+    return added
 
 
 def merge_hooks(path: Path, command: str) -> str:
@@ -170,6 +206,8 @@ def copy_skills(root: Path) -> tuple[list[str], list[str], list[str]]:
     return created, preserved, global_skills
 
 
+# Edited by the user in layout.json and kept across re-runs of the init.
+USER_LAYOUT_KEYS = ("overrides", "proof_allow")
 SKIP_DIRS = {
     ".git",
     ".cursor",
@@ -193,20 +231,34 @@ def rel(root: Path, path: Path) -> str:
     return path.relative_to(root).as_posix()
 
 
+def doc_folder_first(paths: list[str]) -> list[str]:
+    """docs/<name> before anything else, then shallower paths, so code folders like spec/ or lib/tasks lose."""
+    return sorted(paths, key=lambda item: (not item.lower().startswith("docs/"), item.count("/"), item))
+
+
 def discover_layout(root: Path) -> dict:
     prd, architecture, specs, adr_dirs, adr_files = [], [], [], [], []
-    tasks_dir = changes_dir = progress = None
+    tasks_dirs: list[str] = []
+    changes_dirs: list[str] = []
+    progress = None
+    doc_dirs: dict[str, str] = {}
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [name for name in dirnames if name not in SKIP_DIRS and not name.startswith(".")]
+        dirnames[:] = sorted(name for name in dirnames if name not in SKIP_DIRS and not name.startswith("."))
         current = Path(dirpath)
         folder = current.name.lower()
+        has_markdown = any(name.lower().endswith(".md") for name in filenames)
+        # Only docs/<name> counts: a top-level tests/ folder holds test code, not verification docs.
+        if current.parent.name.lower() == "docs" and folder in DOC_DIR_KEYS:
+            doc_dirs.setdefault(DOC_DIR_KEYS[folder], rel(root, current))
         if folder in ADR_DIRS:
             adr_dirs.append(rel(root, current))
-        if folder in {"tasks"} and tasks_dir is None:
-            tasks_dir = rel(root, current)
-        if folder in {"changes", "change-requests"} and changes_dir is None:
-            changes_dir = rel(root, current)
-        if folder in {"specs", "spec"}:
+        # Outside docs/, spec/ (RSpec) and tasks/ (Rake, Celery) usually hold code; require Markdown there.
+        in_docs = current.parent.name.lower() == "docs"
+        if folder == "tasks" and (in_docs or has_markdown):
+            tasks_dirs.append(rel(root, current))
+        if folder in {"changes", "change-requests"} and (in_docs or has_markdown):
+            changes_dirs.append(rel(root, current))
+        if folder in {"specs", "spec"} and (in_docs or has_markdown):
             specs.append(rel(root, current))
         for filename in filenames:
             lowered = filename.lower()
@@ -237,20 +289,91 @@ def discover_layout(root: Path) -> dict:
     if list(root.glob("*.csproj")) or list(root.glob("*.sln")):
         stack.append("dotnet")
     signals = scan_signals(root)
+    frameworks = detect_frameworks(root)
+    for label in frameworks.values():
+        if label not in stack:
+            stack.append(label)
     return {
-        "version": 1,
+        "version": 2,
         "adapted_at": utc_now(),
         "prd": prd[:50],
         "adr_dirs": adr_dirs[:50],
         "adr_files": adr_files[:200],
         "architecture": architecture[:50],
-        "specs": specs[:50],
-        "tasks_dir": tasks_dir,
-        "changes_dir": changes_dir,
+        "specs": doc_folder_first(specs)[:50],
+        "tasks_dir": next(iter(doc_folder_first(tasks_dirs)), None),
+        "changes_dir": next(iter(doc_folder_first(changes_dirs)), None),
         "progress": progress,
+        **{key: doc_dirs.get(key) for key in DOC_DIR_KEYS.values()},
         "stack": stack,
+        "frameworks": sorted(frameworks),
+        "security_references": security_references(frameworks),
         "signals": signals,
     }
+
+
+DOC_DIR_KEYS = {"tests": "tests_dir", "reviews": "reviews_dir", "security": "security_dir"}
+FRAMEWORK_PATTERNS = [
+    # (framework, stack, manifest file names, regex over the manifest text)
+    ("express", "node", {"package.json"}, r'"express"\s*:'),
+    ("nextjs", "node", {"package.json"}, r'"next"\s*:'),
+    ("react", "node", {"package.json"}, r'"react"\s*:'),
+    ("fastapi", "python", {"pyproject.toml", "requirements.txt", "pipfile", "setup.cfg"}, r"\bfastapi\b"),
+    ("django", "python", {"pyproject.toml", "requirements.txt", "pipfile", "setup.cfg"}, r"\bdjango\b"),
+    ("flask", "python", {"pyproject.toml", "requirements.txt", "pipfile", "setup.cfg"}, r"\bflask\b"),
+    ("laravel", "php", {"composer.json"}, r'"laravel/framework"\s*:'),
+    ("php", "php", {"composer.json"}, r'"php"\s*:'),
+    ("aspnetcore", "dotnet", {".csproj"}, r"Microsoft\.NET\.Sdk\.Web|Microsoft\.AspNetCore"),
+    ("spring", "java", {"pom.xml", "build.gradle", "build.gradle.kts"}, r"spring-boot"),
+]
+SECURITY_REFERENCES = {
+    "express": ["javascript-express-security.md"],
+    "nextjs": ["javascript-typescript-nextjs-security.md", "javascript-typescript-react-security.md"],
+    "react": ["javascript-typescript-react-security.md"],
+    "fastapi": ["python-fastapi-security.md", "python-general-web-security.md"],
+    "django": ["python-django-security.md", "python-general-web-security.md"],
+    "flask": ["python-general-web-security.md"],
+    "laravel": ["php-laravel-security.md", "php-general-web-security.md"],
+    "php": ["php-general-web-security.md"],
+    "aspnetcore": ["csharp-aspnetcore-security.md"],
+    "spring": ["java-spring-security.md"],
+}
+MANIFEST_DEPTH = 2
+
+
+def detect_frameworks(root: Path) -> dict[str, str]:
+    """Framework -> stack, from manifests at the root and up to two folders down."""
+    found: dict[str, str] = {}
+    for dirpath, dirnames, filenames in os.walk(root):
+        current = Path(dirpath)
+        depth = len(current.relative_to(root).parts)
+        dirnames[:] = [] if depth >= MANIFEST_DEPTH else [name for name in dirnames if name not in SKIP_DIRS and not name.startswith(".")]
+        for filename in filenames:
+            lowered = filename.lower()
+            key = ".csproj" if lowered.endswith(".csproj") else lowered
+            candidates = [item for item in FRAMEWORK_PATTERNS if key in item[2] or (lowered.startswith("requirements") and lowered.endswith(".txt") and "requirements.txt" in item[2])]
+            if not candidates:
+                continue
+            path = current / filename
+            try:
+                if path.stat().st_size > 1_000_000:
+                    continue
+                text = path.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+            for framework, stack, _, pattern in candidates:
+                if re.search(pattern, text, re.IGNORECASE):
+                    found.setdefault(framework, stack)
+    return found
+
+
+def security_references(frameworks: dict[str, str]) -> list[str]:
+    refs: list[str] = []
+    for framework in sorted(frameworks):
+        for name in SECURITY_REFERENCES.get(framework, []):
+            if name not in refs:
+                refs.append(name)
+    return refs
 
 
 TEST_DIRS = {"test", "tests", "__tests__"}
@@ -261,6 +384,7 @@ SOURCE_SUFFIXES = {".py", ".ts", ".tsx", ".js", ".jsx", ".cs", ".go", ".java", "
 def scan_signals(root: Path) -> dict:
     tests, sources = [], []
     frontend, api, database, devops, auth = [], [], [], [], []
+    surfaces: dict[str, list[str]] = {}
     package_text = ""
     package = root / "package.json"
     if package.exists() and package.stat().st_size < 500_000:
@@ -287,6 +411,9 @@ def scan_signals(root: Path) -> dict:
                 devops.append(relative)
             if any(token in lowered for token in ("auth", "login", "jwt")):
                 auth.append(relative)
+            for surface, tokens in SURFACE_TOKENS.items():
+                if any(token in relative.lower() for token in tokens):
+                    surfaces.setdefault(surface, []).append(relative)
     if any(token in package_text for token in ('"react"', '"vue"', '"next"', '"@angular/core"', '"svelte"')):
         frontend.append("package.json")
     return {
@@ -298,7 +425,23 @@ def scan_signals(root: Path) -> dict:
         "database": database[:5],
         "devops": devops[:5],
         "auth": auth[:5],
+        "attack_surfaces": attack_surfaces(auth, api, database, devops, surfaces),
     }
+
+
+SURFACE_TOKENS = {
+    "file_upload": ("upload", "multer", "attachment"),
+    "payments": ("payment", "stripe", "checkout", "billing", "invoice"),
+    "cryptography": ("crypto", "encrypt", "cipher", "hash"),
+    "multi_tenant": ("tenant",),
+    "secrets_config": (".env.example", "secrets", "vault"),
+}
+
+
+def attack_surfaces(auth, api, database, devops, surfaces: dict[str, list[str]]) -> dict[str, list[str]]:
+    """Candidate surfaces from file names. A hint for risk classification, not a verdict."""
+    found = {"authentication": auth, "api": api, "database": database, "infrastructure": devops, **surfaces}
+    return {name: items[:5] for name, items in sorted(found.items()) if items}
 
 
 def installed_agent_names(root: Path) -> set[str]:
@@ -338,6 +481,16 @@ def suggest(root: Path, layout: dict) -> list[dict]:
         if not evidence or name in installed:
             continue
         items.append({"kind": "agent", "status": "missing", "name": name, "evidence": evidence[:3], "suggestion": f"{reason} Criar só se você pedir: /create-agent {name}."})
+    surfaces = signals.get("attack_surfaces") or {}
+    if surfaces:
+        evidence = [f"{name}: {files[0]}" for name, files in surfaces.items()][:6]
+        refs = ", ".join(layout.get("security_references") or []) or "nenhuma referência específica da stack"
+        items.append({
+            "kind": "security",
+            "status": "present",
+            "evidence": evidence,
+            "suggestion": f"Superfícies sensíveis detectadas pelo nome dos arquivos ({', '.join(surfaces)}). É indício, não veredito: o orchestrator avalia o risco por pedido. Mudança nelas pede análise proporcional (security-reviewer ou /security-review). Referências da stack: {refs}.",
+        })
     return items
 
 
@@ -428,7 +581,21 @@ def main() -> int:
     report["hooks"] = merge_hooks(hooks_path, "python .cursor/agent-system/scripts/hook.py")
 
     layout = discover_layout(root)
-    write_json(system / "layout.json", layout)
+    layout_file = system / "layout.json"
+    try:
+        previous = read_json(layout_file, {})
+    except (OSError, json.JSONDecodeError):
+        backup = system / "layout.json.invalid"
+        if not backup.exists():
+            shutil.copyfile(layout_file, backup)
+            report["preserved"].append("layout.json.invalid")
+        previous = {}
+    if not isinstance(previous, dict):
+        previous = {}
+    for key in USER_LAYOUT_KEYS:
+        if key in previous:
+            layout[key] = previous[key]
+    write_json(layout_file, layout)
     suggestions = suggest(root, layout)
     write_suggestions(root, suggestions)
     report["layout"] = {
@@ -438,10 +605,15 @@ def main() -> int:
         "architecture": layout["architecture"],
         "specs": layout["specs"],
         "stack": layout["stack"],
+        "frameworks": layout["frameworks"],
+        "security_references": layout["security_references"],
     }
     report["suggestions"] = suggestions
     if state_existed:
         report["preserved"].append("state.json")
+        migrated = migrate_state(state_file, root)
+        if migrated:
+            report["migrated_state_keys"] = migrated
     else:
         state = default_state(root)
         if layout["prd"] or layout["adr_files"] or layout["architecture"]:

@@ -1,0 +1,19 @@
+{
+  "base": "complete-feature",
+  "description": "Plano com ciclo, dependência inexistente e tarefa bloqueada sem causa é reprovado antes de implementar.",
+  "steps": [
+    {
+      "script": "validate_tasks.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 1,
+      "contains": [
+        "Circular dependency: TASK-001 -> TASK-002 -> TASK-001.",
+        "TASK-003 depends on unknown task TASK-404.",
+        "TASK-004 is blocked without a dependency"
+      ]
+    }
+  ]
+}

@@ -6,6 +6,8 @@ import argparse
 import json
 from pathlib import Path
 
+from lib import redact, safe_files
+
 
 def main() -> int:
     parser = argparse.ArgumentParser()
@@ -22,18 +24,23 @@ def main() -> int:
     selected = lines[-args.limit :]
     blocks = []
     for line in selected:
-        event = json.loads(line)
-        files = event.get("files") or []
-        file_text = "\n".join(f"- {item}" for item in files)
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(event, dict):
+            continue
+        files = event.get("files") if isinstance(event.get("files"), list) else []
+        file_text = "\n".join(f"- {item}" for item in safe_files([str(item) for item in files]))
         block = "\n".join(
             [
                 str(event.get("local_time") or event.get("timestamp")),
                 f"Agent: {event.get('agent')}",
                 f"Task: {event.get('task') or '-'}",
                 f"Event: {event.get('event')}",
-                f"Summary: {event.get('summary')}",
+                f"Summary: {redact(str(event.get('summary') or ''), 240)}",
                 f"Files:\n{file_text}" if file_text else "Files: -",
-                f"Result: {event.get('result')}",
+                f"Result: {redact(str(event.get('result') or ''), 160)}",
             ]
         )
         blocks.append(block)

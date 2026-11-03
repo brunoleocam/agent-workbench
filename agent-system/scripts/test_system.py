@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import subprocess
 import sys
 import tempfile
+import traceback
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -55,7 +57,7 @@ def test_static() -> None:
         assert name in hooks["hooks"]
     registry = json.loads((ROOT / "agents.json").read_text(encoding="utf-8"))
     names = [item["name"] for item in registry["agents"]]
-    assert names == ["orchestrator", "planner", "implementer", "tester", "reviewer", "debugger"]
+    assert names == ["orchestrator", "planner", "implementer", "tester", "reviewer", "debugger", "security-reviewer"]
     for name in names:
         text = (BASE_DIR / "agents" / f"{name}.md").read_text(encoding="utf-8")
         assert text.startswith("---")
@@ -69,6 +71,7 @@ def test_static() -> None:
         "05-code-review.mdc",
         "06-checkpoint-and-progress.mdc",
         "07-documentation.mdc",
+        "08-security-engineering.mdc",
     ):
         text = (BASE_DIR / "rules" / rule).read_text(encoding="utf-8")
         assert text.startswith("---")
@@ -231,7 +234,39 @@ def test_workflows() -> None:
         assert builtin.returncode == 2
 
 
-if __name__ == "__main__":
-    test_static()
-    test_workflows()
+def collect() -> list:
+    """test_* functions here and in agent-system/tests/test_*.py, in file order."""
+    found = [("test_system", test_static), ("test_system", test_workflows)]
+    folder = ROOT / "tests"
+    sys.path.insert(0, str(folder))
+    for path in sorted(folder.glob("test_*.py")):
+        spec = importlib.util.spec_from_file_location(path.stem, path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        names = [name for name in vars(module) if name.startswith("test_") and callable(getattr(module, name))]
+        found += [(path.stem, getattr(module, name)) for name in names]
+    return found
+
+
+def main(filters: list[str]) -> int:
+    failures = 0
+    selected = [(module, func) for module, func in collect() if not filters or any(item in f"{module}.{func.__name__}" for item in filters)]
+    if not selected:
+        print(f"No test matched {filters}.")
+        return 2
+    for module, func in selected:
+        try:
+            func()
+        except Exception:
+            failures += 1
+            print(f"FAIL {module}.{func.__name__}")
+            traceback.print_exc(limit=3)
+    print(f"{len(selected) - failures} passed, {failures} failed")
+    if failures:
+        return 1
     print("ok")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

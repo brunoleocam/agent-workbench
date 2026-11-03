@@ -1,0 +1,34 @@
+{
+  "base": "complete-feature",
+  "description": "Falha da aplicação (exit 1) e problema de ambiente (executável ausente) são registrados e reportados de forma diferente.",
+  "steps": [
+    {
+      "script": "check_proofs.py",
+      "args": [
+        "--feature",
+        "feat",
+        "--allow",
+        "ghost-runner-xyz"
+      ],
+      "exit_code": 1,
+      "contains": [
+        "[FAIL] TEST-001",
+        "exit=1",
+        "[ERROR] TEST-002",
+        "environment problem"
+      ]
+    },
+    {
+      "script": "validate_verification.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 1,
+      "contains": [
+        "TEST-001 proof is FAIL (application or test failure)",
+        "TEST-002 proof is ERROR (environment or policy problem"
+      ]
+    }
+  ]
+}

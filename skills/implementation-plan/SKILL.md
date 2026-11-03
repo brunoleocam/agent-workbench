@@ -34,4 +34,6 @@ Para cada tarefa:
 
 Cabeçalho do arquivo: objetivo em uma frase, abordagem, stack já usada no repo, restrições copiadas da spec.
 
+Em M ou maior, cada tarefa é um `### TASK-NNN` com `- Requirements:`, `- Acceptance:`, `- Files:`, `- Depends on:`, `- Verification:` (IDs de TEST), `- Done when:`, `- Gate:` e `- Status:`; cada verificação é um `### TEST-NNN` com `- Acceptance:`, `- Task:` e `- Command:` executável sem shell. Formato em `agent-system/docs/artifacts.md`. Rode `validate_tasks.py --feature <slug>` antes de entregar o plano.
+
 Não commite o plano a menos que o usuário peça. Ao terminar, o próximo passo é `implementation` ou `tdd`, uma tarefa por vez.

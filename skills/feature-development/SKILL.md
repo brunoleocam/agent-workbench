@@ -16,10 +16,15 @@ Pré-condição: o pedido é FEATURE, complexidade S ou maior. XS não usa esta 
    - restrições, premissas e comportamento existente afetado
    - critérios de aceite
    - spec do que o sistema deve fazer
-3. Cada task vai ao `implementer`, com teste antes ou junto da mudança.
-4. Verificação vai ao `tester`.
-5. Revisão vai ao `reviewer`. FAIL volta para correção, teste e nova revisão.
-6. Grave o checkpoint. A próxima etapa sai das tasks e dependências. Escopo novo no meio usa `change-request`.
+   Em M ou maior, no formato rastreável (`agent-system/docs/artifacts.md`): REQ em EARS, AC, TASK e TEST. Gate: `validate_spec.py --feature <slug> --require-approval`, aprovação do usuário, depois `validate_tasks.py --feature <slug>`.
+3. Cada task vai ao `implementer`, com teste antes ou junto da mudança. Superfície sensível: skill `security-best-practices`.
+4. Verificação vai ao `tester`, que roda `check_proofs.py --feature <slug>`.
+5. Risco HIGH ou CRITICAL: `security-reviewer` grava `<security_dir>/<slug>.md`.
+6. Revisão vai ao `reviewer`, com Verification Audit, em `<reviews_dir>/<slug>.md`. FAIL volta para correção, teste e nova revisão.
+7. `validate_verification.py --feature <slug>` sai 0. Sem isso, não está pronto.
+8. Grave o checkpoint. A próxima etapa sai das tasks e dependências. Escopo novo no meio usa `change-request`.
+
+Em S: spec curta e o teste que prova a mudança, sem IDs nem gates obrigatórios.
 
 ## Artefatos
 
@@ -27,7 +32,7 @@ Spec do comportamento alterado, testes que provam o aceite, checkpoint. PRD só 
 
 ## Pronto
 
-Aceite atendido, testes relevantes verdes, review PASS ou achados documentados, estado atualizado.
+Aceite atendido, testes relevantes verdes, review PASS ou achados documentados, estado atualizado. Em M ou maior, `validate_verification.py` saindo 0.
 
 ## Handoff
 

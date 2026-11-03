@@ -18,9 +18,15 @@ SECRET_PATH = re.compile(
     re.IGNORECASE,
 )
 SECRET_TEXT = re.compile(
-    r"(api[_-]?key|secret|token|password|authorization|bearer)\s*[:=]\s*\S+",
+    r"(api[_-]?key|secret|token|password|passwd|authorization|bearer)\s*[:=]\s*\S+",
     re.IGNORECASE,
 )
+AUTH_HEADER = re.compile(r"\bauthorization\s*[:=]\s*(?:[A-Za-z-]+\s+)?[^\s\"']+", re.IGNORECASE)
+AUTH_SCHEME = re.compile(r"\b(bearer|basic)\s+[A-Za-z0-9._~+/=-]{8,}", re.IGNORECASE)
+SECRET_FLAG = re.compile(r"(--?(?:api[_-]?key|secret|token|password|passwd|pwd))(\s+)\S+", re.IGNORECASE)
+SECRET_TOKEN = re.compile(r"\b(?:ghp|gho|ghs|github_pat|sk|sk_live|rk_live|xox[abprs]|AKIA|ASIA|glpat)[-_A-Za-z0-9]{12,}\b")
+URL_CREDENTIALS = re.compile(r"(\w+://)[^/\s:@]+:[^/\s@]+@")
+USER_FLAG = re.compile(r"((?:^|\s)(?:-u|--user)(?:\s+|=)[^\s:]+:)\S+")
 BUILTIN_AGENTS = {
     "generalpurpose",
     "explore",
@@ -69,6 +75,25 @@ SEMANTIC_EVENTS = {
     "TOOL_FAILURE",
     "SHELL",
     "AGENT_RESPONSE",
+    "SPEC_VALIDATION_STARTED",
+    "SPEC_VALIDATION_COMPLETED",
+    "TASK_VALIDATION_STARTED",
+    "TASK_VALIDATION_COMPLETED",
+    "PROOF_EXECUTION_STARTED",
+    "PROOF_EXECUTION_COMPLETED",
+    "VERIFICATION_COMPLETED",
+    "SECURITY_REVIEW_STARTED",
+    "SECURITY_REVIEW_COMPLETED",
+    "LESSON_PROPOSED",
+    "LESSON_CONFIRMED",
+    "LESSON_REJECTED",
+}
+VERIFICATION_STEPS = {
+    "SPEC_VALIDATION_COMPLETED": "spec",
+    "TASK_VALIDATION_COMPLETED": "tasks",
+    "PROOF_EXECUTION_COMPLETED": "proofs",
+    "VERIFICATION_COMPLETED": "gate",
+    "SECURITY_REVIEW_COMPLETED": "security",
 }
 
 
@@ -119,10 +144,23 @@ def workspace_roots(payload: dict) -> list[Path]:
     return found
 
 
+def redact_secrets(text: str) -> str:
+    """Mask secrets and keep the line structure, for captured command output."""
+    if not text:
+        return ""
+    cleaned = AUTH_HEADER.sub("[redacted]", text)
+    cleaned = AUTH_SCHEME.sub(r"\1 [redacted]", cleaned)
+    cleaned = SECRET_TEXT.sub("[redacted]", cleaned)
+    cleaned = SECRET_FLAG.sub(r"\1\2[redacted]", cleaned)
+    cleaned = SECRET_TOKEN.sub("[redacted]", cleaned)
+    cleaned = USER_FLAG.sub(r"\1[redacted]", cleaned)
+    return URL_CREDENTIALS.sub(r"\1[redacted]@", cleaned)
+
+
 def redact(text: str, limit: int = 160) -> str:
     if not text:
         return ""
-    cleaned = SECRET_TEXT.sub("[redacted]", text.replace("\n", " "))
+    cleaned = redact_secrets(text.replace("\n", " "))
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
     if len(cleaned) > limit:
         return cleaned[: limit - 1] + "…"
@@ -181,6 +219,22 @@ def roadmap_summary(root: Path) -> str:
     if counts["!"]:
         parts.append(f"{counts['!']} bloqueadas")
     return redact(f"{position or 'posição não marcada'} | {', '.join(parts)}", 200)
+
+
+def confirmed_lessons(root: Path, limit: int = 5) -> str:
+    """Titles of the newest confirmed lessons for session context. Candidates never load."""
+    path = root / ".cursor" / "agent-system" / "lessons.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return ""
+    items = [item for item in (data.get("lessons") or []) if isinstance(item, dict) and item.get("status") == "confirmed"] if isinstance(data, dict) else []
+    if not items:
+        return ""
+    items.sort(key=lambda item: str(item.get("confirmed_at") or ""), reverse=True)
+    shown = "; ".join(f"[{item.get('category')}] {redact(str(item.get('title') or ''), 90)}" for item in items[:limit])
+    more = f" (+{len(items) - limit} em lessons.py list --status confirmed)" if len(items) > limit else ""
+    return f"Lições confirmadas: {shown}{more}"
 
 
 def save_state(root: Path, state: dict) -> None:
@@ -277,4 +331,19 @@ def apply_semantic_state(state: dict, event: dict) -> dict:
         state["active_agent"] = event.get("agent") or state.get("active_agent")
     elif kind == "SUBAGENT_STOPPED":
         state["active_agent"] = "orchestrator"
+    step = VERIFICATION_STEPS.get(kind)
+    feature = event.get("feature")
+    if step and feature:
+        verification = state.get("verification")
+        if not isinstance(verification, dict):
+            verification = {}
+        entry = verification.setdefault(str(feature), {})
+        entry[step] = event.get("result")
+        entry["updated_at"] = event.get("timestamp")
+        if len(verification) > 50:
+            ordered = sorted(verification.items(), key=lambda item: str(item[1].get("updated_at") or ""))
+            verification = dict(ordered[-50:])
+        state["verification"] = verification
+        if kind == "VERIFICATION_COMPLETED":
+            state["phase"] = "verified" if str(event.get("result")).startswith("passed") else "verification"
     return state

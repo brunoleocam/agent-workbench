@@ -1,0 +1,37 @@
+{
+  "base": "complete-feature",
+  "description": "AC-002 sem TEST: validate_tasks avisa (bloqueia com --strict) e o gate reprova.",
+  "steps": [
+    {
+      "script": "validate_tasks.py",
+      "args": [
+        "--feature",
+        "feat",
+        "--strict"
+      ],
+      "exit_code": 1,
+      "contains": [
+        "AC-002 has no TEST definition."
+      ]
+    },
+    {
+      "script": "check_proofs.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 0
+    },
+    {
+      "script": "validate_verification.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 1,
+      "contains": [
+        "AC-002 has no TEST check."
+      ]
+    }
+  ]
+}
