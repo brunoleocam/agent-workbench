@@ -1,0 +1,14 @@
+{
+  "name": "agent-workbench",
+  "description": "Agent Workbench: spec-driven engineering harness with traceability, verification gates and security review.",
+  "owner": {
+    "name": "brunoleocam"
+  },
+  "plugins": [
+    {
+      "name": "agent-workbench",
+      "source": "./",
+      "description": "Spec-driven development harness: rules, skills, subagents, hooks, deterministic traceability and verification gates, security review, lessons, and deterministic evals, tuned for low token usage."
+    }
+  ]
+}

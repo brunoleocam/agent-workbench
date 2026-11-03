@@ -214,7 +214,7 @@ def test_registry_and_new_layers_are_wired() -> None:
         assert f"### {name}" in contracts, name
         assert "contracts.md" in (PLUGIN / "agents" / f"{name}.md").read_text(encoding="utf-8"), name
     manifest = json.loads((PLUGIN / ".cursor-plugin/plugin.json").read_text(encoding="utf-8"))
-    assert manifest["version"] == "0.3.0"
+    assert manifest["version"] == "0.4.0"
     for readme in ("README.md", "README.pt-BR.md"):
         assert f"version-{manifest['version']}-" in (PLUGIN / readme).read_text(encoding="utf-8"), readme
 
@@ -224,7 +224,7 @@ def test_readmes_cite_only_existing_commands_and_scripts() -> None:
     scripts = {path.name for path in (SYSTEM / "scripts").glob("*.py")}
     for readme in (PLUGIN / "README.md", PLUGIN / "README.pt-BR.md", SYSTEM / "README.md"):
         text = readme.read_text(encoding="utf-8")
-        for command in set(re.findall(r"`/([a-z][a-z0-9-]+)", text)) - {"nome"}:
+        for command in set(re.findall(r"`/(?:agent-workbench:)?([a-z][a-z0-9-]+)", text)) - {"nome", "plugin", "reload-plugins", "agent-workbench"}:
             assert command in skills, f"{readme.name}: /{command}"
         for script in set(re.findall(r"\b([a-z_]+\.py)\b", text)):
             assert script in scripts, f"{readme.name}: {script}"

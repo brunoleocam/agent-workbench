@@ -160,6 +160,38 @@ def copy_scripts(root: Path) -> None:
         target.write_text(text, encoding="utf-8")
 
 
+CLAUDE_TEMPLATE = SCRIPT_DIR.parent / "templates" / "CLAUDE.md"
+CLAUDE_BEGIN_PREFIX = "<!-- agent-workbench:begin"
+CLAUDE_BEGIN = CLAUDE_BEGIN_PREFIX + " (gerado por /init-agent-system; edite fora deste bloco) -->"
+CLAUDE_END = "<!-- agent-workbench:end -->"
+
+
+def write_claude_md(root: Path) -> str:
+    """Create or refresh the managed block in the project CLAUDE.md. Text outside the block is never touched."""
+    if not CLAUDE_TEMPLATE.is_file():
+        return "skipped: template not found"
+    block = f"{CLAUDE_BEGIN}\n{CLAUDE_TEMPLATE.read_text(encoding='utf-8').strip()}\n{CLAUDE_END}"
+    path = root / "CLAUDE.md"
+    if not path.exists():
+        path.write_text(block + "\n", encoding="utf-8")
+        return "created"
+    text = path.read_text(encoding="utf-8")
+    # Match the prefix, so a block written by an older wording of the marker is still found.
+    start = text.find(CLAUDE_BEGIN_PREFIX)
+    end = text.find(CLAUDE_END)
+    if start == -1 and end == -1:
+        prefix = text.rstrip("\n") + "\n\n" if text.strip() else ""
+        path.write_text(prefix + block + "\n", encoding="utf-8")
+        return "appended"
+    if start == -1 or end == -1 or end < start:
+        return "skipped: incomplete agent-workbench markers, fix CLAUDE.md by hand"
+    updated = text[:start] + block + text[end + len(CLAUDE_END):]
+    if updated == text:
+        return "unchanged"
+    path.write_text(updated, encoding="utf-8")
+    return "refreshed"
+
+
 def skill_sources() -> list[Path]:
     found = [BASE_DIR / "skills"] if (BASE_DIR / "skills").is_dir() else []
     agents = Path.home() / ".agents" / "skills"
@@ -530,6 +562,8 @@ def main() -> int:
     parser.add_argument("--force-home", action="store_true")
     # Locally the plugin already loads rules and agents; project copies would load them twice.
     parser.add_argument("--for-cloud", action="store_true", help="copy rules and agents into the project for Cloud Agents")
+    # Claude Code has no always-on plugin rules: the condensed rules go into the project CLAUDE.md instead.
+    parser.add_argument("--claude", action="store_true", help="running under Claude Code: write the rules block in CLAUDE.md and skip .cursor/hooks.json")
     args = parser.parse_args()
     root = Path(args.root).resolve()
     if root == Path.home().resolve() and not args.force_home:
@@ -572,13 +606,18 @@ def main() -> int:
     if agents:
         report["preserved"].extend(agents)
 
-    hooks_path = cursor / "hooks.json"
-    if hooks_path.exists():
-        backup = cursor / "hooks.json.bak-agent-system"
-        if not backup.exists():
-            shutil.copyfile(hooks_path, backup)
-            report["preserved"].append("hooks.json.bak-agent-system")
-    report["hooks"] = merge_hooks(hooks_path, "python .cursor/agent-system/scripts/hook.py")
+    if args.claude:
+        # Claude Code runs the plugin's own hooks (hooks/claude-hooks.json); .cursor/hooks.json is not read.
+        report["hooks"] = "plugin hooks (Claude Code)"
+        report["claude_md"] = write_claude_md(root)
+    else:
+        hooks_path = cursor / "hooks.json"
+        if hooks_path.exists():
+            backup = cursor / "hooks.json.bak-agent-system"
+            if not backup.exists():
+                shutil.copyfile(hooks_path, backup)
+                report["preserved"].append("hooks.json.bak-agent-system")
+        report["hooks"] = merge_hooks(hooks_path, "python .cursor/agent-system/scripts/hook.py")
 
     layout = discover_layout(root)
     layout_file = system / "layout.json"

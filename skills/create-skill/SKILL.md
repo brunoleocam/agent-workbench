@@ -1,6 +1,6 @@
 ---
 name: create-skill
-description: Creates a personal Cursor skill in the user profile, with a slash name and a /help entry. Use when the user asks to create, add, or author a skill (criar skill, nova skill, comando novo).
+description: Creates a personal skill for the agent-workbench plugin (Cursor or Claude Code), with a slash name and a /help entry. Use when the user asks to create, add, or author a skill (criar skill, nova skill, comando novo).
 ---
 
 # Criar skill
@@ -13,7 +13,9 @@ Não grave em `~/.cursor/skills-cursor/`. Esse diretório é do Cursor.
 
 `<plugin>/skills/<nome>/SKILL.md`, onde `<plugin>` é a raiz do plugin agent-workbench, dois níveis acima deste `SKILL.md`. O `name` do frontmatter é igual ao nome da pasta. Skill específica de empresa ou linguagem não entra no plugin, que é público: pergunte onde gravar.
 
-Se o usuário pedir skill só daquele repositório, aí sim use `.cursor/skills/<nome>/SKILL.md` do projeto.
+Se o usuário pedir skill só daquele repositório, aí sim use `.cursor/skills/<nome>/SKILL.md` do projeto (no Claude Code, `.claude/skills/<nome>/SKILL.md`).
+
+No Claude Code, `<plugin>` é `${CLAUDE_PLUGIN_ROOT}`. Instalado de um marketplace remoto, esse diretório é uma cópia em cache que o próximo update substitui: pergunte o caminho do clone local do repositório agent-workbench e grave lá. Sem clone, grave em `~/.claude/skills/<nome>/SKILL.md` e avise que a skill fica fora do plugin.
 
 ## Antes de escrever
 
