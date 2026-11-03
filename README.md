@@ -1,4 +1,8 @@
-[Leia em Português](README.pt-BR.md)
+<div align="right">
+  <a href="README.pt-BR.md">
+    <img src="https://img.shields.io/badge/README-PT--BR-blue?style=flat-square" alt="Português 🇧🇷" />
+  </a>
+</div>
 
 # Agent Workbench
 
