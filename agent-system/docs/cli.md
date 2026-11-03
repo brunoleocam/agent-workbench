@@ -67,8 +67,8 @@ Fingerprint: HEAD mais o hash do conteúdo de cada arquivo modificado ou não ra
 python .cursor/agent-system/scripts/validate_verification.py --feature reset-password
 ```
 
-Inclui as falhas estruturais de `validate_spec` e `validate_tasks`. FAIL: AC obrigatório sem TEST, TEST obrigatório sem prova, prova diferente de PASS, prova de outro fingerprint, comando do TEST alterado depois da prova, tarefa que não está `done` nem `cancelled`, review ausente em M+ ou com status FAIL, revisão de segurança ausente com risco HIGH/CRITICAL ou com status FAIL, achado bloqueante aberto, risco aceito sem justificativa.
-WARN: review com fingerprint de outro estado, achado `major`/`MEDIUM` aberto, AC coberto só por TEST opcional.
+Inclui as falhas estruturais de `validate_spec` e `validate_tasks`. FAIL: AC obrigatório sem TEST, TEST obrigatório sem prova, prova diferente de PASS, prova de outro fingerprint, comando do TEST alterado depois da prova, tarefa que não está `done` nem `cancelled`, review ausente em M+ ou com status FAIL, revisão de segurança ausente com risco HIGH/CRITICAL ou com status FAIL, review ou revisão de segurança obrigatória sem `fingerprint` ou com fingerprint diferente do workspace atual (comparação exata), achado bloqueante aberto, risco aceito sem justificativa.
+WARN: review ou revisão de segurança não obrigatória com fingerprint de outro estado, achado `major`/`MEDIUM` aberto, AC coberto só por TEST opcional.
 
 ## lessons.py
 

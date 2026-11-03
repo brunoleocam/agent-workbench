@@ -1,7 +1,7 @@
 ---
 status: PASS_WITH_WARNINGS
 reviewer: reviewer
-fingerprint: 49451b3ea44a2c2e8cc003d1544f84eff7f5d0ac05b2009f834b0664020a119a
+fingerprint: 45c3adc984edaf14fcad9ec6f7582b654d19d03e96c09909c893829deef648b9
 ---
 # Review: evolução do harness
 
@@ -15,6 +15,8 @@ Como verifiquei (Windows, Python 3.13):
 - Script descartável em `%TEMP%` chamando `policy_refusal` e `batch_refusal` com 24 comandos que deveriam ser recusados e 27 que deveriam passar. Para as formas que escapam, executei `node` para confirmar que o código roda. Scripts e pastas temporárias foram apagados.
 - Não rodei `check_proofs.py` sem `--dry-run` sobre o repositório nem `record_event.py`, para não alterar provas nem arquivos fora desta review.
 - Terceira rodada (FIND-017 documentado como limite, sem mudança de código): `check_proofs.py` e `test_proofs.py` não mudaram desde a rodada anterior (modificados às 10:47, antes dela). Só mudaram REQ-005 na spec, `agent-system/docs/cli.md`, `agent-system/README.md` e `docs/security/harness-evolution.md`. Os dois READMEs entram no fingerprint, o que explica o digest novo `49451b3e…`. As 14 provas regeneradas estão PASS com esse fingerprint, e o TEST-015 (suíte completa) faz parte delas.
+- Atualização sobre o commit `1c1ee94` (PR #3), feita pelo implementador e ainda sem nova revisão independente: correção de FIND-021 em `validate_verification.py`. O workspace atual é o HEAD `1c1ee94` mais 9 arquivos alterados, digest `565b74e4…`. Antes de atualizar esta review, o gate corrigido reprovou com `Review was recorded for another workspace state (fingerprint 49451b3ea44a, current 565b74e4f01b)`; o código anterior não teria apontado isso. Resultados: suíte 28/28 no Windows e no Linux (WSL2), evals 8/8, validadores strict com exit 0, 14 provas PASS regeneradas com esse digest.
+- Depois, só documentação e o teste de READMEs: `README.md` passou a ser a versão em inglês, com link para `README.pt-BR.md` (novo), e `test_readmes_cite_only_existing_commands_and_scripts` passou a checar também o README em português. Digest novo `45c3adc9…`; 14 provas PASS regeneradas, incluindo o TEST-015 (suíte completa). Sem mudança de código do harness.
 
 ## Verification Audit
 
@@ -184,3 +186,10 @@ Minimum Effective Engineering: `metrics.py`, `/agent-evaluation`, cenários e ru
 - Status: resolved
 - File: docs/tasks/harness-evolution.md:128
 - Evidence: o comando do TEST-009 agora é `["python", "agent-system/scripts/test_system.py", "test_lessons_lifecycle", "test_lessons_edited_by_hand_stay_redacted"]`, e a prova atual registra `2 passed, 0 failed` com o fingerprint do workspace.
+
+### FIND-021: gate aceitava relatório obrigatório sem fingerprint ou de outro estado
+- Severity: major
+- Status: resolved
+- File: agent-system/scripts/validate_verification.py:57
+- Evidence: `check_report_doc()` comparava por prefixo (`current.startswith(recorded)`), só avisava quando o fingerprint diferia e ignorava fingerprint ausente. Agora, para review e revisão de segurança obrigatórias, fingerprint ausente ou diferente reprova, com comparação exata; relatório não obrigatório só avisa. `test_report_fingerprint_must_match_exactly` cobre ausente, diferente (incluindo prefixo de 12 caracteres e digest com sufixo extra), igual, revisão de segurança obrigatória e review opcional. Controle negativo: com o `validate_verification.py` do commit `1c1ee94`, o teste falha, porque a review sem fingerprint passa no gate. O eval `stale-proof` agora exige que a review seja registrada de novo depois da mudança de código.
+- Requirement: REQ-007 / AC-007 (TEST-006).

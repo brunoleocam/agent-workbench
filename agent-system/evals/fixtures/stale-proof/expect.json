@@ -1,6 +1,6 @@
 {
   "base": "complete-feature",
-  "description": "Código alterado depois da prova: o gate reprova até check_proofs rodar de novo.",
+  "description": "Código alterado depois da prova: o gate reprova até check_proofs rodar de novo e a review ser registrada para o novo estado.",
   "steps": [
     {
       "script": "check_proofs.py",
@@ -9,6 +9,9 @@
         "feat"
       ],
       "exit_code": 0
+    },
+    {
+      "stamp": "docs/reviews/feat.md"
     },
     {
       "script": "validate_verification.py",
@@ -44,6 +47,23 @@
         "feat"
       ],
       "exit_code": 0
+    },
+    {
+      "script": "validate_verification.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 1,
+      "contains": [
+        "Review was recorded for another workspace state"
+      ],
+      "not_contains": [
+        "predates the current workspace"
+      ]
+    },
+    {
+      "stamp": "docs/reviews/feat.md"
     },
     {
       "script": "validate_verification.py",

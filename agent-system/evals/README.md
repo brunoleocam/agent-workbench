@@ -2,7 +2,7 @@
 
 Fixtures determinísticas dos gates, sem API externa nem serviço pago. Comportamento do modelo (classificação, qualidade de spec, review) não é avaliado aqui.
 
-`python agent-system/scripts/run_evals.py` copia cada fixture para uma pasta temporária, troca `__PYTHON__` pelo interpretador atual, executa os passos e compara exit code, `contains` e `not_contains`. Passo `write` altera um arquivo (por exemplo, para tornar uma prova obsoleta). `base` herda o projeto de outra fixture. Os TESTs das fixtures rodam arquivos de teste em `checks/`, como um projeto real; nada usa `python -c`.
+`python agent-system/scripts/run_evals.py` copia cada fixture para uma pasta temporária, troca `__PYTHON__` pelo interpretador atual, executa os passos e compara exit code, `contains` e `not_contains`. Passo `write` altera um arquivo (por exemplo, para tornar uma prova obsoleta). Passo `stamp` grava no front matter de um relatório o fingerprint atual (`check_proofs.py --fingerprint`), como o revisor faz. `base` herda o projeto de outra fixture. Os TESTs das fixtures rodam arquivos de teste em `checks/`, como um projeto real; nada usa `python -c`.
 
 | Fixture | O que prova |
 | --- | --- |

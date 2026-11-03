@@ -68,9 +68,19 @@ def check_report_doc(doc: Document | None, label: str, kind: str, required: bool
         report.fail(f"{label.lower()}-failed", f"{label} status is FAIL.")
     else:
         report.ok(f"{label.lower()}-status", f"{label} status is {status}.")
-    recorded = doc.frontmatter.get("fingerprint", "")
-    if recorded and current and not current.startswith(recorded):
-        report.warn(f"{label.lower()}-stale", f"{label} was recorded for another workspace state (fingerprint {recorded[:12]}).")
+    recorded = doc.frontmatter.get("fingerprint", "").strip()
+    code = label.lower().replace(" ", "-")
+    if not recorded:
+        if required:
+            report.fail(f"{code}-fingerprint-missing", f"{label} has no fingerprint; record the digest from check_proofs.py --fingerprint.")
+    elif recorded != current:
+        message = f"{label} was recorded for another workspace state (fingerprint {recorded[:12]}, current {current[:12]})."
+        if required:
+            report.fail(f"{code}-stale", message)
+        else:
+            report.warn(f"{code}-stale", message)
+    else:
+        report.ok(f"{code}-fingerprint", f"{label} fingerprint matches the current workspace.")
     check_findings(doc, label, kind, report)
 
 
