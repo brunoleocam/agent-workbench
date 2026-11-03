@@ -131,6 +131,16 @@ TEST-001 fails if the expiry is removed.
 """
 
 
+def fingerprint(root: Path) -> str:
+    done = run("check_proofs.py", ["--root", str(root), "--fingerprint"])
+    return json.loads(done.stdout)["digest"]
+
+
+def stamped(root: Path, text: str = REVIEW_PASS) -> str:
+    """A review recorded for the current workspace state."""
+    return text.replace("---\n", f"---\nfingerprint: {fingerprint(root)}\n", 1)
+
+
 def feature_project(root: Path, **kwargs) -> Path:
     write(root, "docs/specs/reset.md", SPEC)
     write(root, "docs/tasks/reset.md", tasks(**kwargs))

@@ -42,6 +42,9 @@
       "exit_code": 0
     },
     {
+      "stamp": "docs/reviews/feat.md"
+    },
+    {
       "script": "validate_verification.py",
       "args": [
         "--feature",

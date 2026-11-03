@@ -35,7 +35,7 @@ IF o executável de um TEST não está na lista permitida, ou o comando usa um s
 THE SYSTEM SHALL calcular um fingerprint com HEAD, arquivos modificados e não rastreados (conteúdo), excluindo `.cursor/`, caches e os diretórios de documentação do harness, sem exigir commit.
 
 ### REQ-007: Gate de verificação
-WHEN `validate_verification.py` roda, THE SYSTEM SHALL reprovar a conclusão se faltar TEST para AC, prova para TEST obrigatório, prova PASS, prova do fingerprint atual, review aprovada (M ou maior), revisão de segurança quando o risco for HIGH ou CRITICAL, ou se houver achado bloqueante aberto ou risco aceito sem justificativa.
+WHEN `validate_verification.py` roda, THE SYSTEM SHALL reprovar a conclusão se faltar TEST para AC, prova para TEST obrigatório, prova PASS, prova do fingerprint atual, review aprovada (M ou maior), revisão de segurança quando o risco for HIGH ou CRITICAL, fingerprint de relatório obrigatório igual ao workspace atual (comparação exata; ausente reprova), ou se houver achado bloqueante aberto ou risco aceito sem justificativa.
 
 ### REQ-008: Respeito ao layout
 THE SYSTEM SHALL resolver os caminhos de spec, tasks, testes, reviews e segurança a partir de `.cursor/agent-system/layout.json` (com `overrides`), caindo para `docs/...` só quando o layout não informa, e recusar caminho fora da raiz do projeto.

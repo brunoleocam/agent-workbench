@@ -107,7 +107,7 @@ Spec: [harness-evolution](../specs/harness-evolution.md). Testes rodam pela suí
 ### TEST-006: gate de verificação
 - Acceptance: AC-007
 - Task: TASK-002
-- Command: ["python", "agent-system/scripts/test_system.py", "test_validate_verification_gate", "test_small_change_needs_no_review"]
+- Command: ["python", "agent-system/scripts/test_system.py", "test_validate_verification_gate", "test_small_change_needs_no_review", "test_report_fingerprint_must_match_exactly"]
 - Expected result: exit 0; prova ausente ou obsoleta, review ausente e achado aberto reprovam; caso completo passa
 
 ### TEST-007: camadas registradas e ligadas

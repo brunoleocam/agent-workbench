@@ -38,6 +38,25 @@ def prepare(source: Path, target: Path, base: str | None) -> None:
             path.write_text(text.replace(PYTHON_TOKEN, escaped), encoding="utf-8")
 
 
+def stamp(root: Path, relative: str) -> list[str]:
+    """Record the current workspace fingerprint in a report's front matter, as the reviewer does."""
+    target = (root / relative).resolve()
+    if root.resolve() not in target.parents or not target.is_file():
+        raise FixtureError(f"stamp needs an existing file inside the fixture: {relative}")
+    done = subprocess.run(
+        [sys.executable, str(SCRIPTS / "check_proofs.py"), "--root", str(root), "--fingerprint"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120, check=False,
+    )
+    if done.returncode != 0:
+        return [f"stamp: check_proofs.py --fingerprint exit {done.returncode}"]
+    digest = json.loads(done.stdout)["digest"]
+    lines = [line for line in target.read_text(encoding="utf-8").splitlines() if not line.startswith("fingerprint:")]
+    if not lines or lines[0] != "---":
+        raise FixtureError(f"stamp: {relative} has no front matter")
+    target.write_text("\n".join([lines[0], f"fingerprint: {digest}", *lines[1:]]) + "\n", encoding="utf-8")
+    return []
+
+
 def run_step(step: dict, root: Path) -> list[str]:
     if "write" in step:
         target = (root / step["write"]).resolve()
@@ -46,6 +65,8 @@ def run_step(step: dict, root: Path) -> list[str]:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(step.get("content", ""), encoding="utf-8")
         return []
+    if "stamp" in step:
+        return stamp(root, step["stamp"])
     script = step.get("script")
     if script not in SCRIPTS_ALLOWED:
         raise FixtureError(f"unknown script {script!r}")

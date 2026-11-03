@@ -14,7 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-from support import REVIEW_PASS, feature_project, opt_in, py_command, run, tasks, write  # noqa: E402
+from support import REVIEW_PASS, feature_project, fingerprint, opt_in, py_command, run, stamped, tasks, write  # noqa: E402
 
 from artifacts import resolve_layout, workspace_fingerprint  # noqa: E402
 
@@ -260,7 +260,7 @@ def test_validate_verification_gate() -> None:
         assert "TEST-001 has no proof" in missing.stdout and "Review is required and was not found." in missing.stdout
 
         assert proof_run(args).returncode == 0
-        write(root, "docs/reviews/reset.md", REVIEW_PASS)
+        write(root, "docs/reviews/reset.md", stamped(root))
         passed = run("validate_verification.py", args)
         assert passed.returncode == 0, passed.stdout + passed.stderr
         events = (root / ".cursor/timeline/events.jsonl").read_text(encoding="utf-8")
@@ -273,10 +273,10 @@ def test_validate_verification_gate() -> None:
         assert stale.returncode == 1 and "predates the current workspace" in stale.stdout
         assert proof_run(args).returncode == 0
 
-        write(root, "docs/reviews/reset.md", REVIEW_PASS.replace("status: PASS", "status: FAIL", 1))
+        write(root, "docs/reviews/reset.md", stamped(root, REVIEW_PASS.replace("status: PASS", "status: FAIL", 1)))
         failed_review = run("validate_verification.py", args)
         assert failed_review.returncode == 1 and "Review status is FAIL." in failed_review.stdout, failed_review.stdout
-        write(root, "docs/reviews/reset.md", REVIEW_PASS)
+        write(root, "docs/reviews/reset.md", stamped(root))
         tasks_text = (root / "docs/tasks/reset.md").read_text(encoding="utf-8")
         write(root, "docs/tasks/reset.md", tasks_text.replace("raise SystemExit(0)", "raise SystemExit(0)  ", 1))
         changed = run("validate_verification.py", args)
@@ -285,12 +285,12 @@ def test_validate_verification_gate() -> None:
         assert run("validate_verification.py", args).returncode == 0
 
         blocking = REVIEW_PASS.replace("- Severity: minor\n- Status: resolved", "- Severity: blocker\n- Status: open")
-        write(root, "docs/reviews/reset.md", blocking)
+        write(root, "docs/reviews/reset.md", stamped(root, blocking))
         assert "FIND-001 (blocker) is still open" in run("validate_verification.py", args).stdout
         accepted = REVIEW_PASS.replace("- Status: resolved", "- Status: accepted")
-        write(root, "docs/reviews/reset.md", accepted)
+        write(root, "docs/reviews/reset.md", stamped(root, accepted))
         assert "accepted as residual risk without a Justification" in run("validate_verification.py", args).stdout
-        write(root, "docs/reviews/reset.md", accepted + "- Justification: cosmetic, tracked in TASK-009\n")
+        write(root, "docs/reviews/reset.md", stamped(root, accepted) + "- Justification: cosmetic, tracked in TASK-009\n")
         assert run("validate_verification.py", args).returncode == 0
 
         spec = (root / "docs/specs/reset.md").read_text(encoding="utf-8").replace("security_risk: LOW", "security_risk: HIGH")
@@ -303,6 +303,44 @@ def test_validate_verification_gate() -> None:
 
         write(root, "docs/tasks/reset.md", tasks(status1="done", status2="in_progress"))
         assert "TASK-002 is in_progress" in run("validate_verification.py", args).stdout
+
+
+def test_report_fingerprint_must_match_exactly() -> None:
+    with tempfile.TemporaryDirectory() as raw:
+        root = feature_project(Path(raw), status1="done", status2="done")
+        args = ["--root", str(root), "--feature", "reset"]
+        assert proof_run(args).returncode == 0
+        digest = fingerprint(root)
+
+        write(root, "docs/reviews/reset.md", REVIEW_PASS)
+        missing = run("validate_verification.py", args)
+        assert missing.returncode == 1 and "Review has no fingerprint" in missing.stdout, missing.stdout
+
+        other = digest[:-1] + ("0" if digest[-1] != "0" else "1")
+        for recorded in (other, digest[:12], digest + "0"):
+            write(root, "docs/reviews/reset.md", REVIEW_PASS.replace("---\n", f"---\nfingerprint: {recorded}\n", 1))
+            stale = run("validate_verification.py", args)
+            assert stale.returncode == 1 and "[FAIL] Review was recorded for another workspace state" in stale.stdout, recorded
+
+        write(root, "docs/reviews/reset.md", stamped(root))
+        exact = run("validate_verification.py", args)
+        assert exact.returncode == 0 and "Review fingerprint matches the current workspace." in exact.stdout, exact.stdout
+
+        spec = (root / "docs/specs/reset.md").read_text(encoding="utf-8").replace("security_risk: LOW", "security_risk: HIGH")
+        write(root, "docs/specs/reset.md", spec)
+        security = "---\nstatus: PASS\n---\n# Security Assessment\n"
+        write(root, "docs/security/reset.md", security)
+        assert "Security review has no fingerprint" in run("validate_verification.py", args).stdout
+        write(root, "docs/security/reset.md", security.replace("---\n", f"---\nfingerprint: {other}\n", 1))
+        assert "[FAIL] Security review was recorded for another workspace state" in run("validate_verification.py", args).stdout
+        write(root, "docs/security/reset.md", stamped(root, security))
+        assert run("validate_verification.py", args).returncode == 0
+
+        small = spec.replace("security_risk: HIGH", "security_risk: LOW").replace("complexity: M", "complexity: S")
+        write(root, "docs/specs/reset.md", small)
+        write(root, "docs/reviews/reset.md", REVIEW_PASS.replace("---\n", f"---\nfingerprint: {other}\n", 1))
+        optional = run("validate_verification.py", args)
+        assert optional.returncode == 0 and "[WARN] Review was recorded for another workspace state" in optional.stdout, optional.stdout
 
 
 def test_small_change_needs_no_review() -> None:
