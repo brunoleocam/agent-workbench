@@ -59,7 +59,7 @@ A prova guarda o fingerprint de antes da execução. Se o workspace mudar enquan
 
 Saída: `.cursor/agent-system/proofs/<slug>.json` (fonte de verdade) e `<slug>.md`. Cada prova guarda TEST, REQ, AC, tarefa, comando (redigido), exit code, status, motivo, horários, duração, as últimas 20 000 letras de stdout e stderr com segredos mascarados, e o fingerprint. Rodar só alguns TESTs mantém as provas dos outros. As provas são evidência local, presa ao fingerprint: não versione a pasta (o plugin a ignora no `.gitignore`; faça o mesmo no projeto). Num projeto que é subpasta de um repositório git, o fingerprint considera só os arquivos da subpasta.
 
-Fingerprint: HEAD mais o hash do conteúdo de cada arquivo modificado ou não rastreado (git status), sem `.cursor/`, caches e Markdown das pastas de doc do harness. Sem git, hash dos arquivos do projeto (até 5 000 arquivos). Não exige commit.
+Fingerprint: o blob id do git de cada arquivo do projeto (índice para arquivo sem mudança, `git hash-object` para modificado ou não rastreado), sem `.cursor/`, caches e Markdown das pastas de doc do harness. Não usa o HEAD: commitar o mesmo conteúdo mantém o fingerprint, e uma review registrada antes do commit continua válida. Sem git, hash dos arquivos do projeto (até 5 000 arquivos). Não exige commit.
 
 ## validate_verification.py
 

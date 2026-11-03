@@ -227,6 +227,40 @@ def test_fingerprint_tracks_code_not_harness_docs() -> None:
             assert dirty["changed_files"] == 1 and dirty["digest"] != clean["digest"]
 
 
+def test_fingerprint_survives_commit() -> None:
+    if not shutil.which("git"):
+        return
+    with tempfile.TemporaryDirectory() as raw:
+        root = feature_project(Path(raw), status1="done", status2="done")
+        write(root, ".gitattributes", "*.py text eol=crlf\n")
+        write(root, "src/reset.py", "TOKEN_TTL = 15\r\nREFRESH = True\r\n")
+        git = ["git", "-C", str(root), "-c", "user.email=t@example.com", "-c", "user.name=t", "-c", "commit.gpgsign=false"]
+        subprocess.run([*git, "init", "-q"], check=True)
+        layout = resolve_layout(root)
+        untracked = workspace_fingerprint(root, layout)
+        assert untracked["mode"] == "git" and untracked["head"] is None
+
+        args = ["--root", str(root), "--feature", "reset"]
+        assert proof_run(args).returncode == 0
+        write(root, "docs/reviews/reset.md", stamped(root))
+        assert run("validate_verification.py", args).returncode == 0
+        subprocess.run([*git, "add", "-A"], check=True)
+        subprocess.run([*git, "commit", "-q", "-m", "feature"], check=True)
+        committed = workspace_fingerprint(root, layout)
+        assert committed["head"] and committed["changed_files"] == 0
+        assert committed["digest"] == untracked["digest"]
+        after = run("validate_verification.py", args)
+        assert after.returncode == 0 and "Review fingerprint matches the current workspace." in after.stdout, after.stdout
+
+        write(root, "src/reset.py", "TOKEN_TTL = 16\r\nREFRESH = True\r\n")
+        assert workspace_fingerprint(root, layout)["digest"] != committed["digest"]
+        assert run("validate_verification.py", args).returncode == 1
+        write(root, "src/reset.py", "TOKEN_TTL = 15\r\nREFRESH = True\r\n")
+        assert workspace_fingerprint(root, layout)["digest"] == committed["digest"]
+        (root / "src/reset.py").unlink()
+        assert workspace_fingerprint(root, layout)["digest"] != committed["digest"]
+
+
 def test_fingerprint_in_repository_subdirectory() -> None:
     if not shutil.which("git"):
         return

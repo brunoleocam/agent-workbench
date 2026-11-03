@@ -32,7 +32,7 @@ WHEN `check_proofs.py` executa os TEST de uma feature, THE SYSTEM SHALL gravar, 
 IF o executável de um TEST não está na lista permitida, ou o comando usa um subcomando conhecido de instalação, publicação ou remoção de pacotes (melhor esforço, por nome; não é sandbox), ou executa código inline (`python -c`, `node -e` e equivalentes, também atrás de wrappers como `uv run`; melhor esforço por análise de argumentos), ou passa metacaractere do `cmd.exe` para um `.cmd`/`.bat` no Windows, THEN THE SYSTEM SHALL recusar a execução e marcar REFUSED. Código inline só roda com `--allow-inline` na CLI, por autorização do usuário. Shell só roda com `Shell: yes` no artefato e `--allow-shell` na CLI.
 
 ### REQ-006: Fingerprint do workspace
-THE SYSTEM SHALL calcular um fingerprint com HEAD, arquivos modificados e não rastreados (conteúdo), excluindo `.cursor/`, caches e os diretórios de documentação do harness, sem exigir commit.
+THE SYSTEM SHALL calcular um fingerprint pelo conteúdo dos arquivos do projeto, rastreados ou não, excluindo `.cursor/`, caches e os diretórios de documentação do harness, sem exigir commit e sem depender do HEAD (o mesmo conteúdo dá o mesmo fingerprint antes e depois do commit).
 
 ### REQ-007: Gate de verificação
 WHEN `validate_verification.py` roda, THE SYSTEM SHALL reprovar a conclusão se faltar TEST para AC, prova para TEST obrigatório, prova PASS, prova do fingerprint atual, review aprovada (M ou maior), revisão de segurança quando o risco for HIGH ou CRITICAL, fingerprint de relatório obrigatório igual ao workspace atual (comparação exata; ausente reprova), ou se houver achado bloqueante aberto ou risco aceito sem justificativa.

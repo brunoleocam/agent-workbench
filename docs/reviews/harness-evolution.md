@@ -1,7 +1,7 @@
 ---
 status: PASS_WITH_WARNINGS
 reviewer: reviewer
-fingerprint: 45c3adc984edaf14fcad9ec6f7582b654d19d03e96c09909c893829deef648b9
+fingerprint: b9a8f9305dd1f636b8618b6d6436fb2a6be66aa16ddcddf52bc4d39885efce90
 ---
 # Review: evolução do harness
 
@@ -17,6 +17,7 @@ Como verifiquei (Windows, Python 3.13):
 - Terceira rodada (FIND-017 documentado como limite, sem mudança de código): `check_proofs.py` e `test_proofs.py` não mudaram desde a rodada anterior (modificados às 10:47, antes dela). Só mudaram REQ-005 na spec, `agent-system/docs/cli.md`, `agent-system/README.md` e `docs/security/harness-evolution.md`. Os dois READMEs entram no fingerprint, o que explica o digest novo `49451b3e…`. As 14 provas regeneradas estão PASS com esse fingerprint, e o TEST-015 (suíte completa) faz parte delas.
 - Atualização sobre o commit `1c1ee94` (PR #3), feita pelo implementador e ainda sem nova revisão independente: correção de FIND-021 em `validate_verification.py`. O workspace atual é o HEAD `1c1ee94` mais 9 arquivos alterados, digest `565b74e4…`. Antes de atualizar esta review, o gate corrigido reprovou com `Review was recorded for another workspace state (fingerprint 49451b3ea44a, current 565b74e4f01b)`; o código anterior não teria apontado isso. Resultados: suíte 28/28 no Windows e no Linux (WSL2), evals 8/8, validadores strict com exit 0, 14 provas PASS regeneradas com esse digest.
 - Depois, só documentação e o teste de READMEs: `README.md` passou a ser a versão em inglês, com link para `README.pt-BR.md` (novo), e `test_readmes_cite_only_existing_commands_and_scripts` passou a checar também o README em português. Digest novo `45c3adc9…`; 14 provas PASS regeneradas, incluindo o TEST-015 (suíte completa). Sem mudança de código do harness.
+- Atualização sobre o `main` em `c3e37e9` (PR #4 mergeado), feita pelo implementador e ainda sem nova revisão independente: correção de FIND-022 (fingerprint pelo conteúdo, sem HEAD). Digest `b9a8f930…` (modo git, 123 arquivos, 4 alterados); cálculo em 0,76 s. Suíte 29/29 no Windows e no Linux (WSL2), evals 8/8, validadores strict com exit 0, 14 provas PASS.
 
 ## Verification Audit
 
@@ -193,3 +194,10 @@ Minimum Effective Engineering: `metrics.py`, `/agent-evaluation`, cenários e ru
 - File: agent-system/scripts/validate_verification.py:57
 - Evidence: `check_report_doc()` comparava por prefixo (`current.startswith(recorded)`), só avisava quando o fingerprint diferia e ignorava fingerprint ausente. Agora, para review e revisão de segurança obrigatórias, fingerprint ausente ou diferente reprova, com comparação exata; relatório não obrigatório só avisa. `test_report_fingerprint_must_match_exactly` cobre ausente, diferente (incluindo prefixo de 12 caracteres e digest com sufixo extra), igual, revisão de segurança obrigatória e review opcional. Controle negativo: com o `validate_verification.py` do commit `1c1ee94`, o teste falha, porque a review sem fingerprint passa no gate. O eval `stale-proof` agora exige que a review seja registrada de novo depois da mudança de código.
 - Requirement: REQ-007 / AC-007 (TEST-006).
+
+### FIND-022: review commitada nunca batia com o fingerprint do próprio commit
+- Severity: major
+- Status: resolved
+- File: agent-system/scripts/artifacts.py (`workspace_fingerprint`)
+- Evidence: o fingerprint incluía o HEAD; commitar a review mudava o HEAD, e o gate exato (FIND-021) reprovava no estado commitado (`fingerprint 45c3adc984ed, current 04449f90ccb3` no PR #4). Agora o digest é o blob id do git de cada arquivo do projeto (índice para arquivo sem mudança, `git hash-object` para modificado ou não rastreado, com a normalização de fim de linha do `git add`), sem o HEAD. `test_fingerprint_survives_commit` cobre: repositório sem commit em modo git, digest igual antes e depois do commit com `.gitattributes` `eol=crlf`, review carimbada antes do commit aceita pelo gate depois dele, mudança de conteúdo invalida e restaurar o conteúdo volta ao mesmo digest, arquivo apagado invalida. Controle negativo: num repositório com um commit, mudar um arquivo e commitar mantém o digest com o código novo (`True`) e muda com o anterior (`False`).
+- Requirement: REQ-006 / AC-006 (TEST-005).
