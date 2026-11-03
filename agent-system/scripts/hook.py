@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from lib import (  # noqa: E402
     append_event,
     base_event,
+    confirmed_lessons,
     load_state,
     opted_in,
     project_owns_hook,
@@ -26,7 +27,12 @@ from lib import (  # noqa: E402
     workspace_roots,
 )
 
-TEST_CMD = ("pytest", "npm test", "pnpm test", "yarn test", "dotnet test", "go test", "cargo test", "vitest", "jest")
+TEST_CMD = (
+    "pytest", "unittest", "npm test", "npm run test", "pnpm test", "yarn test", "bun test", "dotnet test", "go test",
+    "cargo test", "vitest", "jest", "phpunit", "pest", "mvn test", "mvn verify", "gradle test", "gradlew test", "rspec",
+)
+# check_proofs.py records the real exit code itself; counting it here too would duplicate the result.
+DETERMINISTIC_CMD = ("check_proofs.py", "validate_verification.py")
 
 
 def emit(payload: dict) -> None:
@@ -58,10 +64,12 @@ def targets(payload: dict) -> list[Path]:
     return found
 
 
-def log(root: Path, payload: dict, kind: str, summary: str, result: str = "completed", files=None) -> None:
+def log(root: Path, payload: dict, kind: str, summary: str, result: str = "completed", files=None, inferred: bool = False) -> None:
     state = load_state(root)
     event = base_event(payload, state, kind, summary, result)
     event["files"] = safe_files(files or [])
+    if inferred:
+        event["inferred"] = True
     append_event(root, event)
     if kind == "SUBAGENT_STARTED":
         state["active_agent"] = event["agent"]
@@ -76,12 +84,14 @@ def log(root: Path, payload: dict, kind: str, summary: str, result: str = "compl
 
 def test_result(command: str, output: str) -> tuple[str, str] | None:
     lowered = command.lower()
+    if any(token in lowered for token in DETERMINISTIC_CMD):
+        return None
     if not any(token in lowered for token in TEST_CMD):
         return None
     text = output or ""
     failed = bool(re_failed(text))
     kind = "TEST_FAILED" if failed else "TEST_COMPLETED"
-    return kind, redact(text, 120) or ("failed" if failed else "completed")
+    return kind, "inferred from output: " + (redact(text, 100) or ("failed" if failed else "no failure text"))
 
 
 def re_failed(text: str) -> bool:
@@ -132,8 +142,11 @@ def handle(payload: dict) -> dict:
             roadmap = roadmap_summary(root)
             if roadmap:
                 context += f". Roadmap ({ROADMAP_REL}): {roadmap}. Atualize a linha da tarefa ao mudar o status."
+            lessons = confirmed_lessons(root)
+            if lessons:
+                context += f". {lessons}"
         if context:
-            return {"additional_context": redact(context, 500)}
+            return {"additional_context": redact(context, 900)}
         return {}
 
     if name == "sessionEnd":
@@ -167,7 +180,7 @@ def handle(payload: dict) -> dict:
         if classified:
             kind, result = classified
             for root in roots:
-                log(root, payload, kind, redact(command, 120), result=result)
+                log(root, payload, kind, redact(command, 120), result=result, inferred=True)
         return {}
 
     if name == "afterAgentResponse":

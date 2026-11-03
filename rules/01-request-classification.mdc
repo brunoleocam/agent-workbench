@@ -26,7 +26,14 @@ Feature ou bug-fix em repositório git: siga `commit-push`. A branch é criada a
 
 Complexidade: XS typo ou ajuste local; S bug ou mudança pequena; M feature em vários componentes; L ou XL módulo, sistema, arquitetura, integração ou greenfield. XS e S não criam PRD, ADR, CR nem checkpoint e não delegam a subagents.
 
-Diga a classe e a complexidade em uma linha antes de agir.
+Risco de segurança é outra dimensão, independente da complexidade: NONE, LOW, MEDIUM, HIGH ou CRITICAL. Avalie pelo impacto no contexto, não por palavra-chave. Gatilhos: autenticação, autorização, pagamento, dado pessoal, upload, SQL e acesso a banco, integração externa, segredo e credencial, multi-tenant, criptografia, infraestrutura e deploy, transição de estado sensível. As `signals.attack_surfaces` do `layout.json` são indício, não veredito.
+
+- NONE ou LOW: sem revisão de segurança dedicada.
+- MEDIUM: aplique a regra `08`; em superfície sensível, `security-reviewer` proporcional ao trecho.
+- HIGH ou CRITICAL: `security-reviewer` obrigatório antes do gate; CRITICAL também pede decisão do usuário antes de implementar.
+- O usuário pode pedir `/security-review` a qualquer momento.
+
+Diga a classe, a complexidade e o risco em uma linha antes de agir. Ex.: `FEATURE · M · segurança HIGH (authentication, personal_data)`.
 
 Repositório que ainda não segue a árvore spec-driven: não migre o histórico nem crie a árvore vazia. No próximo trabalho não trivial, documente só essa mudança. Use o lugar de spec que o repo já tiver. Se não houver, crie apenas a spec, a verificação e o checkpoint dessa frente.
 

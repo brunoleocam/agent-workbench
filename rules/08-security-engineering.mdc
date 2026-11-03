@@ -1,0 +1,29 @@
+---
+description: Segurança no ciclo de desenvolvimento. Use ao tocar autenticação, autorização, dados pessoais, segredos, upload, SQL, integração externa, pagamento, criptografia, multi-tenant, infraestrutura ou transição de estado sensível.
+alwaysApply: false
+---
+
+# Engenharia de segurança
+
+Seguro por padrão: negar por padrão, menor privilégio, falhar fechado, validar no servidor.
+
+## Operação sensível
+
+Autenticação, autorização, dados pessoais, pagamento, upload, acesso a banco, integração externa, segredo, multi-tenant, criptografia, deploy e mudança de estado irreversível. Nela:
+
+- Autorização em cada operação, no servidor, por recurso e por tenant. Esconder botão não é controle de acesso.
+- Entrada não confiável é validada por tipo, tamanho e formato na borda. Consulta parametrizada; nunca SQL, shell ou caminho montado por concatenação.
+- Dado pessoal: colete o mínimo, não registre em log, mascare na saída, defina retenção.
+- Segredo fica fora do código, do log, da timeline, da mensagem de erro e do commit. Variável de ambiente ou cofre.
+- Integração externa: timeout, TLS verificado, validação da resposta, credencial de escopo mínimo, webhook com assinatura.
+- Upload: limite de tamanho, tipo verificado pelo conteúdo, nome gerado pelo servidor, armazenamento fora da raiz pública.
+- Erro ao usuário é genérico. Detalhe técnico vai ao log, sem segredo nem dado pessoal.
+- Permissão nova (escopo OAuth, papel, IAM, CORS, porta) é decisão de segurança: apresente ao usuário antes.
+
+## Fluxo
+
+- O orchestrator dá ao pedido um risco de segurança (regra `01`) separado da complexidade.
+- Ao implementar em stack com referência, use a skill `security-best-practices` e carregue só a referência da stack.
+- Risco HIGH ou CRITICAL: `security-reviewer` antes do gate e `security_risk` na spec; `validate_verification.py` exige a revisão de segurança.
+- Achado de segurança não é corrigido sem autorização: vira tarefa, bug-fix ou change request.
+- Security review e code review são complementares. Um não substitui o outro.

@@ -1,0 +1,57 @@
+{
+  "base": "complete-feature",
+  "description": "Código alterado depois da prova: o gate reprova até check_proofs rodar de novo.",
+  "steps": [
+    {
+      "script": "check_proofs.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 0
+    },
+    {
+      "script": "validate_verification.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 0
+    },
+    {
+      "write": "src/coupon.py",
+      "content": "def apply(total, percent, expired):\n    return (total, 'COUPON_EXPIRED') if expired else (total - total * percent // 100, None)\n"
+    },
+    {
+      "write": "docs/progress/CURRENT.md",
+      "content": "# checkpoint\n"
+    },
+    {
+      "script": "validate_verification.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 1,
+      "contains": [
+        "TEST-001 proof predates the current workspace"
+      ]
+    },
+    {
+      "script": "check_proofs.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 0
+    },
+    {
+      "script": "validate_verification.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 0
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "base": "complete-feature",
+  "description": "Spec aprovada com pergunta aberta e requisito sem critério: aviso no modo normal, reprovação com --strict.",
+  "steps": [
+    {
+      "script": "validate_spec.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 0,
+      "contains": [
+        "[WARN] Approved specification still has 1 open question(s).",
+        "[WARN] REQ-003 has no linked acceptance criterion."
+      ]
+    },
+    {
+      "script": "validate_spec.py",
+      "args": [
+        "--feature",
+        "feat",
+        "--strict"
+      ],
+      "exit_code": 1
+    }
+  ]
+}

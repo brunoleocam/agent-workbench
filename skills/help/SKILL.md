@@ -20,6 +20,8 @@ Interface: `/brainstorm` ou `/ui-ux-experiment` → você escolhe → `/ui-ux`.
 
 Mudança trivial não precisa de comando. Repositório antigo não é migrado inteiro.
 
+Em M ou maior com `/init-agent-system`, os gates são scripts em `.cursor/agent-system/scripts/`: `validate_spec.py`, `validate_tasks.py`, `check_proofs.py` (roda os testes e grava o exit code real) e `validate_verification.py` (só sai 0 com critérios testados, provas do código atual, review e achados bloqueantes resolvidos). Contratos em `agent-system/docs/cli.md` do plugin.
+
 ## Comandos
 
 - `/brainstorm` — ideia ainda crua. Uma pergunta por vez, alternativas, design aprovado por você. Não escreve código nem plano.
@@ -44,7 +46,10 @@ Mudança trivial não precisa de comando. Repositório antigo não é migrado in
 - `/root-cause` — registra sintoma, mecanismo, evidência e o teste que faltou. Só com causa confirmada.
 - `/refactoring` — muda estrutura. Comportamento permanece, coberto por teste.
 - `/change-request` — escopo novo no meio da tarefa. Atualiza spec ou cria dependência antes de continuar.
-- `/code-review` — confronta requisitos, spec, critérios, testes e código. Achado tem severidade e evidência.
+- `/code-review` — confronta requisitos, spec, critérios, testes e código, com Verification Audit (o teste falharia se o requisito estivesse errado?). Achado tem severidade e evidência.
+- `/security-review` — auditoria de segurança da feature ou do repositório pelo `security-reviewer`, com referências da stack. Gera relatório com achados SEC; não corrige sem sua autorização. Não é o subagent built-in `security-review` do Cursor.
+- `/security-best-practices` — secure coding na stack detectada, carregando só a referência dela. Diferencia vulnerabilidade de hardening.
+- `/lessons` — propõe, lista, confirma ou rejeita lições do projeto. Só você confirma; só confirmadas entram no contexto.
 - `/update-docs` — alinha spec, ADR novo ou progresso ao que mudou. Não reescreve ADR aceito.
 - `/commit-push` — branch antes de editar; com testes verdes, uma única aprovação sua para commit, push, PR e merge. Sem aprovação, nada sai da máquina.
 - `/roadmap` — mostra em que fase e tarefa você está, o que falta e o que está bloqueado. Também cria, atualiza ou gera a visão em Canvas (`/roadmap visual`). Só em projeto com `/init-agent-system`.

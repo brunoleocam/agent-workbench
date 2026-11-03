@@ -1,0 +1,25 @@
+{
+  "base": "complete-feature",
+  "description": "Limite conhecido: um TEST que não verifica nada passa no gate estrutural. Só a Verification Audit do reviewer (manual) pega.",
+  "steps": [
+    {
+      "script": "check_proofs.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 0
+    },
+    {
+      "script": "validate_verification.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 0,
+      "contains": [
+        "Verification gate passed."
+      ]
+    }
+  ]
+}

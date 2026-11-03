@@ -17,4 +17,6 @@ TDD preferido: Red → Green → Refactor.
 
 Não marque o trabalho como completo enquanto um teste ou eval exigido falhar. Depois do teste alvo, rode a regressão relevante.
 
+Evidência é exit code real. Em feature com `TEST-NNN`, rode `check_proofs.py --feature <slug>`: ele grava stdout, stderr, exit code e o fingerprint do workspace. O resultado de teste capturado pelo hook de shell é só inferido do texto e não conta como prova. Prova de outro estado do código é obsoleta. O `Command` do TEST chama o runner ou um arquivo de teste do projeto, não código inline; `--allow-inline` e `--allow-shell` só com autorização do usuário.
+
 Estratégia de verificação fica em `docs/tests/` quando o projeto usar a árvore spec-driven. Código de teste executável fica na árvore de testes do projeto, não em `docs/`.

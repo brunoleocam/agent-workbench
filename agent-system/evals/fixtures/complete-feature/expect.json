@@ -1,0 +1,56 @@
+{
+  "description": "Feature M completa: spec aprovada, tarefas válidas, provas PASS e review PASS passam no gate.",
+  "steps": [
+    {
+      "script": "validate_spec.py",
+      "args": [
+        "--feature",
+        "feat",
+        "--require-approval"
+      ],
+      "exit_code": 0
+    },
+    {
+      "script": "validate_tasks.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 1,
+      "contains": [
+        "TASK-001 is done without a passing proof for TEST-001."
+      ]
+    },
+    {
+      "script": "check_proofs.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 0,
+      "contains": [
+        "[PASS] TEST-001",
+        "[PASS] TEST-002"
+      ]
+    },
+    {
+      "script": "validate_tasks.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 0
+    },
+    {
+      "script": "validate_verification.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 0,
+      "contains": [
+        "Verification gate passed."
+      ]
+    }
+  ]
+}

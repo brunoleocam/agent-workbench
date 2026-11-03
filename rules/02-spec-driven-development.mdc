@@ -22,3 +22,13 @@ Use ADR em `docs/architecture/ADR/` quando a decisão de arquitetura for relevan
 Não tome decisão arquitetural significativa só dentro do código. ADR aceito é registro histórico. Se a decisão mudar, substitua com um ADR novo; não reescreva o anterior.
 
 Verifique o design contra requisitos e critérios de aceite antes de planejar a implementação. O plano vira tarefas em `docs/tasks/`, cada uma ligada a um requisito ou critério.
+
+## Rastreabilidade (M ou maior)
+
+IDs: `REQ-NNN` requisito, `AC-NNN` critério, `ADR-NNNN` decisão, `TASK-NNN` tarefa, `TEST-NNN` verificação, `PROOF-NNN` evidência gerada. Cada item é um título que começa com o ID; os vínculos são linhas `- Requirements:`, `- Acceptance:`, `- Verification:`. Formato completo: `agent-system/docs/artifacts.md`.
+
+- Requisito comportamental em EARS: `WHEN <gatilho> THE SYSTEM SHALL <resposta>` (também `WHILE`, `IF ... THEN`, `WHERE`). Requisito puramente técnico pode ser linguagem natural estruturada.
+- Requisito diz o quê; critério diz como observar (Given/When/Then); tarefa diz o que mudar.
+- Gramática EARS não torna um requisito correto. A qualidade semântica é do planner e da revisão.
+- `validate_spec.py --feature <slug> --require-approval` antes das tarefas; `validate_tasks.py` antes de implementar.
+- XS e S não usam esta estrutura. Spec antiga sem IDs não é migrada.

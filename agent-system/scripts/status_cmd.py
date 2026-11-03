@@ -60,6 +60,10 @@ def main() -> int:
         print(f"Review: {state.get('review_status')}")
         print(f"Next: {state.get('next_step')}")
         print(f"Roadmap: {roadmap_summary(root) or '-'}")
+        verification = state.get("verification") if isinstance(state.get("verification"), dict) else {}
+        for feature, steps in sorted(verification.items()):
+            shown = ", ".join(f"{key}={value}" for key, value in steps.items() if key != "updated_at")
+            print(f"Verification {feature}: {shown}")
     return 0
 
 

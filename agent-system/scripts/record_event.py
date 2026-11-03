@@ -21,6 +21,7 @@ def main() -> int:
     parser.add_argument("--files", default="")
     parser.add_argument("--result", default="completed")
     parser.add_argument("--session", default="")
+    parser.add_argument("--feature", default="", help="feature slug, for validation and security events")
     args = parser.parse_args()
 
     if args.event not in SEMANTIC_EVENTS:
@@ -45,6 +46,8 @@ def main() -> int:
         "summary": redact(args.summary, 240),
         "result": redact(args.result, 160),
     }
+    if args.feature:
+        event["feature"] = redact(args.feature, 80)
     append_event(root, event)
     save_state(root, apply_semantic_state(state, event))
     print(event["timestamp"], event["event"])

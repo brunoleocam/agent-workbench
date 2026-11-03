@@ -60,6 +60,16 @@
       "scope": "user",
       "recommended_for": "BUG_FIX and test failures.",
       "dependencies": ["orchestrator"]
+    },
+    {
+      "name": "security-reviewer",
+      "type": "custom",
+      "purpose": "Independent security review with stack references. Reports SEC findings; does not fix.",
+      "status": "active",
+      "created_at": "2026-11-03T12:00:00+00:00",
+      "scope": "user",
+      "recommended_for": "Security risk HIGH or CRITICAL, sensitive surfaces, or /security-review.",
+      "dependencies": ["orchestrator"]
     }
   ]
 }

@@ -1,0 +1,235 @@
+"""Lessons learned per project. lessons.json is the source of truth; LESSONS.md is generated.
+
+Agents propose (status candidate). Only the user confirms or rejects. Only confirmed lessons are loaded at session start.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from lib import SECRET_PATH, append_event, apply_semantic_state, load_state, local_stamp, opted_in, redact, redact_secrets, save_state, utc_now, write_json  # noqa: E402
+
+CATEGORIES = ("architecture", "requirements", "implementation", "testing", "security", "performance", "debugging", "workflow", "tooling")
+STATUSES = ("candidate", "confirmed", "rejected")
+ID_RE = re.compile(r"^LESSON-(\d{3,})$")
+LIMITS = {"title": 120, "description": 1000, "context": 600, "evidence": 300}
+
+
+class LessonError(Exception):
+    def __init__(self, message: str, code: int):
+        super().__init__(message)
+        self.code = code
+
+
+def lessons_path(root: Path) -> Path:
+    return root / ".cursor" / "agent-system" / "lessons.json"
+
+
+def load(root: Path) -> dict:
+    path = lessons_path(root)
+    if not path.exists():
+        return {"version": 1, "lessons": []}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise LessonError(f"Invalid JSON in lessons.json (line {exc.lineno})", 2) from exc
+    if not isinstance(data, dict) or not isinstance(data.get("lessons"), list):
+        raise LessonError("lessons.json must be an object with a 'lessons' list", 2)
+    return data
+
+
+def normalized(title: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", title.lower()).strip()
+
+
+def sensitive(text: str) -> bool:
+    return redact_secrets(text) != text or bool(SECRET_PATH.search(text))
+
+
+def next_id(lessons: list[dict]) -> str:
+    numbers = [int(match.group(1)) for item in lessons if (match := ID_RE.match(str(item.get("id", ""))))]
+    return f"LESSON-{(max(numbers) + 1) if numbers else 1:03d}"
+
+
+def render(root: Path, data: dict) -> Path:
+    lines = ["# Lições aprendidas", "", "Gerado por `lessons.py render`. A fonte de verdade é `lessons.json`. Não edite à mão.", ""]
+    confirmed = [item for item in data["lessons"] if item.get("status") == "confirmed"]
+    candidates = [item for item in data["lessons"] if item.get("status") == "candidate"]
+    lines += ["## Confirmadas", ""]
+    if not confirmed:
+        lines += ["Nenhuma.", ""]
+    for category in CATEGORIES:
+        items = [item for item in confirmed if item.get("category") == category]
+        if items:
+            lines += [f"### {category}", ""]
+            lines += [f"- {item['id']}: {redact(str(item['title']), 200)} — {redact(str(item['description']), 1200)}" for item in items]
+            lines.append("")
+    lines += ["## Candidatas (aguardando confirmação do usuário)", ""]
+    lines += [f"- {item['id']} [{item['category']}]: {redact(str(item['title']), 200)}" for item in candidates] or ["Nenhuma."]
+    path = root / ".cursor" / "agent-system" / "LESSONS.md"
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
+
+
+def event(root: Path, kind: str, lesson: dict, agent: str) -> None:
+    state = load_state(root)
+    item = {
+        "timestamp": utc_now(),
+        "local_time": local_stamp(),
+        "session": state.get("session_id") or "",
+        "agent": agent,
+        "event": kind,
+        "task": state.get("active_task"),
+        "files": [],
+        "summary": redact(f"{lesson['id']} {lesson['category']}: {lesson['title']}", 240),
+        "result": lesson["status"],
+    }
+    try:
+        append_event(root, item)
+        save_state(root, apply_semantic_state(state, item))
+    except OSError:
+        print("[WARN] timeline not updated", file=sys.stderr)
+
+
+def save(root: Path, data: dict) -> None:
+    write_json(lessons_path(root), data)
+    render(root, data)
+
+
+def cmd_add(root: Path, args) -> int:
+    fields = {
+        "title": (args.title or "").strip(),
+        "description": (args.description or "").strip(),
+        "context": (args.context or "").strip(),
+    }
+    evidence = [item.strip() for item in args.evidence or [] if item.strip()]
+    if args.category not in CATEGORIES:
+        raise LessonError(f"Unknown category '{args.category}'. Use one of: {', '.join(CATEGORIES)}", 2)
+    if len(fields["title"]) < 5 or not fields["description"]:
+        raise LessonError("A lesson needs a title (5+ chars) and a description.", 2)
+    for name, value in [*fields.items(), *(("evidence", item) for item in evidence)]:
+        if len(value) > LIMITS[name]:
+            raise LessonError(f"{name} is longer than {LIMITS[name]} characters.", 2)
+        if sensitive(value):
+            raise LessonError(f"{name} looks like it contains a secret or a sensitive path. Rewrite it without the value.", 1)
+    data = load(root)
+    key = normalized(fields["title"])
+    for item in data["lessons"]:
+        if normalized(str(item.get("title", ""))) == key:
+            raise LessonError(f"Duplicate of {item.get('id')} ({item.get('status')}).", 1)
+    lesson = {
+        "id": next_id(data["lessons"]),
+        "category": args.category,
+        "status": "candidate",
+        **fields,
+        "evidence": evidence,
+        "proposed_by": redact(args.agent, 60),
+        "created_at": utc_now(),
+        "confirmed_at": None,
+        "rejected_at": None,
+        "reason": None,
+    }
+    data["lessons"].append(lesson)
+    save(root, data)
+    event(root, "LESSON_PROPOSED", lesson, args.agent)
+    print(f"{lesson['id']} proposed (candidate). Ask the user to confirm or reject it.")
+    return 0
+
+
+def find(data: dict, lesson_id: str) -> dict:
+    for item in data["lessons"]:
+        if item.get("id") == lesson_id:
+            return item
+    raise LessonError(f"Unknown lesson {lesson_id}.", 2)
+
+
+def cmd_status(root: Path, args, status: str) -> int:
+    data = load(root)
+    lesson = find(data, args.id)
+    if lesson.get("status") == status:
+        print(f"{lesson['id']} is already {status}.")
+        return 0
+    texts = [str(lesson.get(key) or "") for key in ("title", "description", "context", "proposed_by")] + [str(item) for item in lesson.get("evidence") or []]
+    if status == "confirmed" and any(sensitive(text) for text in texts):
+        raise LessonError(f"{lesson['id']} looks like it contains a secret or a sensitive path; edit lessons.json before confirming.", 1)
+    lesson["status"] = status
+    if status == "confirmed":
+        lesson["confirmed_at"] = utc_now()
+    else:
+        lesson["rejected_at"] = utc_now()
+        lesson["reason"] = redact(args.reason or "", 300) or None
+    save(root, data)
+    event(root, "LESSON_CONFIRMED" if status == "confirmed" else "LESSON_REJECTED", lesson, "user")
+    print(f"{lesson['id']} {status}.")
+    return 0
+
+
+def cmd_list(root: Path, args) -> int:
+    data = load(root)
+    items = [
+        item for item in data["lessons"]
+        if (not args.status or item.get("status") == args.status) and (not args.category or item.get("category") == args.category)
+    ]
+    if args.json:
+        print(redact_secrets(json.dumps(items, indent=2, ensure_ascii=False)))
+        return 0
+    for item in items:
+        print(f"{item.get('id')} [{item.get('status')}] {item.get('category')}: {redact(str(item.get('title') or ''), 200)}")
+        if args.verbose:
+            print(f"  {redact(str(item.get('description') or ''), 1200)}")
+    if not items:
+        print("No lessons.")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Manage lessons learned for an initialized project.")
+    parser.add_argument("--root", default=".")
+    sub = parser.add_subparsers(dest="command", required=True)
+    add = sub.add_parser("add", help="propose a candidate lesson")
+    add.add_argument("--category", required=True, choices=CATEGORIES)
+    add.add_argument("--title", required=True)
+    add.add_argument("--description", required=True)
+    add.add_argument("--context", default="")
+    add.add_argument("--evidence", action="append", default=[], help="path, command, or ID (repeatable)")
+    add.add_argument("--agent", default="orchestrator")
+    listing = sub.add_parser("list", help="list lessons")
+    listing.add_argument("--status", choices=STATUSES)
+    listing.add_argument("--category", choices=CATEGORIES)
+    listing.add_argument("--json", action="store_true")
+    listing.add_argument("--verbose", action="store_true")
+    for name in ("confirm", "reject"):
+        item = sub.add_parser(name, help=f"{name} a lesson (user decision)")
+        item.add_argument("--id", required=True)
+        item.add_argument("--reason", default="")
+    sub.add_parser("render", help="regenerate LESSONS.md")
+    args = parser.parse_args()
+    root = Path(args.root).resolve()
+    if not opted_in(root):
+        print("Project is not initialized. Run /init-agent-system.", file=sys.stderr)
+        return 2
+    try:
+        if args.command == "add":
+            return cmd_add(root, args)
+        if args.command == "list":
+            return cmd_list(root, args)
+        if args.command == "confirm":
+            return cmd_status(root, args, "confirmed")
+        if args.command == "reject":
+            return cmd_status(root, args, "rejected")
+        path = render(root, load(root))
+        print(f"Rendered {path.relative_to(root).as_posix()}")
+        return 0
+    except LessonError as exc:
+        print(f"[ERROR] {exc}", file=sys.stderr)
+        return exc.code
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

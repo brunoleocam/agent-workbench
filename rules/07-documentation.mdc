@@ -16,6 +16,8 @@ docs/
 ├── tests/
 ├── tasks/
 ├── changes/
+├── reviews/
+├── security/
 └── progress/
     ├── CURRENT.md
     └── ROADMAP.md
@@ -28,6 +30,10 @@ docs/
 - `docs/tests/` — estratégia de verificação; testes executáveis ficam na suíte do projeto
 - `docs/tasks/` — passos verificáveis, com dependências explícitas
 - `docs/changes/` — change requests durante a implementação
+- `docs/reviews/<slug>.md` — review com status e achados FIND-NNN, lida pelo gate
+- `docs/security/<slug>.md` ou `security_assessment.md` — relatório de segurança com achados SEC-NNN
+- Provas (`check_proofs.py`) ficam em `.cursor/agent-system/proofs/`, não em `docs/`
+- Mesma feature, mesmo nome de arquivo (slug) em specs, tasks, tests, reviews e security. `layout.json` (`overrides`) troca as pastas.
 - `docs/progress/CURRENT.md` — checkpoint atual
 - `docs/progress/ROADMAP.md` — fases e tarefas com status; só em projeto inicializado com trabalho M ou maior (skill `roadmap`)
 
