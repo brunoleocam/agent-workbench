@@ -17,11 +17,11 @@ Regra sempre ativa: `mcp-triagem-obrigatoria.mdc`.
 | Testar API REST ou SOAP, coleções Postman | **Postman MCP** (se configurado) |
 | Design Figma, tokens, componentes | **Figma MCP** (se configurado) |
 | Explorar codebase grande ("onde fica X") | Busca local; subagent **explore** se for ler muito |
-| Achar causa de bug | Skill `investigacao-enxuta` ou `debug` |
-| Quebrar pedido em etapas | Skill `tarefa-em-etapas` |
+| Achar causa de bug | Skill `lean-investigation` ou `debug` |
+| Quebrar pedido em etapas | Skill `staged-task` |
 | Critérios de aceite, escopo, edge cases | Skill `feature` ou `brainstorm` |
 | Trade-offs, arquitetura, comparar opções | Skill `brainstorm` |
 
 ## Solicitações muito grandes
 
-Use a skill `tarefa-em-etapas`: etapas pequenas, cada uma verificada antes da próxima. Em projeto inicializado, o plano entra no roadmap (skill `roadmap`).
+Use a skill `staged-task`: etapas pequenas, cada uma verificada antes da próxima. Em projeto inicializado, o plano entra no roadmap (skill `roadmap`).
