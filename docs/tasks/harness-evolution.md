@@ -102,7 +102,7 @@ Spec: [harness-evolution](../specs/harness-evolution.md). Testes rodam pela suí
 - Acceptance: AC-006
 - Task: TASK-002
 - Command: ["python", "agent-system/scripts/test_system.py", "test_fingerprint", "test_proofs_keep_fingerprint_from_before_the_run"]
-- Expected result: exit 0; código muda o fingerprint, doc do harness não, também em subpasta de repositório git; prova guarda o fingerprint de antes da execução
+- Expected result: exit 0; código muda o fingerprint, doc do harness não, também em subpasta de repositório git; prova guarda o fingerprint de antes da execução; commitar o mesmo conteúdo não muda o fingerprint, e a review registrada antes do commit continua válida
 
 ### TEST-006: gate de verificação
 - Acceptance: AC-007

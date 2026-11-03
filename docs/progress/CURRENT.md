@@ -39,8 +39,8 @@ Linux: copiar a árvore para `/tmp/aw-linux` no WSL (sem `.git`, `__pycache__`, 
 
 ## Resultados
 
-- Windows: 28/28 testes, 8/8 evals.
-- Linux (WSL2 Ubuntu, Python 3.14): 28/28 testes, 8/8 evals.
+- Windows: 29/29 testes, 8/8 evals.
+- Linux (WSL2 Ubuntu, Python 3.14): 29/29 testes, 8/8 evals.
 - macOS: não testado.
 
 - Validadores strict (spec com `--require-approval`, tasks): exit 0. Provas: 14/14 PASS com `--strict`.
@@ -51,4 +51,4 @@ Linux: copiar a árvore para `/tmp/aw-linux` no WSL (sem `.git`, `__pycache__`, 
 ## Pendências
 
 - Limites de melhor esforço (FIND-011, 017, 018, 019) aceitos pelo usuário em 2026-11-03: `check_proofs.py` é guardrail, não sandbox nem fronteira de segurança contra código malicioso.
-- Commit `1c1ee94` publicado no PR #3. Correção pendente de commit: FIND-021 (`check_report_doc()` exige fingerprint exato em relatório obrigatório). Aguardando nova revisão do usuário; sem commit, push ou merge até lá.
+- PRs #3 e #4 mergeados em `main` (`c3e37e9`). Branch `fix/content-fingerprint`, sem commit: FIND-022 (fingerprint pelo conteúdo dos arquivos, sem HEAD, para a review commitada continuar válida). Aguardando revisão e aprovação do usuário para commit, push e PR.

@@ -55,7 +55,7 @@ EARS é recomendado para requisito comportamental; requisito técnico pode ser l
 
 Exit codes comuns: `0` ok, `1` gate reprovado, `2` configuração. `--json` e `--strict` em todos.
 
-A prova não exige commit. O fingerprint (HEAD + hash dos arquivos modificados e não rastreados, sem `.cursor/` nem Markdown das pastas de doc) diz se o código mudou depois do teste. `check_proofs.py` roda sem shell, só executáveis permitidos, recusa subcomandos conhecidos de instalação e publicação (melhor esforço, por nome; não é sandbox), recusa código inline por melhor esforço (`python -c`, `node -e`, também atrás de `uv run` e similares) e encerra a árvore de processos no timeout. Um TEST aponta para o runner ou para um arquivo de teste do projeto. As provas ficam em `.cursor/agent-system/proofs/`, são locais e não devem ser versionadas.
+A prova não exige commit. O fingerprint (conteúdo de cada arquivo do projeto, sem `.cursor/` nem Markdown das pastas de doc; não depende do HEAD) diz se o código mudou depois do teste, e continua igual depois de commitar o mesmo conteúdo. `check_proofs.py` roda sem shell, só executáveis permitidos, recusa subcomandos conhecidos de instalação e publicação (melhor esforço, por nome; não é sandbox), recusa código inline por melhor esforço (`python -c`, `node -e`, também atrás de `uv run` e similares) e encerra a árvore de processos no timeout. Um TEST aponta para o runner ou para um arquivo de teste do projeto. As provas ficam em `.cursor/agent-system/proofs/`, são locais e não devem ser versionadas.
 
 ## Segurança
 

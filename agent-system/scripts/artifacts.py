@@ -328,36 +328,73 @@ def _git(root: Path, args: list[str]) -> str | None:
     return done.stdout.decode("utf-8", errors="replace")
 
 
+def _git_blob_ids(root: Path, paths: list[str]) -> list[str] | None:
+    """Blob ids as `git add` would store them (same end-of-line normalization), for files not yet committed."""
+    if not paths:
+        return []
+    try:
+        done = subprocess.run(
+            ["git", "-C", str(root), "hash-object", "--stdin-paths"],
+            input="\n".join(paths) + "\n", capture_output=True, text=True, encoding="utf-8", timeout=120, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    ids = done.stdout.split()
+    return ids if done.returncode == 0 and len(ids) == len(paths) else None
+
+
+def _changed_paths(root: Path) -> list[str]:
+    """Modified, added and untracked files from `git status`, relative to the project root."""
+    prefix = (_git(root, ["rev-parse", "--show-prefix"]) or "").strip().replace("\\", "/")
+    status = _git(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all", "--", "."]) or ""
+    records = status.split("\0")
+    changed, index = [], 0
+    while index < len(records):
+        record = records[index]
+        index += 1
+        if len(record) < 4:
+            continue
+        code, relative = record[:2], record[3:].replace("\\", "/")
+        if code[0] in "RC":
+            index += 1
+        if prefix:
+            if not relative.startswith(prefix):
+                continue
+            relative = relative[len(prefix):]
+        changed.append(relative)
+    return changed
+
+
 def workspace_fingerprint(root: Path, layout: dict | None = None) -> dict:
-    """HEAD plus content of changed and untracked files, without harness docs, caches, or .cursor."""
+    """Content of every project file (git blob ids), without harness docs, caches, or .cursor.
+
+    HEAD is not part of the digest: committing the same content keeps the fingerprint, so a review
+    recorded before the commit still matches after it.
+    """
     layout = layout or resolve_layout(root)
     doc_dirs = harness_doc_dirs(layout)
     head = _git(root, ["rev-parse", "HEAD"])
     entries: list[tuple[str, str]] = []
-    if head is not None:
-        prefix = (_git(root, ["rev-parse", "--show-prefix"]) or "").strip().replace("\\", "/")
-        status = _git(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all", "--", "."]) or ""
-        records = status.split("\0")
-        index = 0
-        while index < len(records):
-            record = records[index]
-            index += 1
-            if len(record) < 4:
-                continue
-            code, relative = record[:2], record[3:]
-            if code[0] in "RC":
-                index += 1
-            relative = relative.replace("\\", "/")
-            if prefix:
-                if not relative.startswith(prefix):
-                    continue
-                relative = relative[len(prefix):]
-            if _excluded(relative, doc_dirs):
-                continue
-            path = root / relative
-            entries.append((relative, _hash_file(path) if path.is_file() else f"deleted:{code.strip()}"))
+    changed_count = 0
+    inside = (_git(root, ["rev-parse", "--is-inside-work-tree"]) or "").strip() == "true"
+    listing = _git(root, ["ls-files", "-s", "-z", "--", "."]) if inside else None
+    if listing is not None:
+        tracked: dict[str, str] = {}
+        for record in listing.split("\0"):
+            meta, _, relative = record.partition("\t")
+            if relative and len(meta.split()) >= 2:
+                tracked[relative.replace("\\", "/")] = meta.split()[1]
+        changed = {relative for relative in _changed_paths(root) if not _excluded(relative, doc_dirs)}
+        pending = sorted(relative for relative in changed if (root / relative).is_file())
+        ids = _git_blob_ids(root, pending)
+        hashed = dict(zip(pending, ids)) if ids is not None else {relative: "sha256:" + _hash_file(root / relative) for relative in pending}
+        changed_count = len(changed)
+        for relative, blob in tracked.items():
+            if relative not in changed and not _excluded(relative, doc_dirs):
+                entries.append((relative, blob))
+        entries += list(hashed.items())
         mode = "git"
-        head = head.strip()
+        head = head.strip() if head else None
     else:
         mode = "files"
         total = 0
@@ -377,12 +414,12 @@ def workspace_fingerprint(root: Path, layout: dict | None = None) -> dict:
                     continue
                 total += size
                 entries.append((relative, _hash_file(path) if size <= FINGERPRINT_BYTES_LIMIT else f"size:{size}"))
+        changed_count = len(entries)
     entries.sort()
-    digest = hashlib.sha256()
-    digest.update((head or "").encode())
+    digest = hashlib.sha256(mode.split("-")[0].encode())
     for relative, value in entries:
         digest.update(f"\n{relative}\0{value}".encode())
-    return {"mode": mode, "head": head, "changed_files": len(entries), "digest": digest.hexdigest()}
+    return {"mode": mode, "head": head, "changed_files": changed_count, "files": len(entries), "digest": digest.hexdigest()}
 
 
 TASK_STATUS = {
