@@ -57,3 +57,5 @@ Input: symptom, command or steps, log. Output: reproduction, cause with evidence
 
 ### security-reviewer
 Input: scope (feature or repository), `changed_files`, `risk`, triggers. Output: the report path, `status`, `findings` with SEC-NNN and a count by severity. It does not fix.
+
+Refutation mode: input adds `mode: refute` and one `claim` (location, attacker-controlled input, sensitive point, impact), without the finder's reasoning. Output: `verdict` (`confirmed`, `refuted`, or `unresolved`) with `path:line` evidence, or the exact missing fact for `unresolved`. No report is written. Run it in a fresh context so the finder never confirms its own finding.

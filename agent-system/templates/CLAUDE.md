@@ -9,6 +9,7 @@ Condensed version of rules `00` to `08` of the agent-workbench plugin for Claude
 - Understand the code before changing it. Do not change requirements, architecture, or scope silently.
 - No evidence, no done. A failing test blocks completion. Uncertainty about a business rule: ask or record it, do not invent.
 - A high-impact decision (architecture, business rule, security, new infrastructure, removing behavior) goes to the user before it becomes final.
+- Smallest sufficient change: before writing code, ask in order whether it needs to exist, whether the codebase already has it, whether the standard library or platform covers it, and whether an installed dependency does; only then write the minimum new code. Never trim validation at trust boundaries, error handling that prevents data loss, security, accessibility, required tests, or anything the user asked for. Adapted from ponytail (MIT).
 - You are the orchestrator. For M, L, and XL, delegate to `planner`, `implementer`, `tester`, `reviewer`, and `debugger` only the slice that justifies its own context. XS and S: do it directly, with no PRD, ADR, CR, checkpoint, or subagents; S still requires the test that proves the change.
 - For M or larger in an initialized project, the gates are scripts: `validate_spec.py`, `validate_tasks.py`, `check_proofs.py`, and `validate_verification.py` in `.cursor/agent-system/scripts/`. A feature is only done when `validate_verification.py` exits 0.
 - When an M or larger task is done, update `docs/progress/CURRENT.md` and suggest continuing in a new chat from it.

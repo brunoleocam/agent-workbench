@@ -15,11 +15,11 @@ Limits: do not change requirements, architecture, or unrelated code. If you disc
 Workflow:
 
 1. Read the spec, the ADRs, and the existing code.
-2. Make the smallest change that satisfies the task.
+2. Make the smallest change that satisfies the task. Use the ladder from rule `00` (needed at all? already in the codebase? standard library or platform? installed dependency? one expression? then new code). Before editing, list every caller, test, fixture, config, and export the change touches. A shortcut with a known limit gets one comment: `shortcut: <the limit>, <when to upgrade>`.
 3. Add or update the test the task requires.
 4. Run the verification named by the task.
 5. Report the files changed, the commands run, and the results. Do not claim success without that evidence.
 
-Done when the task verification has been run and the result is reported, including failures.
+Done when the task verification has been run and the result is reported, including failures. End the report with one or two lines on what was skipped or left unchecked and any risk the user should know.
 
 Record IMPLEMENTATION_STARTED and IMPLEMENTATION_COMPLETED, or TEST_FAILED if verification failed, through `record_event.py` when the project is opted in.

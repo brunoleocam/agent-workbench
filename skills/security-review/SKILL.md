@@ -26,19 +26,35 @@ Not to be confused with Cursor's built-in subagent called `security-review`: tha
 5. Load only the stack's references from `../security-best-practices/references/`. Never all of them.
 6. Analyze the surfaces' code. Follow the data from the input to the sensitive point. Also record the controls that already exist.
 7. Classify each finding (fields below). Do not invent a path, line, or exploit scenario. A missing recommendation with no exploitation path is `hardening`, not a vulnerability.
-8. Fingerprint of the reviewed state:
+8. Refutation pass (see below). Mandatory for every candidate you would rate CRITICAL or HIGH; with `--deep`, for every candidate.
+9. Fingerprint of the reviewed state:
 
    ```bash
    python .cursor/agent-system/scripts/check_proofs.py --root . --fingerprint
    ```
 
    Without the script (project not initialized), leave the fingerprint blank and say in the Executive Summary that the report is not tied to a code state. HEAD alone does not work: it ignores modified files.
-9. Write the report (see Output) and recommend next steps.
-10. End event, only if `.cursor/agent-system/state.json` exists:
+10. Write the report (see Output) and recommend next steps.
+11. End event, only if `.cursor/agent-system/state.json` exists:
 
     ```bash
     python .cursor/agent-system/scripts/record_event.py --event SECURITY_REVIEW_COMPLETED --result "<STATUS> findings=<N>" --agent security-reviewer
     ```
+
+## Refutation pass
+
+The agent that found a candidate must not be the one that confirms it. Methodology adapted from Cloudflare's [security-audit-skill](https://github.com/cloudflare/security-audit-skill) (MIT), reduced to the part that fits this harness.
+
+1. Write each CRITICAL/HIGH candidate as a short claim: `Location`, the input an attacker controls, the sensitive point it reaches, and the impact. Leave out your reasoning.
+2. Hand the claim to a fresh `security-reviewer` run in `mode: refute` (see `agent-system/docs/contracts.md`). Without subagents, restart the analysis from the claim alone and try to disprove it before reading your earlier notes.
+3. The refuter looks for the control that stops the attack: validation, authorization, a framework default, an unreachable path, a precondition that cannot hold. It returns one verdict:
+   - `confirmed`: a complete trace from input to impact that it could not break. Keep the finding.
+   - `refuted`: a concrete control or unreachable path, cited as `path:line`. Drop the finding and list it under Rejected Candidates.
+   - `unresolved`: it cannot decide without running code or a fact outside the repository. Keep the finding as `Classification: suspected`, write the exact missing fact in the description, and do not rate it above MEDIUM.
+4. Severity is likelihood times impact, not distance from a checklist. If another layer already prevents the attack, the missing second layer is `hardening`.
+5. Do not run target code unless the user confirms an OS-level sandbox. Without one, a lead that needs execution stays `suspected`.
+
+A refuter that disagrees with the original rating changes the finding; it does not leave both opinions in the report.
 
 ## Output
 
@@ -75,6 +91,7 @@ fingerprint: <digest>
 ## Informational Findings
 ## Existing Security Controls
 ## Residual Risks
+## Rejected Candidates
 ## Recommendations
 ```
 
@@ -90,7 +107,7 @@ fingerprint: <digest>
 
 After the field lines, free text: Evidence, Description, Impact, Exploit scenario (only if demonstrable), Recommendation.
 
-In Findings Summary, count findings by severity and by status.
+In Findings Summary, count findings by severity and by status. In Rejected Candidates, one line per refuted candidate: the claim, the control that stops it (`path:line`), and who refuted it. Write `None.` if the pass refuted nothing.
 
 ## Example finding
 

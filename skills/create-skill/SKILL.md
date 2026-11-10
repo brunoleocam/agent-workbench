@@ -20,7 +20,7 @@ In Claude Code, `<plugin>` is `${CLAUDE_PLUGIN_ROOT}`. Installed from a remote m
 ## Before writing
 
 1. Extract from the request: what the skill does, when it triggers, and whether it is an explicit command (`/name`) or the agent should pull it in on its own.
-2. Name: lowercase letters, numbers, and hyphens, at most 64 characters. The name is the command.
+2. Name: lowercase letters, numbers, and single hyphens (no leading, trailing, or doubled hyphen), at most 64 characters, equal to the folder name. The name is the command. The `description` is at most 1024 characters. These limits come from the [Agent Skills specification](https://agentskills.io/specification); `agent-system/tests/test_audit.py` checks every skill against it, so run the test suite after adding one.
 3. If the user supplied the skill's text to be used exactly, copy that text. Do not paraphrase.
 4. Do not duplicate a profile skill that already covers the same work. Extend the existing one if it is the same command.
 
