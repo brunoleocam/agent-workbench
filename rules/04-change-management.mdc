@@ -1,20 +1,20 @@
 ---
-description: Trata ideia, bug, requisito ou dependência surgidos durante a implementação como mudança formal. Use ao descobrir escopo novo no meio de uma tarefa.
+description: Treats an idea, bug, requirement, or dependency that appears during implementation as a formal change. Use when discovering new scope in the middle of a task.
 alwaysApply: false
 ---
 
-# Mudança durante a implementação
+# Change during implementation
 
-Se surgir ideia, bug, requisito, melhoria ou dependência no meio da implementação, não altere o código atual no escuro.
+If an idea, bug, requirement, improvement, or dependency appears in the middle of implementation, do not change the current code blindly.
 
-Classifique como LOCAL_CHANGE, REQUIREMENT_CHANGE, SPECIFICATION_CHANGE, ARCHITECTURE_CHANGE, BUG_DISCOVERED, NEW_DEPENDENCY ou NEW_TASK.
+Classify it as LOCAL_CHANGE, REQUIREMENT_CHANGE, SPECIFICATION_CHANGE, ARCHITECTURE_CHANGE, BUG_DISCOVERED, NEW_DEPENDENCY, or NEW_TASK.
 
-Analise impacto em: requisitos, specs, ADRs, testes/evals, tarefas, dependências e regressões possíveis.
+Analyze the impact on: requirements, specs, ADRs, tests/evals, tasks, dependencies, and possible regressions.
 
-Ajuste local pequeno: atualize o código e os testes da tarefa atual.
+Small local adjustment: update the code and the tests of the current task.
 
-Mudança de requisito, spec ou arquitetura: crie um Change Request em `docs/changes/` e atualize os artefatos afetados antes de continuar.
+Change to a requirement, spec, or architecture: create a Change Request in `docs/changes/` and update the affected artifacts before continuing.
 
-Dependência ou tarefa nova: registre a tarefa e a dependência de forma explícita. Exemplo: `TASK-X: Implementar checkout` depende de `TASK-Z: Reservar estoque`. Não esconda a resolução da dependência dentro de trabalho não relacionado.
+New dependency or task: record the task and the dependency explicitly. Example: `TASK-X: Implement checkout` depends on `TASK-Z: Reserve inventory`. Do not hide the dependency's resolution inside unrelated work.
 
-Depois, retome a tarefa original.
+Then resume the original task.

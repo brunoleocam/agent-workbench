@@ -38,7 +38,7 @@ def test_lessons_lifecycle() -> None:
         assert run("lessons.py", ["--root", str(root), "add", "--category", "nope", "--title", "xxxxx", "--description", "y"]).returncode == 2
 
         started = hook(SCRIPTS / "hook.py", {"hook_event_name": "sessionStart", "workspace_roots": [str(root)]})
-        assert "Lições confirmadas" not in started.get("additional_context", "")
+        assert "Confirmed lessons" not in started.get("additional_context", "")
         assert run("lessons.py", ["--root", str(root), "confirm", "--id", "LESSON-001"]).returncode == 0
         assert run("lessons.py", ["--root", str(root), "reject", "--id", "LESSON-002", "--reason", "not general"]).returncode == 0
         assert run("lessons.py", ["--root", str(root), "confirm", "--id", "LESSON-099"]).returncode == 2
@@ -48,7 +48,7 @@ def test_lessons_lifecycle() -> None:
         context = started["additional_context"]
         assert "Avoid testing implementation details" in context and "Bad category" not in context
         rendered = (root / ".cursor/agent-system/LESSONS.md").read_text(encoding="utf-8")
-        assert "LESSON-001" in rendered and "Bad category" not in rendered.split("## Candidatas")[0]
+        assert "LESSON-001" in rendered and "Bad category" not in rendered.split("## Candidates")[0]
         events = (root / ".cursor/timeline/events.jsonl").read_text(encoding="utf-8")
         assert "LESSON_PROPOSED" in events and "LESSON_CONFIRMED" in events and "sk_live_" not in events
         write(root, ".cursor/agent-system/lessons.json", "{broken")
@@ -137,7 +137,7 @@ def test_init_stack_detection_migration_and_cloud() -> None:
         assert state["phase"] == "review" and state["next_step"] == "keep me" and state["verification"] == {}
         assert "verification" in report["migrated_state_keys"]
         suggestions = (root / ".cursor/agent-system/SUGGESTIONS.md").read_text(encoding="utf-8")
-        assert "Superfícies sensíveis" in suggestions
+        assert "Sensitive surfaces" in suggestions
         for name in ("validate_spec.py", "check_proofs.py", "validate_verification.py", "lessons.py", "artifacts.py"):
             assert (root / ".cursor/agent-system/scripts" / name).exists(), name
         copied = root / ".cursor/agent-system/scripts"
@@ -208,7 +208,7 @@ def test_registry_and_new_layers_are_wired() -> None:
     assert len(refs) >= 10
     for ref in refs:
         body = ref.read_text(encoding="utf-8")
-        assert "Última revisão:" in body and "## Fontes" in body and "https://" in body, ref.name
+        assert "Last reviewed:" in body and "## Sources" in body and "https://" in body, ref.name
     contracts = (SYSTEM / "docs/contracts.md").read_text(encoding="utf-8")
     for name in names:
         assert f"### {name}" in contracts, name

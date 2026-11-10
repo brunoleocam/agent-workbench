@@ -5,31 +5,31 @@ description: Classifies a change discovered during implementation, analyzes impa
 
 # Change request
 
-Surgiu algo novo enquanto `TASK-X` estava em andamento. Não altere o código de `TASK-X` para absorver isso sem classificar.
+Something new appeared while `TASK-X` was in progress. Do not change `TASK-X`'s code to absorb it without classifying it.
 
-## Classifique
+## Classify
 
-- Ajuste local de implementação
-- Mudança de requisito
-- Mudança de spec
-- Mudança de arquitetura
-- Dependência pré-requisito
-- Tarefa nova independente
-- Bug em comportamento existente
+- Local implementation adjustment
+- Requirement change
+- Spec change
+- Architecture change
+- Prerequisite dependency
+- New independent task
+- Bug in existing behavior
 
-## Impacto
+## Impact
 
-Liste o que é afetado: requisitos, specs, ADRs, testes/evals, tarefas, dependências, regressões possíveis.
+List what is affected: requirements, specs, ADRs, tests/evals, tasks, dependencies, possible regressions.
 
-## O que fazer
+## What to do
 
-| Classe | Ação |
+| Class | Action |
 | --- | --- |
-| Ajuste local pequeno | Atualize código e testes da tarefa atual |
-| Requisito, spec ou arquitetura | Grave `docs/changes/CR-NNNN.md` e atualize os artefatos antes de continuar |
-| Dependência ou tarefa nova | Crie a tarefa e registre `TASK-X` depende de `TASK-Z`. Não resolva a dependência dentro de trabalho alheio |
-| Bug existente | Registre e use `bug-fix` se for bloqueante; senão deixe a tarefa separada |
+| Small local adjustment | Update the current task's code and tests |
+| Requirement, spec, or architecture | Write `docs/changes/CR-NNNN.md` and update the artifacts before continuing |
+| Dependency or new task | Create the task and record that `TASK-X` depends on `TASK-Z`. Do not resolve the dependency inside unrelated work |
+| Existing bug | Record it and use `bug-fix` if it is blocking; otherwise leave it as a separate task |
 
-`docs/changes/CR-NNNN.md`: o que apareceu, classe, impacto, decisão, artefatos atualizados, tarefa que pode retomar.
+`docs/changes/CR-NNNN.md`: what appeared, class, impact, decision, artifacts updated, task that can resume.
 
-Retome `TASK-X` só depois dessa atualização. O próximo passo vem das dependências, não do impulso de seguir editando.
+Resume `TASK-X` only after that update. The next step comes from the dependencies, not from the impulse to keep editing.

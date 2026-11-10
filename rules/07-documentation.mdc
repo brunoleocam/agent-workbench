@@ -1,11 +1,11 @@
 ---
-description: Árvore de artefatos spec-driven do projeto (PRD, ADR, specs, tarefas, changes, progresso). Use ao criar ou atualizar documentação de produto, arquitetura ou spec.
+description: The project's spec-driven artifact tree (PRD, ADR, specs, tasks, changes, progress). Use when creating or updating product, architecture, or spec documentation.
 alwaysApply: false
 ---
 
-# Artefatos do projeto
+# Project artifacts
 
-Crie esta árvore no repositório do trabalho, não no perfil do usuário. Não crie arquivo vazio sem conteúdo útil. Em mudança trivial, não crie a árvore.
+Create this tree in the work repository, not in the user's profile. Do not create an empty file without useful content. For a trivial change, do not create the tree.
 
 ```
 docs/
@@ -23,34 +23,34 @@ docs/
     └── ROADMAP.md
 ```
 
-- `docs/product/PRD.md` — problema, resultado, requisitos, fora de escopo
-- `docs/architecture/ARCHITECTURE.md` — visão atual do sistema
-- `docs/architecture/ADR/NNNN-titulo.md` — uma decisão; ADR novo substitui o antigo
-- `docs/specs/` — o que o sistema deve fazer, ligado aos requisitos
-- `docs/tests/` — estratégia de verificação; testes executáveis ficam na suíte do projeto
-- `docs/tasks/` — passos verificáveis, com dependências explícitas
-- `docs/changes/` — change requests durante a implementação
-- `docs/reviews/<slug>.md` — review com status e achados FIND-NNN, lida pelo gate
-- `docs/security/<slug>.md` ou `security_assessment.md` — relatório de segurança com achados SEC-NNN
-- Provas (`check_proofs.py`) ficam em `.cursor/agent-system/proofs/`, não em `docs/`
-- Mesma feature, mesmo nome de arquivo (slug) em specs, tasks, tests, reviews e security. `layout.json` (`overrides`) troca as pastas.
-- `docs/progress/CURRENT.md` — checkpoint atual
-- `docs/progress/ROADMAP.md` — fases e tarefas com status; só em projeto inicializado com trabalho M ou maior (skill `roadmap`)
+- `docs/product/PRD.md` — problem, outcome, requirements, out of scope
+- `docs/architecture/ARCHITECTURE.md` — current view of the system
+- `docs/architecture/ADR/NNNN-title.md` — one decision; a new ADR supersedes the old one
+- `docs/specs/` — what the system must do, linked to requirements
+- `docs/tests/` — verification strategy; executable tests live in the project's suite
+- `docs/tasks/` — verifiable steps, with explicit dependencies
+- `docs/changes/` — change requests during implementation
+- `docs/reviews/<slug>.md` — review with status and FIND-NNN findings, read by the gate
+- `docs/security/<slug>.md` or `security_assessment.md` — security report with SEC-NNN findings
+- Proofs (`check_proofs.py`) live in `.cursor/agent-system/proofs/`, not in `docs/`
+- Same feature, same file name (slug) in specs, tasks, tests, reviews, and security. `layout.json` (`overrides`) changes the folders.
+- `docs/progress/CURRENT.md` — current checkpoint
+- `docs/progress/ROADMAP.md` — phases and tasks with status; only in an initialized project with M or larger work (`roadmap` skill)
 
-Se existir `.cursor/agent-system/layout.json`, ele é o mapa do que o projeto já usa. Grave ADR, PRD e spec novos nesses caminhos. Não mova nem reescreva os arquivos listados ali.
+If `.cursor/agent-system/layout.json` exists, it is the map of what the project already uses. Write new ADRs, PRDs, and specs to those paths. Do not move or rewrite the files listed there.
 
-Se o repositório já tiver outro lugar canônico para spec ou ADR, use o existente e não duplique a árvore.
+If the repository already has another canonical place for specs or ADRs, use the existing one and do not duplicate the tree.
 
-## Repositório fora do padrão
+## Repository outside the standard
 
-Não reconstrua PRD, arquitetura nem tarefas do que já está pronto. Não crie arquivo vazio para "completar" a árvore.
+Do not rebuild the PRD, architecture, or tasks for what is already done. Do not create an empty file to "complete" the tree.
 
-No próximo trabalho não trivial:
+On the next non-trivial work:
 
-- Grave a spec e os critérios de aceite só do que vai mudar.
-- Grave a estratégia de verificação dessa mudança.
-- Grave `docs/progress/CURRENT.md` (ou o equivalente já usado no repo) com o estado desta frente.
-- Abra ADR só se esta mudança decidir arquitetura.
-- Abra PRD ou `ARCHITECTURE.md` só se a mudança for grande o bastante para precisar deles, ou se o usuário pedir a adoção do padrão.
+- Write the spec and acceptance criteria only for what will change.
+- Write the verification strategy for that change.
+- Write `docs/progress/CURRENT.md` (or the equivalent already used in the repo) with the state of this front.
+- Open an ADR only if this change decides architecture.
+- Open a PRD or `ARCHITECTURE.md` only if the change is large enough to need them, or if the user asks to adopt the standard.
 
-A árvore cresce com o trabalho novo. O código antigo continua valendo como está até alguém for mudar aquele comportamento.
+The tree grows with new work. The old code remains valid as it is until someone changes that behavior.

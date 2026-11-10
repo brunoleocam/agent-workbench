@@ -1,27 +1,27 @@
 ---
-description: Tabela de qual MCP, subagent ou skill usar por situação, e como tratar pedidos grandes. Use ao escolher ferramenta para uma tarefa.
+description: Table of which MCP, subagent, or skill to use per situation, and how to handle large requests (Cursor only). Use when choosing a tool for a task.
 alwaysApply: false
 ---
-# Uso de ferramentas e MCPs
+# Tool and MCP usage
 
-Regra sempre ativa: `mcp-triagem-obrigatoria.mdc`.
+Always-on rule: `mcp-triagem-obrigatoria.mdc`.
 
-## Tabela — qual ferramenta usar
+## Table — which tool to use
 
-| Situação | Ação |
+| Situation | Action |
 |----------|------|
-| Docs/API de biblioteca atuais, sintaxe, exemplos oficiais | **Context7** |
-| PR, issues, CI, comentários GitHub | **GitHub MCP** |
-| UI real, reproduzir bug visual | **Browser** (cursor-ide-browser); fluxo repetível: **Playwright** |
-| Bitrix24 REST, campos, métodos | **b24-dev-mcp** (se configurado) |
-| Testar API REST ou SOAP, coleções Postman | **Postman MCP** (se configurado) |
-| Design Figma, tokens, componentes | **Figma MCP** (se configurado) |
-| Explorar codebase grande ("onde fica X") | Busca local; subagent **explore** se for ler muito |
-| Achar causa de bug | Skill `lean-investigation` ou `debug` |
-| Quebrar pedido em etapas | Skill `staged-task` |
-| Critérios de aceite, escopo, edge cases | Skill `feature` ou `brainstorm` |
-| Trade-offs, arquitetura, comparar opções | Skill `brainstorm` |
+| Current library docs/API, syntax, official examples | **Context7** |
+| PR, issues, CI, GitHub comments | **GitHub MCP** |
+| Real UI, reproducing a visual bug | **Browser** (cursor-ide-browser); repeatable flow: **Playwright** |
+| Bitrix24 REST, fields, methods | **b24-dev-mcp** (if configured) |
+| Testing a REST or SOAP API, Postman collections | **Postman MCP** (if configured) |
+| Figma design, tokens, components | **Figma MCP** (if configured) |
+| Exploring a large codebase ("where is X") | Local search; **explore** subagent if it must read a lot |
+| Finding a bug's cause | `lean-investigation` or `debug` skill |
+| Splitting a request into steps | `staged-task` skill |
+| Acceptance criteria, scope, edge cases | `feature` or `brainstorm` skill |
+| Trade-offs, architecture, comparing options | `brainstorm` skill |
 
-## Solicitações muito grandes
+## Very large requests
 
-Use a skill `staged-task`: etapas pequenas, cada uma verificada antes da próxima. Em projeto inicializado, o plano entra no roadmap (skill `roadmap`).
+Use the `staged-task` skill: small steps, each verified before the next. In an initialized project, the plan goes into the roadmap (`roadmap` skill).

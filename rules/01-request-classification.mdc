@@ -1,40 +1,40 @@
 ---
-description: Classifica o pedido antes de alterar código e escolhe a skill spec-driven. Não usa fluxo completo em mudança trivial.
+description: Classifies the request before changing code and picks the spec-driven skill. Does not use the full flow for a trivial change.
 alwaysApply: true
 ---
 
-# Classificação do pedido
+# Request classification
 
-Antes de modificar código, classifique o pedido como um destes:
+Before modifying code, classify the request as one of these:
 
-| Classe | Skill |
+| Class | Skill |
 | --- | --- |
-| Projeto greenfield | `new-project` |
-| Feature ou mudança de comportamento em sistema existente | `feature` |
-| Correção de defeito | `bug-fix` |
-| Refatoração sem mudança de comportamento | `refactoring` |
-| Investigação, sem implementar | `investigation` |
-| Mudança descoberta durante uma implementação ativa | `change-request` |
-| Executar um passo já especificado | `implementation` |
-| Revisão independente de mudança significativa | `code-review` |
+| Greenfield project | `new-project` |
+| Feature or behavior change in an existing system | `feature` |
+| Defect fix | `bug-fix` |
+| Refactoring with no behavior change | `refactoring` |
+| Investigation, no implementation | `investigation` |
+| Change discovered during an active implementation | `change-request` |
+| Execute an already specified step | `implementation` |
+| Independent review of a significant change | `code-review` |
 
-Pedido para criar uma skill: use `create-skill`. Não trate isso como feature do repositório aberto.
+A request to create a skill: use `create-skill`. Do not treat it as a feature of the open repository.
 
-No meio do ciclo, use também: `brainstorm` antes de código ou plano quando a ideia ainda não tem design aprovado; `implementation-plan` com o design pronto; `ui-ux` ou `ui-ux-experiment` para interface; `git-worktree` para isolar; `tdd` e `test-hygiene` ao implementar; `debug` e `root-cause` ao investigar falha; `update-docs` ao atualizar spec ou ADR.
+Mid-cycle, also use: `brainstorm` before code or a plan when the idea has no approved design yet; `implementation-plan` once the design is ready; `ui-ux` or `ui-ux-experiment` for interfaces; `git-worktree` to isolate work; `tdd` and `test-hygiene` while implementing; `debug` and `root-cause` when investigating a failure; `update-docs` when updating a spec or ADR.
 
-Feature ou bug-fix em repositório git: siga `commit-push`. A branch é criada antes de editar código. Com testes verdes, mostre o resumo e peça uma única aprovação para commit, push, PR e merge. Sem aprovação, nada é commitado.
+Feature or bug-fix in a git repository: follow `commit-push`. The branch is created before editing code. With green tests, show the summary and ask for a single approval for commit, push, PR, and merge. Without approval, nothing is committed.
 
-Complexidade: XS typo ou ajuste local; S bug ou mudança pequena; M feature em vários componentes; L ou XL módulo, sistema, arquitetura, integração ou greenfield. XS e S não criam PRD, ADR, CR nem checkpoint e não delegam a subagents.
+Complexity: XS typo or local tweak; S bug or small change; M feature across several components; L or XL module, system, architecture, integration, or greenfield. XS and S create no PRD, ADR, CR, or checkpoint and do not delegate to subagents.
 
-Risco de segurança é outra dimensão, independente da complexidade: NONE, LOW, MEDIUM, HIGH ou CRITICAL. Avalie pelo impacto no contexto, não por palavra-chave. Gatilhos: autenticação, autorização, pagamento, dado pessoal, upload, SQL e acesso a banco, integração externa, segredo e credencial, multi-tenant, criptografia, infraestrutura e deploy, transição de estado sensível. As `signals.attack_surfaces` do `layout.json` são indício, não veredito.
+Security risk is a separate dimension, independent of complexity: NONE, LOW, MEDIUM, HIGH, or CRITICAL. Assess it by impact in context, not by keyword. Triggers: authentication, authorization, payment, personal data, upload, SQL and database access, external integration, secrets and credentials, multi-tenant, cryptography, infrastructure and deploy, sensitive state transitions. The `signals.attack_surfaces` in `layout.json` are a hint, not a verdict.
 
-- NONE ou LOW: sem revisão de segurança dedicada.
-- MEDIUM: aplique a regra `08`; em superfície sensível, `security-reviewer` proporcional ao trecho.
-- HIGH ou CRITICAL: `security-reviewer` obrigatório antes do gate; CRITICAL também pede decisão do usuário antes de implementar.
-- O usuário pode pedir `/security-review` a qualquer momento.
+- NONE or LOW: no dedicated security review.
+- MEDIUM: apply rule `08`; on a sensitive surface, a `security-reviewer` proportional to the affected code.
+- HIGH or CRITICAL: `security-reviewer` is mandatory before the gate; CRITICAL also needs the user's decision before implementing.
+- The user can ask for `/security-review` at any time.
 
-Diga a classe, a complexidade e o risco em uma linha antes de agir. Ex.: `FEATURE · M · segurança HIGH (authentication, personal_data)`.
+State the class, complexity, and risk in one line before acting. E.g. `FEATURE · M · security HIGH (authentication, personal_data)`.
 
-Repositório que ainda não segue a árvore spec-driven: não migre o histórico nem crie a árvore vazia. No próximo trabalho não trivial, documente só essa mudança. Use o lugar de spec que o repo já tiver. Se não houver, crie apenas a spec, a verificação e o checkpoint dessa frente.
+A repository that does not follow the spec-driven tree yet: do not migrate history or create an empty tree. On the next non-trivial work, document only that change. Use the spec location the repo already has. If there is none, create only the spec, verification, and checkpoint for that work.
 
-Trabalho M ou maior: leia a skill da classe e aplique as regras `02` a `07` conforme a fase. Em S, leia a skill da classe só se o caminho não for óbvio. Não invente o próximo passo como "continuar codando"; derive-o do grafo de tarefas, dependências e do progresso do projeto quando existir.
+M or larger work: read the class skill and apply rules `02` to `07` as the phase requires. For S, read the class skill only if the path is not obvious. Do not invent the next step as "keep coding"; derive it from the task graph, dependencies, and the project's progress when they exist.

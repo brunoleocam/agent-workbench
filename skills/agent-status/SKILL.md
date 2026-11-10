@@ -6,12 +6,12 @@ disable-model-invocation: true
 
 # /agent-status
 
-Rode na raiz do projeto:
+Run it at the project root:
 
-`<plugin>` é a raiz do plugin agent-workbench. No Claude Code é `${CLAUDE_PLUGIN_ROOT}` (o caminho já chega substituído). No Cursor, fica dois níveis acima deste `SKILL.md`.
+`<plugin>` is the agent-workbench plugin root. In Claude Code it is `${CLAUDE_PLUGIN_ROOT}` (the path arrives already substituted). In Cursor, it is two levels above this `SKILL.md`.
 
 ```powershell
 python "<plugin>/agent-system/scripts/status_cmd.py" --root .
 ```
 
-Repasse a saída. Se o projeto não estiver inicializado, diga para usar `/init-agent-system`. Não invente task, blocker ou próxima etapa que o script não mostrou.
+Relay the output. If the project is not initialized, say to use `/init-agent-system`. Do not invent a task, blocker, or next step that the script did not show.

@@ -3,37 +3,37 @@ name: implementation-plan
 description: Writes a comprehensive implementation plan with exact file paths, complete code examples, and verification steps for an engineer with zero codebase context. Use when the design or spec is approved and tasks must be detailed before coding (plano de implementação, quebrar em tarefas, design pronto).
 ---
 
-# Plano de implementação
+# Implementation plan
 
-O design ou a spec já está aprovado. Esta skill produz o plano. Não implementa.
+The design or spec is already approved. This skill produces the plan. It does not implement.
 
-O leitor é um engenheiro habilidoso, sem contexto deste repositório e com pouco conhecimento do domínio. Caminho de arquivo, exemplo e verificação têm de bastar sozinhos.
+The reader is a skilled engineer with no context on this repository and little knowledge of the domain. File paths, examples, and verification must be enough on their own.
 
-## Antes de escrever
+## Before writing
 
-1. Leia a spec aprovada e o código que os caminhos citam. Não invente path. Se o arquivo ainda não existe, marque como criar e mostre o diretório pai real.
-2. Se a spec cobre subsistemas independentes, proponha um plano por subsistema. Cada plano entrega software testável.
-3. Mapeie os arquivos a criar ou alterar e a responsabilidade de cada um. Siga o padrão do repo. Não reestruture arquivo alheio à spec.
+1. Read the approved spec and the code the paths cite. Do not invent a path. If the file does not exist yet, mark it as create and show the real parent directory.
+2. If the spec covers independent subsystems, propose one plan per subsystem. Each plan delivers testable software.
+3. Map the files to create or change and each one's responsibility. Follow the repo's pattern. Do not restructure files unrelated to the spec.
 
-## Onde gravar
+## Where to write
 
-`docs/tasks/` se o projeto usa a árvore spec-driven. Senão, o lugar de planos que o repo já tiver. Um arquivo por frente: `docs/tasks/NNNN-titulo.md`.
+`docs/tasks/` if the project uses the spec-driven tree. Otherwise, the place for plans the repo already has. One file per front: `docs/tasks/NNNN-title.md`.
 
-## Cada tarefa
+## Each task
 
-Uma tarefa é o menor pedaço que um revisor pode aceitar ou recusar sozinho, com teste próprio.
+A task is the smallest piece a reviewer can accept or reject alone, with its own test.
 
-Para cada tarefa:
+For each task:
 
-- Requisito ou critério de aceite que ela cobre
-- Paths exatos
-- Passos em ordem: teste que falha, comando para ver a falha, código mínimo, comando para ver o verde, regressão
-- Exemplo de código completo do que não for óbvio, no estilo do repo. Sem pseudocódigo no lugar do código
-- Resultado esperado de cada comando
-- Dependência de outra tarefa, se houver
+- The requirement or acceptance criterion it covers
+- Exact paths
+- Steps in order: failing test, command to see the failure, minimal code, command to see green, regression
+- A complete code example for whatever is not obvious, in the repo's style. No pseudocode in place of code
+- Expected result of each command
+- Dependency on another task, if any
 
-Cabeçalho do arquivo: objetivo em uma frase, abordagem, stack já usada no repo, restrições copiadas da spec.
+File header: goal in one sentence, approach, the stack already used in the repo, constraints copied from the spec.
 
-Em M ou maior, cada tarefa é um `### TASK-NNN` com `- Requirements:`, `- Acceptance:`, `- Files:`, `- Depends on:`, `- Verification:` (IDs de TEST), `- Done when:`, `- Gate:` e `- Status:`; cada verificação é um `### TEST-NNN` com `- Acceptance:`, `- Task:` e `- Command:` executável sem shell. Formato em `agent-system/docs/artifacts.md`. Rode `validate_tasks.py --feature <slug>` antes de entregar o plano.
+For M or larger, each task is a `### TASK-NNN` with `- Requirements:`, `- Acceptance:`, `- Files:`, `- Depends on:`, `- Verification:` (TEST IDs), `- Done when:`, `- Gate:`, and `- Status:`; each verification is a `### TEST-NNN` with `- Acceptance:`, `- Task:`, and a `- Command:` executable without a shell. Format in `agent-system/docs/artifacts.md`. Run `validate_tasks.py --feature <slug>` before delivering the plan.
 
-Não commite o plano a menos que o usuário peça. Ao terminar, o próximo passo é `implementation` ou `tdd`, uma tarefa por vez.
+Do not commit the plan unless the user asks. When done, the next step is `implementation` or `tdd`, one task at a time.

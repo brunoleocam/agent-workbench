@@ -1,13 +1,13 @@
-# Contratos de handoff
+# Handoff contracts
 
-Todo handoff entre agentes usa um bloco `handoff` em YAML simples (chave: valor e listas). Sem relatório livre. O que já está em arquivo é citado pelo caminho, não copiado.
+Every handoff between agents uses a `handoff` block in simple YAML (key: value and lists). No free-form report. What is already in a file is cited by path, not copied.
 
-Entrada (o orchestrator envia):
+Input (the orchestrator sends):
 
 ```yaml
 handoff: in
 agent: implementer
-feature: reset-password        # slug comum a spec, tasks, reviews e security
+feature: reset-password        # slug shared by spec, tasks, reviews, and security
 task: TASK-001
 requirements: [REQ-001]
 acceptance: [AC-001]
@@ -18,7 +18,7 @@ files_allowed: [src/reset.py, tests/test_reset.py]
 constraints: [no new dependency]
 ```
 
-Saída (o agente devolve):
+Output (the agent returns):
 
 ```yaml
 handoff: out
@@ -28,32 +28,32 @@ task: TASK-001
 changed_files: [src/reset.py, tests/test_reset.py]
 tests: [TEST-001]
 evidence: [.cursor/agent-system/proofs/reset-password.json]
-findings: []                   # IDs (FIND-NNN, SEC-NNN) ou "nenhum"
+findings: []                   # IDs (FIND-NNN, SEC-NNN) or "none"
 blockers: []
 next_step: tester
 ```
 
-Campos sem valor ficam como lista vazia. `needs_decision` nomeia a decisão em `blockers`.
+Fields without a value stay as an empty list. `needs_decision` names the decision in `blockers`.
 
-## Por agente
+## Per agent
 
 ### orchestrator
-Entrada: pedido do usuário, `state.json`, `layout.json`. Saída para o usuário: classe, complexidade, risco, próximo agente e gate. Não recebe handoff de outro orchestrator.
+Input: the user's request, `state.json`, `layout.json`. Output to the user: class, complexity, risk, next agent, and gate. It does not receive a handoff from another orchestrator.
 
 ### planner
-Entrada: intenção, classificação, risco, caminhos do layout. Saída: `artifacts` (spec, ADR, tasks), lista de TASK com dependências, resultado de `validate_spec.py` e `validate_tasks.py`, decisões pendentes em `blockers`.
+Input: intent, classification, risk, layout paths. Output: `artifacts` (spec, ADR, tasks), a list of TASKs with dependencies, the result of `validate_spec.py` and `validate_tasks.py`, pending decisions in `blockers`.
 
 ### implementer
-Entrada: uma `task` com `requirements`, `acceptance`, `verification` e `files_allowed`. Saída: `changed_files`, `tests` rodados, comandos e resultado; escopo novo vai em `blockers` com `status: needs_decision`.
+Input: one `task` with `requirements`, `acceptance`, `verification`, and `files_allowed`. Output: `changed_files`, `tests` run, commands and results; new scope goes in `blockers` with `status: needs_decision`.
 
 ### tester
-Entrada: `feature`, `task` ou lista de TEST. Saída: um relatório por TEST (formato em `agents/tester.md`), `evidence` com o JSON do `check_proofs.py`, e a classificação de cada falha: aplicação, teste ou ambiente.
+Input: `feature`, `task`, or a list of TESTs. Output: one report per TEST (format in `agents/tester.md`), `evidence` with the JSON from `check_proofs.py`, and the classification of each failure: application, test, or environment.
 
 ### reviewer
-Entrada: `feature`, `artifacts`, `evidence`, diff. Saída: `status` PASS, PASS_WITH_WARNINGS ou FAIL; caminho de `<reviews_dir>/<slug>.md`; `findings` com FIND-NNN; resultado da Verification Audit.
+Input: `feature`, `artifacts`, `evidence`, diff. Output: `status` PASS, PASS_WITH_WARNINGS, or FAIL; the path of `<reviews_dir>/<slug>.md`; `findings` with FIND-NNN; the Verification Audit result.
 
 ### debugger
-Entrada: sintoma, comando ou passos, log. Saída: reprodução, causa com evidência, correção aplicada ou proposta, teste de regressão (TEST-NNN quando houver plano).
+Input: symptom, command or steps, log. Output: reproduction, cause with evidence, fix applied or proposed, regression test (TEST-NNN when there is a plan).
 
 ### security-reviewer
-Entrada: escopo (feature ou repositório), `changed_files`, `risk`, gatilhos. Saída: caminho do relatório, `status`, `findings` com SEC-NNN e contagem por severidade. Não corrige.
+Input: scope (feature or repository), `changed_files`, `risk`, triggers. Output: the report path, `status`, `findings` with SEC-NNN and a count by severity. It does not fix.

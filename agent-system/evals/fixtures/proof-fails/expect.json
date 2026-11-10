@@ -1,6 +1,6 @@
 {
   "base": "complete-feature",
-  "description": "Falha da aplicação (exit 1) e problema de ambiente (executável ausente) são registrados e reportados de forma diferente.",
+  "description": "An application failure (exit 1) and an environment problem (missing executable) are recorded and reported differently.",
   "steps": [
     {
       "script": "check_proofs.py",

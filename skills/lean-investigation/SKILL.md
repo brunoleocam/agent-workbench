@@ -1,26 +1,26 @@
 ---
 name: lean-investigation
-description: Acha a causa de um bug lendo o mínimo de código e log, com busca dirigida e uma hipótese por vez. Não corrige. Use quando o ponto de falha não é óbvio ou o usuário quer achar a causa gastando pouco contexto (investigação enxuta, achar a causa, onde quebra, por que dá erro).
+description: Finds a bug's cause reading the minimum of code and logs, with directed search and one hypothesis at a time. Does not fix. Use when the failure point is not obvious or the user wants to find the cause spending little context (investigação enxuta, achar a causa, onde quebra, por que dá erro).
 ---
 
-# Investigação enxuta
+# Lean investigation
 
-Mesmos princípios de `debug` (causa com evidência antes de qualquer fix). Esta skill define como chegar lá lendo pouco.
+Same principles as `debug` (cause with evidence before any fix). This skill defines how to get there reading little.
 
-1. Âncora: extraia do sintoma algo buscável (mensagem de erro exata, frame da stack, função, rota, código de erro). Sem âncora, peça ao usuário um dado objetivo antes de explorar.
-2. Busque a âncora com Grep (texto exato) ou busca semântica restrita à pasta provável. Não liste pastas nem abra arquivos "para entender".
-3. Leia só o trecho do resultado (a função, cerca de 30 linhas). Siga a próxima chamada buscando o símbolo, não abrindo o arquivo inteiro.
-4. Uma hipótese por vez, em uma linha, com a evidência mínima que confirma ou descarta: um trecho, um valor, um teste, uma linha de log.
-5. Teste e log: rode só o caso que falha e filtre a saída pela âncora (`Select-String` ou `grep`, com `-First` ou `head`).
-6. Pare quando a causa explicar o sintoma. Depois de 3 hipóteses descartadas ou cerca de 8 leituras sem causa, pare e reporte o que foi descartado e qual dado falta.
-7. Se a exploração ampla for inevitável (muitos arquivos, log enorme), delegue a um subagent `explore` ou `debugger` pedindo resposta curta com `caminho:linha`.
+1. Anchor: extract something searchable from the symptom (exact error message, stack frame, function, route, error code). Without an anchor, ask the user for an objective datum before exploring.
+2. Search the anchor with Grep (exact text) or semantic search restricted to the likely folder. Do not list folders or open files "to understand".
+3. Read only the result's section (the function, about 30 lines). Follow the next call by searching the symbol, not by opening the whole file.
+4. One hypothesis at a time, in one line, with the minimum evidence that confirms or rules it out: a snippet, a value, a test, a log line.
+5. Tests and logs: run only the failing case and filter the output by the anchor (`Select-String` or `grep`, with `-First` or `head`).
+6. Stop when the cause explains the symptom. After 3 ruled-out hypotheses or about 8 reads without a cause, stop and report what was ruled out and which datum is missing.
+7. If broad exploration is unavoidable (many files, a huge log), delegate to an `explore` or `debugger` subagent asking for a short answer with `path:line`.
 
-## Saída (até 6 linhas)
+## Output (up to 6 lines)
 
 ```
-Causa: <mecanismo, em uma frase>
-Evidência: <caminho:linha> — <o que prova>
-Descartado: <hipótese>; <hipótese>
-Correção sugerida: <uma linha, não aplicada>
-Próximo: /bug-fix ou /tdd (e /root-cause se valer registrar)
+Cause: <mechanism, in one sentence>
+Evidence: <path:line> — <what proves it>
+Ruled out: <hypothesis>; <hypothesis>
+Suggested fix: <one line, not applied>
+Next: /bug-fix or /tdd (and /root-cause if worth recording)
 ```

@@ -5,35 +5,35 @@ description: Develops a feature in an existing system from impact analysis throu
 
 # Feature
 
-Pré-condição: o pedido é FEATURE, complexidade S ou maior. XS não usa esta skill.
+Precondition: the request is a FEATURE, complexity S or larger. XS does not use this skill.
 
-## Procedimento
+## Procedure
 
-1. Inspecione o código e a doc existentes. Não reconstrua documentação que não será alterada.
-2. Delegue ao `planner`, ou faça você mesmo se a delegação não estiver disponível: impacto, delta de spec, ADR só se a arquitetura mudar, tasks. Não crie a árvore inteira num repo antigo.
-   - problema e resultado
-   - requisitos funcionais e não funcionais quando couberem
-   - restrições, premissas e comportamento existente afetado
-   - critérios de aceite
-   - spec do que o sistema deve fazer
-   Em M ou maior, no formato rastreável (`agent-system/docs/artifacts.md`): REQ em EARS, AC, TASK e TEST. Gate: `validate_spec.py --feature <slug> --require-approval`, aprovação do usuário, depois `validate_tasks.py --feature <slug>`.
-3. Cada task vai ao `implementer`, com teste antes ou junto da mudança. Superfície sensível: skill `security-best-practices`.
-4. Verificação vai ao `tester`, que roda `check_proofs.py --feature <slug>`.
-5. Risco HIGH ou CRITICAL: `security-reviewer` grava `<security_dir>/<slug>.md`.
-6. Revisão vai ao `reviewer`, com Verification Audit, em `<reviews_dir>/<slug>.md`. FAIL volta para correção, teste e nova revisão.
-7. `validate_verification.py --feature <slug>` sai 0. Sem isso, não está pronto.
-8. Grave o checkpoint. A próxima etapa sai das tasks e dependências. Escopo novo no meio usa `change-request`.
+1. Inspect the existing code and docs. Do not rebuild documentation that will not be changed.
+2. Delegate to the `planner`, or do it yourself if delegation is unavailable: impact, spec delta, ADR only if the architecture changes, tasks. Do not create the whole tree in an old repo.
+   - problem and outcome
+   - functional and non-functional requirements where they fit
+   - constraints, assumptions, and existing behavior affected
+   - acceptance criteria
+   - spec of what the system must do
+   For M or larger, in the traceable format (`agent-system/docs/artifacts.md`): REQ in EARS, AC, TASK, and TEST. Gate: `validate_spec.py --feature <slug> --require-approval`, the user's approval, then `validate_tasks.py --feature <slug>`.
+3. Each task goes to the `implementer`, with the test before or alongside the change. Sensitive surface: `security-best-practices` skill.
+4. Verification goes to the `tester`, who runs `check_proofs.py --feature <slug>`.
+5. HIGH or CRITICAL risk: `security-reviewer` writes `<security_dir>/<slug>.md`.
+6. Review goes to the `reviewer`, with a Verification Audit, in `<reviews_dir>/<slug>.md`. FAIL goes back to fix, test, and a new review.
+7. `validate_verification.py --feature <slug>` exits 0. Without that, it is not done.
+8. Write the checkpoint. The next step comes from the tasks and dependencies. New scope in the middle uses `change-request`.
 
-Em S: spec curta e o teste que prova a mudança, sem IDs nem gates obrigatórios.
+For S: a short spec and the test that proves the change, with no IDs and no mandatory gates.
 
-## Artefatos
+## Artifacts
 
-Spec do comportamento alterado, testes que provam o aceite, checkpoint. PRD só se a feature for grande o bastante. ADR só se houver decisão de arquitetura.
+Spec of the changed behavior, tests that prove acceptance, checkpoint. PRD only if the feature is big enough. ADR only if there is an architecture decision.
 
-## Pronto
+## Done
 
-Aceite atendido, testes relevantes verdes, review PASS ou achados documentados, estado atualizado. Em M ou maior, `validate_verification.py` saindo 0.
+Acceptance met, relevant tests green, review PASS or findings documented, state updated. For M or larger, `validate_verification.py` exiting 0.
 
 ## Handoff
 
-Planner não implementa. Implementer para na descoberta de mudança de escopo e devolve ao orchestrator para `change-request`. Reviewer não corrige sozinho.
+The planner does not implement. The implementer stops when it discovers a scope change and returns to the orchestrator for `change-request`. The reviewer does not fix on its own.

@@ -1,6 +1,6 @@
 {
   "base": "complete-feature",
-  "description": "Risco HIGH exige revisão de segurança; achado HIGH aberto bloqueia; risco aceito sem justificativa também.",
+  "description": "HIGH risk requires a security review; an open HIGH finding blocks; so does accepted risk without justification.",
   "steps": [
     {
       "script": "check_proofs.py",
@@ -12,7 +12,7 @@
     },
     {
       "write": "docs/security/feat.md",
-      "content": "---\nstatus: FAIL\nscope: feat\nreviewer: security-reviewer\n---\n# Security Assessment\n## High Findings\n### SEC-001: SQL montado por concatenação\n- Severity: HIGH\n- Confidence: high\n- Classification: confirmed\n- Status: open\n- Location: src/coupon_repo.py:12\n- Verification: teste com payload ' OR 1=1 -- retorna 0 linhas\n## Low Findings\n### SEC-002: Cabeçalho HSTS ausente\n- Severity: LOW\n- Classification: hardening\n- Status: accepted\n"
+      "content": "---\nstatus: FAIL\nscope: feat\nreviewer: security-reviewer\n---\n# Security Assessment\n## High Findings\n### SEC-001: SQL built by concatenation\n- Severity: HIGH\n- Confidence: high\n- Classification: confirmed\n- Status: open\n- Location: src/coupon_repo.py:12\n- Verification: test with payload ' OR 1=1 -- returns 0 rows\n## Low Findings\n### SEC-002: HSTS header missing\n- Severity: LOW\n- Classification: hardening\n- Status: accepted\n"
     },
     {
       "script": "validate_verification.py",

@@ -66,13 +66,13 @@ def test_claude_hook_adapter() -> None:
         opt_in(root)
         # A Cursor-only project hook must not silence the plugin hook under Claude Code.
         write(root, ".cursor/hooks.json", '{"version":1,"hooks":{"stop":[{"command":"python .cursor/agent-system/scripts/hook.py"}]}}')
-        write(root, "docs/progress/ROADMAP.md", "# Roadmap\n\n> Você está aqui: Fase 1 · TASK-001\n\n- [~] TASK-001 Modelo\n- [ ] TASK-002 API\n")
+        write(root, "docs/progress/ROADMAP.md", "# Roadmap\n\n> You are here: Phase 1 · TASK-001\n\n- [~] TASK-001 Modelo\n- [ ] TASK-002 API\n")
         common = {"session_id": "sess-1", "cwd": str(root / "src"), "transcript_path": "/tmp/t.jsonl"}
 
         started = claude_hook({**common, "hook_event_name": "SessionStart", "source": "startup"}, str(root))
         context = started["hookSpecificOutput"]
         assert context["hookEventName"] == "SessionStart"
-        assert "Fase 1 · TASK-001 | 0/2 feitas, 1 em andamento" in context["additionalContext"]
+        assert "Phase 1 · TASK-001 | 0/2 done, 1 in progress" in context["additionalContext"]
         assert "additional_context" not in started
 
         edit = {**common, "hook_event_name": "PostToolUse", "tool_name": "Write", "tool_input": {"file_path": str(root / ".env"), "content": "API_KEY=secret"}, "tool_response": {"success": True}}
@@ -146,7 +146,7 @@ def test_init_claude_md_block() -> None:
         assert (root / ".cursor" / "agent-system" / "scripts" / "check_proofs.py").exists()
         text = (root / "CLAUDE.md").read_text(encoding="utf-8")
         assert text.startswith(BEGIN) and text.rstrip().endswith(END)
-        for section in ("### 00 · Princípios", "### 01 · Classificação", "### 05 · Revisão", "### 08 · Segurança"):
+        for section in ("### 00 · Principles", "### 01 · Request classification", "### 05 · Independent review", "### 08 · Security"):
             assert section in text, section
 
         again = json.loads(run("init_project.py", ["--root", str(root), "--claude"]).stdout)
@@ -155,13 +155,13 @@ def test_init_claude_md_block() -> None:
         # User text around the block survives; edits inside the block are reverted on the next init.
         managed = text.strip()
         path = root / "CLAUDE.md"
-        path.write_text("# Meu projeto\n\nRode `npm test`.\n\n" + managed.replace("TDD preferido", "TDD opcional") + "\n\n## Notas\nfim\n", encoding="utf-8")
+        path.write_text("# Meu projeto\n\nRode `npm test`.\n\n" + managed.replace("Preferred TDD", "TDD opcional") + "\n\n## Notas\nfim\n", encoding="utf-8")
         refreshed = json.loads(run("init_project.py", ["--root", str(root), "--claude"]).stdout)
         assert refreshed["claude_md"] == "refreshed"
         updated = path.read_text(encoding="utf-8")
         assert updated.startswith("# Meu projeto\n\nRode `npm test`.\n\n" + BEGIN)
         assert updated.endswith(END + "\n\n## Notas\nfim\n")
-        assert "TDD preferido" in updated and "TDD opcional" not in updated
+        assert "Preferred TDD" in updated and "TDD opcional" not in updated
         assert updated.count(BEGIN) == 1
 
     with tempfile.TemporaryDirectory() as raw:

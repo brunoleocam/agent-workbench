@@ -1,25 +1,25 @@
-# Princípios de design e processo
+# Design principles and process
 
-Os oito princípios de *Principles of Great Design* (WWDC 2026), citados pela skill original. Use estes nomes ao justificar uma decisão de design.
+The eight principles from *Principles of Great Design* (WWDC 2026), cited by the original skill. Use these names when justifying a design decision.
 
-1. **Propósito.** Faça com intenção e decida o que não construir. Cada recurso pede tempo, atenção e confiança do usuário; gaste só onde compensa.
-2. **Agência.** O usuário no controle: ofereça escolhas, não um caminho único. Perdoe erros com desfazer fácil; diálogo de confirmação só para ação destrutiva e irreversível. Confirmação em excesso ensina a clicar sem ler.
-3. **Responsabilidade.** Aja no interesse do usuário. Privacidade: peça na hora certa, só o necessário, com transparência. Segurança: antecipe mau uso e dano, especialmente com IA. Use prévia, confirmação e aviso; corte o recurso cujo risco supera o valor.
-4. **Familiaridade.** Construa sobre o que as pessoas já conhecem. Metáforas nem literais nem abstratas demais (lixeira = apagar), respeitando a física delas. O que parece igual se comporta igual e fica no mesmo lugar. Só quebre um padrão familiar se provar que o novo é melhor, e teste.
-5. **Flexibilidade.** Projete para contextos, dispositivos e capacidades diferentes. Celular é toque rápido; desktop é fluxo profundo com ponteiro preciso. Inclua idade, idioma, experiência e acessibilidade. Quando nenhum layout serve a todos, deixe personalizar.
-6. **Simplicidade, não minimalismo.** Tire o desnecessário para o propósito aparecer; esconder tudo num lugar parece mínimo mas não é simples. Linguagem direta, menos passos, hierarquia clara por ordem, espaçamento e contraste. Às vezes adicionar contexto simplifica. Caminho comum primeiro; opção avançada um nível abaixo.
-7. **Cuidado artesanal.** Atenção ao detalhe gera confiança: tipografia, cores que se adaptam a claro e escuro, ícones claros, animação responsiva. Nenhum valor é aleatório; todo espaçamento, tempo e alinhamento tem justificativa. Scroll trêmulo e ícone desalinhado parecem descuido.
-8. **Encanto.** Resultado de acertar os outros sete, não confete colado por cima. Decida a emoção (calma, confiança, empolgação) e reforce em cada decisão.
+1. **Purpose.** Make with intent and decide what not to build. Every feature costs the user time, attention, and trust; spend only where it pays off.
+2. **Agency.** The user in control: offer choices, not a single path. Forgive mistakes with easy undo; confirmation dialogs only for destructive, irreversible actions. Excess confirmation teaches clicking without reading.
+3. **Responsibility.** Act in the user's interest. Privacy: ask at the right time, only what is needed, with transparency. Safety: anticipate misuse and harm, especially with AI. Use previews, confirmation, and warnings; cut the feature whose risk outweighs its value.
+4. **Familiarity.** Build on what people already know. Metaphors neither too literal nor too abstract (trash can = delete), respecting their physics. What looks the same behaves the same and sits in the same place. Break a familiar pattern only if you can prove the new one is better, and test it.
+5. **Flexibility.** Design for different contexts, devices, and abilities. Phone is quick touch; desktop is deep flow with a precise pointer. Include age, language, experience, and accessibility. When no layout serves everyone, let people customize.
+6. **Simplicity, not minimalism.** Remove what is unnecessary so the purpose shows; hiding everything in one place looks minimal but is not simple. Direct language, fewer steps, clear hierarchy through order, spacing, and contrast. Sometimes adding context simplifies. The common path first; the advanced option one level down.
+7. **Craft.** Attention to detail builds trust: typography, colors that adapt to light and dark, clear icons, responsive animation. No value is arbitrary; every spacing, timing, and alignment has a justification. Jittery scrolling and a misaligned icon look careless.
+8. **Delight.** The result of getting the other seven right, not confetti stuck on top. Decide the emotion (calm, confidence, excitement) and reinforce it in every decision.
 
-## Regras táticas
+## Tactical rules
 
-- **Feedback tem quatro tipos:** status, conclusão, aviso e erro. Confirme ações relevantes, exponha status em andamento, avise antes do problema, valide inline e não só no envio.
-- **Orientação.** Toda tela responde: onde estou, para onde posso ir, o que há lá, como saio. Nunca prenda o usuário.
-- **Agrupamento e mapeamento.** Proximidade indica relação. Coloque o controle perto do que ele afeta, organizado como aquilo que ele muda. Se o controle precisa de rótulo para explicar, o mapeamento está fraco.
-- **Rótulo específico vence rótulo genérico.** Nomeie a navegação pelo conteúdo ("Progresso", "Biblioteca"), não por guarda-chuvas vagos ("Início").
+- **Feedback has four types:** status, completion, warning, and error. Confirm relevant actions, expose in-progress status, warn before the problem, validate inline and not only on submit.
+- **Orientation.** Every screen answers: where am I, where can I go, what is there, how do I leave. Never trap the user.
+- **Grouping and mapping.** Proximity indicates relation. Put the control near what it affects, organized like what it changes. If the control needs a label to explain it, the mapping is weak.
+- **A specific label beats a generic one.** Name navigation by its content ("Progress", "Library"), not by vague umbrellas ("Home").
 
-## Processo
+## Process
 
-- Prototipe de forma interativa. Um protótipo funcionando vale mais que muitas telas estáticas e fixa um padrão concreto para a versão final.
-- Projete interação e visual juntos; movimento não é uma camada aplicada depois dos pixels.
-- Teste com pessoas reais em contexto real. Revise o movimento em câmera lenta ou frame a frame para pegar o que passa despercebido na velocidade normal.
+- Prototype interactively. A working prototype is worth more than many static screens and fixes a concrete pattern for the final version.
+- Design interaction and visuals together; motion is not a layer applied after the pixels.
+- Test with real people in a real context. Review the motion in slow motion or frame by frame to catch what goes unnoticed at normal speed.

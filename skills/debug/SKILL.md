@@ -5,13 +5,13 @@ description: Finds the root cause of a bug, test failure, or unexpected behavior
 
 # Debug
 
-Não proponha correção antes da causa ter evidência. Patch no sintoma não encerra o debug.
+Do not propose a fix before the cause has evidence. A patch on the symptom does not end the debug.
 
-1. Escreva o sintoma: o que aconteceu, o que era esperado, desde quando.
-2. Reproduza. Se não reproduzir, diga o que falta. Não chute um fix.
-3. Leia o caminho que falha (teste, stack, código). Uma hipótese por vez.
-4. Teste a hipótese com evidência: teste, log, leitura de estado, entrada mínima. Descarte ou confirme.
-5. A causa explica o sintoma. Se não explica, continue. Não empilhe tentativas.
-6. Com a causa confirmada, registre com `root-cause` e corrija com `tdd` ou `bug-fix`.
+1. Write the symptom: what happened, what was expected, since when.
+2. Reproduce. If you cannot reproduce, say what is missing. Do not guess a fix.
+3. Read the failing path (test, stack, code). One hypothesis at a time.
+4. Test the hypothesis with evidence: a test, a log, reading state, a minimal input. Rule it out or confirm it.
+5. The cause explains the symptom. If it does not, keep going. Do not stack attempts.
+6. With the cause confirmed, record it with `root-cause` and fix it with `tdd` or `bug-fix`.
 
-Pare se a correção mudar requisito ou arquitetura e use `change-request`.
+Stop if the fix changes a requirement or architecture and use `change-request`.

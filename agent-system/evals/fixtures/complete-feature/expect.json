@@ -1,5 +1,5 @@
 {
-  "description": "Feature M completa: spec aprovada, tarefas válidas, provas PASS e review PASS passam no gate.",
+  "description": "Complete M feature: approved spec, valid tasks, PASS proofs, and a PASS review pass the gate.",
   "steps": [
     {
       "script": "validate_spec.py",

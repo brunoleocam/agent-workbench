@@ -1,76 +1,36 @@
-# Progresso atual: harness-evolution
+# Current progress
 
-Branch `feat/harness-evolution`, tudo sem commit. Nenhuma operação Git remota feita; aguardando aprovação do usuário para commit, push e PR.
+State of the repository after versions 0.1 to 0.4.0 and the audit-improvements front. Everything before the audit front is merged into `main` (PRs #1 to #7).
 
-## Implementado
+## Delivered (merged)
 
-- Núcleo determinístico: `artifacts.py`, `validate_spec.py`, `validate_tasks.py`, `check_proofs.py`, `validate_verification.py` (gate).
-- Política de comandos de `check_proofs.py` (ADR-0002): sem shell, allowlist de executáveis, recusa de instalação/publicação por subcomando (melhor esforço), recusa de código inline por padrão (`--allow-inline` só com autorização), shell só com `Shell: yes` + `--allow-shell`, encerramento da árvore de processos no timeout.
-- Fingerprint do workspace: escopo do subdiretório do projeto; a prova guarda o fingerprint de antes da execução; mudança durante a execução gera aviso e falha com `--strict`.
-- Provas em `.cursor/agent-system/proofs/` são locais e ignoradas pelo `.gitignore`.
-- Segurança: rule, skill, agente `security-reviewer`, redação de `Authorization`/Bearer/Basic nos hooks e no `timeline_view.py`.
-- Lições (`lessons.py`, ADR-0003): só o usuário confirma; `confirm` recusa segredo aparente; `LESSONS.md` é mascarado ao renderizar.
-- Evals determinísticos (`run_evals.py`, 8 fixtures com arquivos de teste reais).
+- Deterministic core: `artifacts.py`, `validate_spec.py`, `validate_tasks.py`, `check_proofs.py`, `validate_verification.py` (the gate).
+- `check_proofs.py` command policy (ADR-0002): no shell, an executable allowlist, best-effort refusal of install/publish by subcommand, refusal of inline code by default (`--allow-inline` only with authorization), shell only with `Shell: yes` + `--allow-shell`, process-tree termination on timeout.
+- Workspace fingerprint from file contents (no HEAD), so a review recorded before a commit stays valid; the proof stores the fingerprint from before the run.
+- Security: rule `08`, the `security-best-practices` and `security-review` skills, the `security-reviewer` agent, redaction of `Authorization`/Bearer/Basic in hooks and `timeline_view.py`.
+- Lessons (`lessons.py`, ADR-0003): only the user confirms; `confirm` refuses an apparent secret.
+- Deterministic evals (`run_evals.py`, 8 fixtures with real test files).
+- Claude Code support (0.4.0): `.claude-plugin/` manifests, `hooks/claude-hooks.json` (the same `hook.py`, which translates the payload), `init_project.py --claude` writing the condensed rules into a managed block of the project `CLAUDE.md`, and `model: inherit` on the subagents.
 
-## Adiado (Minimum Effective Engineering)
+## Audit-improvements front (branch `chore/audit-improvements`, not merged)
 
-`metrics.py`, skill `/agent-evaluation`, cenários e rubricas manuais de evals. Arquivos guardados fora do repositório, no store do agente (`deferred/harness-evolution/`). Motivo: sem consumidor concreto. Ver seção "Deferred" em `docs/specs/harness-evolution.md`.
+- Documentation: `agent-system/README.md` names both hook files; this file no longer describes already-merged work as uncommitted.
+- Consistency: the `init_project.py` skill list is derived from `skills/`; new tests assert that `agents.json` matches `agents/*.md` and that skill names match their folders.
+- Hooks: events are appended under a file lock and the duplicate-edit filter (`agg.json`) is locked and tolerates a corrupt file; the Claude Code hooks start with `python -I -S`; `re_failed` now reads runner summary lines instead of matching "failed" or "error:" anywhere in the output.
+- Agents: `reviewer` and `security-reviewer` declare `tools: Read, Grep, Glob, Bash, Write` (no `Edit`).
+- CI: `.github/workflows/ci.yml` runs the test suite and the evals on Ubuntu and Windows, Python 3.10 and 3.13.
+- Language: rules, skills, agents' docs, templates, ADRs, references, and user-facing script messages are in English. The roadmap marker "You are here:" replaces "Você está aqui:" (the Portuguese form is still read). `README.pt-BR.md` stays as the Portuguese README. The Cursor-only rule files keep their Portuguese file names.
 
-## Artefatos
-
-- Spec: `docs/specs/harness-evolution.md`
-- Tarefas: `docs/tasks/harness-evolution.md`
-- ADRs: `docs/architecture/ADR/0001-*`, `0002-provas-fingerprint-e-politica-de-comandos.md`, `0003-*`
-- Segurança: `docs/security/harness-evolution.md`
-- Review: `docs/reviews/harness-evolution.md`
-
-## Verificação
+## Verification
 
 ```text
 python agent-system/scripts/test_system.py
 python agent-system/scripts/run_evals.py
-python agent-system/scripts/validate_spec.py --feature harness-evolution --require-approval --strict
-python agent-system/scripts/validate_tasks.py --feature harness-evolution --strict
-python agent-system/scripts/check_proofs.py --feature harness-evolution --strict
-python agent-system/scripts/validate_verification.py --feature harness-evolution
 ```
 
-Linux: copiar a árvore para `/tmp/aw-linux` no WSL (sem `.git`, `__pycache__`, `.cursor`) e rodar os dois primeiros comandos com `python3`.
+## Known limits
 
-## Resultados
-
-- Windows: 29/29 testes, 8/8 evals.
-- Linux (WSL2 Ubuntu, Python 3.14): 29/29 testes, 8/8 evals.
-- macOS: não testado.
-
-- Validadores strict (spec com `--require-approval`, tasks): exit 0. Provas: 14/14 PASS com `--strict`.
-- Revisão de segurança final: SEC-001 a SEC-008 resolvidos (SEC-007 HIGH: metacaractere do `cmd.exe` em `.cmd`/`.bat` no Windows).
-- Revisão independente final: PASS_WITH_WARNINGS. FIND-001 a 016 e 020 resolvidos; FIND-011, 017, 018 e 019 aceitos como limites de melhor esforço; nenhum aberto.
-- Gate `validate_verification.py --feature harness-evolution`: exit 0.
-
-## Pendências
-
-- Limites de melhor esforço (FIND-011, 017, 018, 019) aceitos pelo usuário em 2026-11-03: `check_proofs.py` é guardrail, não sandbox nem fronteira de segurança contra código malicioso.
-- PRs #3 e #4 mergeados em `main` (`c3e37e9`). Branch `fix/content-fingerprint`, sem commit: FIND-022 (fingerprint pelo conteúdo dos arquivos, sem HEAD, para a review commitada continuar válida). Aguardando revisão e aprovação do usuário para commit, push e PR.
-
-## Frente: suporte ao Claude Code (0.4.0)
-
-Branch `feat/claude-code-support`. O mesmo repositório funciona como plugin do Cursor e do Claude Code.
-
-- `.claude-plugin/plugin.json` e `.claude-plugin/marketplace.json` (o repositório é o próprio marketplace). Versão 0.4.0 nos dois manifests.
-- `hooks/claude-hooks.json` chama o mesmo `hook.py`, que traduz o payload do Claude Code para o formato do Cursor e devolve `hookSpecificOutput.additionalContext` no `SessionStart`. `hooks/hooks.json` (Cursor) é ignorado pelo Claude Code com aviso no `claude plugin validate`.
-- Rules: `init_project.py --claude` grava as rules `00` a `08` condensadas (`agent-system/templates/CLAUDE.md`) num bloco gerenciado do `CLAUDE.md` do projeto e não mexe em `.cursor/hooks.json`.
-- Subagents `implementer`, `tester` e `debugger`: `model: inherit` (valor aceito pelos dois editores).
-- Estado do projeto continua em `.cursor/agent-system/` nos dois editores.
-
-Verificação:
-
-```text
-python agent-system/scripts/test_system.py   # 32/32 (inclui test_claude_code.py)
-python agent-system/scripts/run_evals.py     # 8/8
-claude plugin validate .                     # passa; avisos esperados do hooks.json do Cursor e do ícone
-```
-
-Instalação testada com Claude Code 2.1.317 a partir do marketplace local: 34 skills, 7 agents e 7 hooks carregados; init executado a partir da cópia em cache.
-
-Pendente: teste numa sessão real do Claude Code (substituição de `${CLAUDE_PLUGIN_ROOT}` nas skills, hooks disparando) e no macOS, onde `python` pode não existir no PATH.
+- `check_proofs.py` is a guardrail, not a sandbox or a security boundary against malicious code (FIND-011, 017, 018, 019, accepted).
+- macOS is not tested. CI covers Ubuntu and Windows only.
+- Hooks call `python`; on Windows the Microsoft Store stub can shadow a real interpreter, and the hooks then fail open silently.
+- Not yet tested: a real Claude Code session (substitution of `${CLAUDE_PLUGIN_ROOT}` in skills, hooks firing end to end).

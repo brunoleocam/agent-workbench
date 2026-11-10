@@ -3,15 +3,15 @@ name: ui-ux-experiment
 description: Compares alternative user interfaces or experiences before one is chosen. Use when experimenting with different UIs or UXes, variants, or interaction options (experimentar UI, variantes de UX, comparar interfaces).
 ---
 
-# Experimentar UI/UX
+# UI/UX experiment
 
-Compare alternativas. Não implemente todas no produto.
+Compare alternatives. Do not implement all of them in the product.
 
-1. Se a ideia ainda não tem objetivo aprovado, use `brainstorm` antes.
-2. Escreva a tarefa do usuário, o critério de sucesso e a restrição (design system existente, conteúdo, prazo).
-3. Produza 2 ou 3 variantes. Para cada uma: o que muda, o trade-off, e como observar se funcionou.
-4. Se o projeto já tem design system, as variantes ficam dentro dele. Não invente linguagem visual paralela.
-5. Recomende uma. Espere o usuário escolher.
-6. A variante escolhida segue `ui-ux`. As outras não entram no código.
+1. If the idea has no approved goal yet, use `brainstorm` first.
+2. Write the user's task, the success criterion, and the constraint (existing design system, content, deadline).
+3. Produce 2 or 3 variants. For each: what changes, the trade-off, and how to observe whether it worked.
+4. If the project already has a design system, the variants stay within it. Do not invent a parallel visual language.
+5. Recommend one. Wait for the user to choose.
+6. The chosen variant follows `ui-ux`. The others do not go into the code.
 
-Em app web, a variante que for construída de verdade se verifica no browser, no fluxo do usuário, não só por screenshot.
+In a web app, the variant that is actually built is verified in the browser, in the user's flow, not only by screenshot.

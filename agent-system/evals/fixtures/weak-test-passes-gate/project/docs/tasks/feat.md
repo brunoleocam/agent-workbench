@@ -1,6 +1,6 @@
 # Tasks: desconto por cupom
 
-### TASK-001: Aplicar cupom válido
+### TASK-001: Apply valid coupon
 - Requirements: REQ-001
 - Acceptance: AC-001
 - Verification: TEST-001

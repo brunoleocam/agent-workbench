@@ -1,40 +1,40 @@
-# Spring — segurança
+# Spring — security
 
-Última revisão: 2026-11-03
+Last reviewed: 2026-11-03
 
-Escopo: Spring Boot 3.x com Spring Security 6.x, Java 17+, Spring MVC, Spring Data JPA e Thymeleaf quando houver renderização no servidor.
+Scope: Spring Boot 3.x with Spring Security 6.x, Java 17+, Spring MVC, Spring Data JPA, and Thymeleaf when there is server-side rendering.
 
-## Recomendações
+## Recommendations
 
-- Configuração por bean `SecurityFilterChain` (o `WebSecurityConfigurerAdapter` foi removido no Spring Security 6). Em `authorizeHttpRequests`, termine com `.anyRequest().authenticated()` ou `.denyAll()`, para rota nova não nascer aberta.
-- Autorização por método: `@EnableMethodSecurity` e `@PreAuthorize`/`@PostAuthorize` nas operações sensíveis. Checagem de dono no serviço ou na query (`findByIdAndOwnerId`), não só por papel.
-- CSRF vem ligado. Desligue apenas em API stateless autenticada por header (bearer); com sessão por cookie, mantenha.
-- Senhas: `PasswordEncoderFactories.createDelegatingPasswordEncoder()` (bcrypt por padrão, com prefixo de algoritmo) ou `BCryptPasswordEncoder`/`Argon2PasswordEncoder`. Nunca `NoOpPasswordEncoder` fora de teste.
-- Binding: receba DTOs (records) com Bean Validation (`@Valid`, `@NotBlank`, `@Size`). Não use entidade JPA como `@RequestBody`.
-- JPA: parâmetros nomeados em JPQL e native query (`:email`), Criteria API ou derived queries. Nunca concatenar entrada na string da query. `Sort` vindo do usuário com allowlist de propriedades.
-- Thymeleaf: `th:text` escapa; `th:utext` só com HTML sanitizado.
-- SpEL: nunca avalie expressão construída com entrada externa.
-- Jackson: não ative `activateDefaultTyping`/tipagem polimórfica global para dado externo; em polimorfismo, use `@JsonTypeInfo` com subtipos declarados.
-- XML: configure o parser contra XXE (desabilite DTD/entidades externas no `DocumentBuilderFactory`, `SAXParserFactory`, `XMLInputFactory`).
-- Actuator: por padrão só `health` é exposto via HTTP. Expanda `management.endpoints.web.exposure.include` só com autenticação; `env`, `heapdump`, `configprops` e `loggers` vazam segredos ou permitem alterar comportamento.
-- Erros: mantenha `server.error.include-stacktrace=never` e `include-message` desligado em produção.
-- Sessão: `sessionFixation` padrão (migra a sessão no login) não deve ser desligado; cookie `Secure` e `HttpOnly`.
-- CORS: configuração explícita no `SecurityFilterChain` com origens listadas.
-- Segredos em variáveis de ambiente ou cofre, não em `application.yml` commitado.
-- Dependências: OWASP Dependency-Check ou o scanner do repositório no CI; mantenha o BOM do Spring Boot atualizado.
+- Configure through a `SecurityFilterChain` bean (`WebSecurityConfigurerAdapter` was removed in Spring Security 6). In `authorizeHttpRequests`, end with `.anyRequest().authenticated()` or `.denyAll()`, so a new route is not born open.
+- Method authorization: `@EnableMethodSecurity` and `@PreAuthorize`/`@PostAuthorize` on sensitive operations. Check ownership in the service or in the query (`findByIdAndOwnerId`), not only by role.
+- CSRF comes on. Turn it off only on a stateless API authenticated by a header (bearer); with a cookie session, keep it.
+- Passwords: `PasswordEncoderFactories.createDelegatingPasswordEncoder()` (bcrypt by default, with an algorithm prefix) or `BCryptPasswordEncoder`/`Argon2PasswordEncoder`. Never `NoOpPasswordEncoder` outside tests.
+- Binding: receive DTOs (records) with Bean Validation (`@Valid`, `@NotBlank`, `@Size`). Do not use a JPA entity as a `@RequestBody`.
+- JPA: named parameters in JPQL and native queries (`:email`), the Criteria API, or derived queries. Never concatenate input into the query string. A `Sort` coming from the user with an allowlist of properties.
+- Thymeleaf: `th:text` escapes; `th:utext` only with sanitized HTML.
+- SpEL: never evaluate an expression built with external input.
+- Jackson: do not enable `activateDefaultTyping`/global polymorphic typing for external data; for polymorphism, use `@JsonTypeInfo` with declared subtypes.
+- XML: configure the parser against XXE (disable DTDs/external entities in `DocumentBuilderFactory`, `SAXParserFactory`, `XMLInputFactory`).
+- Actuator: by default only `health` is exposed over HTTP. Expand `management.endpoints.web.exposure.include` only with authentication; `env`, `heapdump`, `configprops`, and `loggers` leak secrets or allow changing behavior.
+- Errors: keep `server.error.include-stacktrace=never` and `include-message` off in production.
+- Session: the default `sessionFixation` (migrates the session at login) must not be turned off; `Secure` and `HttpOnly` cookie.
+- CORS: explicit configuration in the `SecurityFilterChain` with listed origins.
+- Secrets in environment variables or a vault, not in a committed `application.yml`.
+- Dependencies: OWASP Dependency-Check or the repository's scanner in CI; keep the Spring Boot BOM updated.
 
-## Vulnerabilidades comuns
+## Common vulnerabilities
 
-- `permitAll()` amplo demais por matcher genérico (`/api/**`).
-- IDOR: `repository.findById(id)` sem checar o dono.
-- SQL injection em `@Query(nativeQuery = true)` montada com concatenação ou em `entityManager.createQuery("... " + nome)`.
-- Mass assignment por `@RequestBody User`.
-- Actuator `env` ou `heapdump` exposto sem autenticação.
-- XSS por `th:utext`.
-- Desserialização insegura com tipagem padrão do Jackson.
-- CSRF desligado em app com login por formulário.
+- A `permitAll()` that is too broad because of a generic matcher (`/api/**`).
+- IDOR: `repository.findById(id)` without checking the owner.
+- SQL injection in `@Query(nativeQuery = true)` built by concatenation or in `entityManager.createQuery("... " + name)`.
+- Mass assignment through `@RequestBody User`.
+- Actuator `env` or `heapdump` exposed without authentication.
+- XSS by `th:utext`.
+- Insecure deserialization with Jackson's default typing.
+- CSRF turned off in an app with form login.
 
-## Implementação segura
+## Secure implementation
 
 ```java
 @Bean
@@ -59,7 +59,7 @@ public ProjectView rename(@PathVariable Long id, @Valid @RequestBody RenameDto d
 }
 ```
 
-## Implementação inadequada e risco
+## Inadequate implementation and risk
 
 ```java
 @PutMapping("/projects/{id}")
@@ -71,17 +71,17 @@ public Project update(@PathVariable Long id, @RequestBody Project project) {
 em.createNativeQuery("SELECT * FROM project WHERE name = '" + name + "'");
 ```
 
-Risco: qualquer usuário sobrescreve qualquer projeto, inclusive o dono e campos internos; a query nativa concatenada permite injeção de SQL.
+Risk: any user overwrites any project, including the owner and internal fields; the concatenated native query allows SQL injection.
 
-## Testes de segurança
+## Security tests
 
-- `spring-security-test` com MockMvc: anônimo → 401/redirect; `@WithMockUser` de outro usuário → 404 ou 403.
-- POST com sessão sem `.with(csrf())` → 403 quando CSRF está ativo.
-- Corpo com campo não previsto no DTO não altera a entidade.
-- `GET /actuator/env` sem credencial → 401 ou 404.
-- Ferramentas opcionais: SpotBugs com Find Security Bugs, OWASP Dependency-Check, Semgrep.
+- `spring-security-test` with MockMvc: anonymous → 401/redirect; another user's `@WithMockUser` → 404 or 403.
+- A POST with a session without `.with(csrf())` → 403 when CSRF is active.
+- A body with a field not expected by the DTO does not change the entity.
+- `GET /actuator/env` without credentials → 401 or 404.
+- Optional tools: SpotBugs with Find Security Bugs, OWASP Dependency-Check, Semgrep.
 
-## Fontes
+## Sources
 
 - https://cheatsheetseries.owasp.org/cheatsheets/Java_Security_Cheat_Sheet.html
 - https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html

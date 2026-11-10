@@ -1,17 +1,17 @@
 ---
 name: staged-task
-description: Divide um pedido grande em etapas pequenas, cada uma com verificação, e executa uma por vez validando antes de seguir. Use quando o pedido toca vários arquivos ou componentes, tem várias partes ou o usuário pede para fazer por partes (etapas, dividir, por partes, passo a passo, fatiar).
+description: Splits a large request into small steps, each with a verification, and executes one at a time, validating before moving on. Use when the request touches several files or components, has several parts, or the user asks to do it in parts (etapas, dividir, por partes, passo a passo, fatiar).
 ---
 
-# Tarefa em etapas
+# Staged task
 
-Se o trabalho segue o fluxo spec-driven (M ou maior na regra `01-request-classification`), as etapas são as tarefas da spec; esta skill só controla a execução. Não cria PRD, ADR nem plano detalhado (isso é `/implementation-plan`).
+If the work follows the spec-driven flow (M or larger in rule `01-request-classification`), the steps are the spec's tasks; this skill only controls execution. It does not create a PRD, ADR, or detailed plan (that is `/implementation-plan`).
 
-1. Plano: 3 a 7 etapas, uma linha cada, no formato `N. <entrega> — verificação: <teste, comando ou checagem>`. Cada etapa pode ser verificada sozinha e deixa o sistema funcionando.
-2. Ordem: dependências primeiro; a etapa de maior risco o mais cedo possível.
-3. Mostre o plano. Peça confirmação só se houver decisão do usuário (escopo, abordagem); senão, comece pela etapa 1.
-4. Em cada etapa: edite só o necessário e rode a verificação dela com saída filtrada.
-5. Verificação falhou: corrija dentro da etapa. Não avance com etapa vermelha. Se precisar mudar o plano, ajuste e avise em uma linha.
-6. Fechou a etapa: uma linha `Etapa N ok: <evidência>`. Não repita o plano inteiro.
-7. Pare e peça ao usuário quando a etapa exigir decisão dele ou validação que você não consegue fazer (visual, ambiente externo, credencial).
-8. No fim: lista curta das etapas com status. Se a conversa ficou longa, ofereça `/context-summary`.
+1. Plan: 3 to 7 steps, one line each, in the format `N. <deliverable> — verification: <test, command, or check>`. Each step can be verified alone and leaves the system working.
+2. Order: dependencies first; the highest-risk step as early as possible.
+3. Show the plan. Ask for confirmation only if there is a decision for the user (scope, approach); otherwise start with step 1.
+4. In each step: edit only what is needed and run its verification with filtered output.
+5. Verification failed: fix it within the step. Do not advance with a red step. If you must change the plan, adjust it and say so in one line.
+6. Step closed: one line `Step N ok: <evidence>`. Do not repeat the whole plan.
+7. Stop and ask the user when the step requires their decision or a validation you cannot do (visual, external environment, credential).
+8. At the end: a short list of the steps with status. If the conversation got long, offer `/context-summary`.

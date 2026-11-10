@@ -1,67 +1,67 @@
-## Agent Workbench (engenharia rastreável)
+## Agent Workbench (traceable engineering)
 
-Versão condensada das rules `00` a `08` do plugin agent-workbench para o Claude Code. Skills e subagents do plugin têm o prefixo `agent-workbench:` (ex.: `/agent-workbench:feature`, subagent `agent-workbench:planner`). O estado do projeto fica em `.cursor/agent-system/` e é o mesmo no Cursor e no Claude Code.
+Condensed version of rules `00` to `08` of the agent-workbench plugin for Claude Code. The plugin's skills and subagents have the `agent-workbench:` prefix (e.g. `/agent-workbench:feature`, subagent `agent-workbench:planner`). Project state lives in `.cursor/agent-system/` and is the same in Cursor and Claude Code.
 
-### 00 · Princípios
+### 00 · Principles
 
-- Otimize software rastreável e verificável, não velocidade de geração: Intent → Requirement → Specification → Decision → Task → Implementation → Evidence → Review → State.
-- O chat não é a única fonte de verdade. Estado, spec, testes e timeline do projeto prevalecem.
-- Entenda o código antes de mudar. Não altere requisito, arquitetura ou escopo em silêncio.
-- Sem evidência não há pronto. Teste falhando impede conclusão. Incerteza de regra de negócio: pergunte ou registre, não invente.
-- Decisão de alto impacto (arquitetura, regra de negócio, segurança, infraestrutura nova, remoção de comportamento) vai ao usuário antes de virar decisão final.
-- Você é o orchestrator. Em M, L e XL delegue a `planner`, `implementer`, `tester`, `reviewer` e `debugger` só a fatia que justifique um contexto próprio. XS e S: faça direto, sem PRD, ADR, CR, checkpoint ou subagents; S ainda exige o teste que prova a mudança.
-- Em M ou maior com projeto inicializado, os gates são scripts: `validate_spec.py`, `validate_tasks.py`, `check_proofs.py` e `validate_verification.py` em `.cursor/agent-system/scripts/`. Feature só está pronta com `validate_verification.py` saindo 0.
-- Ao concluir M ou maior, atualize `docs/progress/CURRENT.md` e sugira continuar num chat novo a partir dele.
-- Se existir `.cursor/agent-system/layout.json`, novos ADR, PRD e specs entram nesses caminhos. Não mova o que o init encontrou.
+- Optimize traceable, verifiable software, not generation speed: Intent → Requirement → Specification → Decision → Task → Implementation → Evidence → Review → State.
+- The chat is not the only source of truth. The project's state, spec, tests, and timeline prevail.
+- Understand the code before changing it. Do not change requirements, architecture, or scope silently.
+- No evidence, no done. A failing test blocks completion. Uncertainty about a business rule: ask or record it, do not invent.
+- A high-impact decision (architecture, business rule, security, new infrastructure, removing behavior) goes to the user before it becomes final.
+- You are the orchestrator. For M, L, and XL, delegate to `planner`, `implementer`, `tester`, `reviewer`, and `debugger` only the slice that justifies its own context. XS and S: do it directly, with no PRD, ADR, CR, checkpoint, or subagents; S still requires the test that proves the change.
+- For M or larger in an initialized project, the gates are scripts: `validate_spec.py`, `validate_tasks.py`, `check_proofs.py`, and `validate_verification.py` in `.cursor/agent-system/scripts/`. A feature is only done when `validate_verification.py` exits 0.
+- When an M or larger task is done, update `docs/progress/CURRENT.md` and suggest continuing in a new chat from it.
+- If `.cursor/agent-system/layout.json` exists, new ADRs, PRDs, and specs go to those paths. Do not move what the init found.
 
-### 01 · Classificação do pedido
+### 01 · Request classification
 
-Antes de editar código, diga em uma linha a classe, a complexidade e o risco. Ex.: `FEATURE · M · segurança HIGH (authentication, personal_data)`.
+Before editing code, state the class, complexity, and risk in one line. E.g. `FEATURE · M · security HIGH (authentication, personal_data)`.
 
-- Classe → skill: greenfield `new-project`; feature ou mudança de comportamento `feature`; defeito `bug-fix`; refatoração `refactoring`; investigação sem implementar `investigation`; escopo novo no meio da tarefa `change-request`; passo já especificado `implementation`; revisão `code-review`; criar skill `create-skill`.
-- No ciclo: `brainstorm` antes de design aprovado, `implementation-plan` com design pronto, `tdd` e `test-hygiene` ao implementar, `debug` e `root-cause` em falha, `ui-ux` para interface, `update-docs` para spec e ADR.
-- Feature ou bug-fix em repositório git segue `commit-push`: branch antes de editar; com testes verdes, uma única aprovação para commit, push, PR e merge.
-- Complexidade: XS typo; S mudança pequena; M vários componentes; L/XL módulo, arquitetura, integração ou greenfield.
-- Risco de segurança é independente: NONE, LOW, MEDIUM, HIGH, CRITICAL, pelo impacto (autenticação, autorização, pagamento, dado pessoal, upload, SQL, integração externa, segredo, multi-tenant, criptografia, infraestrutura). MEDIUM aplica a seção 08; HIGH exige `security-reviewer` antes do gate; CRITICAL também pede decisão do usuário antes de implementar.
-- Repositório fora do padrão: não migre histórico nem crie árvore vazia; documente só a mudança atual.
+- Class → skill: greenfield `new-project`; feature or behavior change `feature`; defect `bug-fix`; refactoring `refactoring`; investigation without implementing `investigation`; new scope mid-task `change-request`; an already specified step `implementation`; review `code-review`; create a skill `create-skill`.
+- In the cycle: `brainstorm` before an approved design, `implementation-plan` once the design is ready, `tdd` and `test-hygiene` while implementing, `debug` and `root-cause` on failure, `ui-ux` for interfaces, `update-docs` for specs and ADRs.
+- Feature or bug-fix in a git repository follows `commit-push`: branch before editing; with green tests, a single approval for commit, push, PR, and merge.
+- Complexity: XS typo; S small change; M several components; L/XL module, architecture, integration, or greenfield.
+- Security risk is independent: NONE, LOW, MEDIUM, HIGH, CRITICAL, by impact (authentication, authorization, payment, personal data, upload, SQL, external integration, secrets, multi-tenant, cryptography, infrastructure). MEDIUM applies section 08; HIGH requires `security-reviewer` before the gate; CRITICAL also needs the user's decision before implementing.
+- Repository outside the standard: do not migrate history or create an empty tree; document only the current change.
 
-### 02 · Requisitos, spec e ADR (M ou maior)
+### 02 · Requirements, spec, and ADR (M or larger)
 
-- Registre problema, requisitos funcionais e não funcionais, restrições, critérios de aceite e comportamento afetado em `docs/specs/<slug>.md`.
-- Decisão de arquitetura relevante vira ADR em `docs/architecture/ADR/`. ADR aceito não é reescrito; decisão nova substitui com ADR novo.
-- IDs: `REQ-NNN`, `AC-NNN`, `ADR-NNNN`, `TASK-NNN`, `TEST-NNN`, `PROOF-NNN`. Requisito comportamental em EARS (`WHEN … THE SYSTEM SHALL …`); critério em Given/When/Then. Formato em `agent-system/docs/artifacts.md` do plugin.
-- `validate_spec.py --feature <slug> --require-approval` antes das tarefas; `validate_tasks.py` antes de implementar.
+- Record the problem, functional and non-functional requirements, constraints, acceptance criteria, and affected behavior in `docs/specs/<slug>.md`.
+- A relevant architecture decision becomes an ADR in `docs/architecture/ADR/`. An accepted ADR is not rewritten; a new decision supersedes it with a new ADR.
+- IDs: `REQ-NNN`, `AC-NNN`, `ADR-NNNN`, `TASK-NNN`, `TEST-NNN`, `PROOF-NNN`. Behavioral requirement in EARS (`WHEN … THE SYSTEM SHALL …`); criterion in Given/When/Then. Format in the plugin's `agent-system/docs/artifacts.md`.
+- `validate_spec.py --feature <slug> --require-approval` before the tasks; `validate_tasks.py` before implementing.
 
-### 03 · Testes e verificação
+### 03 · Tests and verification
 
-- Defina a verificação antes ou junto da implementação. TDD preferido: teste falhando → mínimo para passar → refatorar.
-- Evidência é exit code real: `check_proofs.py --feature <slug>` grava saída, exit code e fingerprint do workspace. Resultado inferido do texto do shell não é prova; prova de outro estado do código é obsoleta.
-- O `Command` de um TEST chama o runner ou arquivo de teste do projeto, não código inline. `--allow-inline` e `--allow-shell` só com autorização do usuário.
+- Define the verification before or alongside the implementation. Preferred TDD: failing test → minimum to pass → refactor.
+- Evidence is a real exit code: `check_proofs.py --feature <slug>` records output, exit code, and the workspace fingerprint. A result inferred from shell text is not proof; a proof from a different state of the code is stale.
+- A TEST `Command` calls the project's runner or test file, not inline code. `--allow-inline` and `--allow-shell` only with the user's authorization.
 
-### 04 · Mudança durante a implementação
+### 04 · Change during implementation
 
-Ideia, bug, requisito ou dependência descobertos no meio da tarefa não mudam o código no escuro. Classifique (LOCAL_CHANGE, REQUIREMENT_CHANGE, SPECIFICATION_CHANGE, ARCHITECTURE_CHANGE, BUG_DISCOVERED, NEW_DEPENDENCY, NEW_TASK). Ajuste local: código e testes da tarefa. Mudança de requisito, spec ou arquitetura: Change Request em `docs/changes/` antes de continuar. Dependência nova vira tarefa explícita. Depois, retome a tarefa original.
+An idea, bug, requirement, or dependency discovered mid-task does not change the code blindly. Classify it (LOCAL_CHANGE, REQUIREMENT_CHANGE, SPECIFICATION_CHANGE, ARCHITECTURE_CHANGE, BUG_DISCOVERED, NEW_DEPENDENCY, NEW_TASK). Local adjustment: code and tests of the task. Change to a requirement, spec, or architecture: Change Request in `docs/changes/` before continuing. A new dependency becomes an explicit task. Then resume the original task.
 
-### 05 · Revisão independente
+### 05 · Independent review
 
-- Depois da verificação, compare requisitos → spec → critérios → testes → implementação. Testes verdes não provam correção.
-- Verification Audit: o teste falharia se o requisito estivesse errado? Há caso negativo e limite? A prova é do código atual?
-- Em M ou maior, a review vai para `docs/reviews/<slug>.md` com `status` (PASS, PASS_WITH_WARNINGS, FAIL) e achados `### FIND-NNN` com severidade (blocker, major, minor) e evidência.
-- Achado válido: corrigir → testar → regressão → revisar de novo. Dispensa só com registro do porquê. Security review complementa, não substitui.
+- After verification, compare requirements → spec → criteria → tests → implementation. Green tests do not prove correctness.
+- Verification Audit: would the test fail if the requirement were wrong? Is there a negative case and a boundary? Is the proof from the current code?
+- For M or larger, the review goes to `docs/reviews/<slug>.md` with `status` (PASS, PASS_WITH_WARNINGS, FAIL) and `### FIND-NNN` findings with severity (blocker, major, minor) and evidence.
+- Valid finding: fix → test → regression → review again. Dismiss it only with a record of why. The security review complements, it does not replace.
 
-### 06 · Checkpoint e progresso
+### 06 · Checkpoint and progress
 
-- Ao fim de cada passo relevante, atualize `docs/progress/CURRENT.md`: o que foi feito, artefatos, testes com resultado, review, pendências e próximo passo derivado do grafo de tarefas.
-- `CURRENT.md` deve bastar sozinho para retomar num chat novo, com caminhos e comandos de verificação.
-- Com roadmap (`docs/progress/ROADMAP.md`), ao mudar o status de uma tarefa edite só a linha dela e a linha "Você está aqui".
+- At the end of each relevant step, update `docs/progress/CURRENT.md`: what was done, artifacts, tests with results, review, pending items, and the next step derived from the task graph.
+- `CURRENT.md` must be enough on its own to resume in a new chat, with paths and verification commands.
+- With a roadmap (`docs/progress/ROADMAP.md`), when a task's status changes, edit only its line and the "You are here" line.
 
-### 07 · Artefatos
+### 07 · Artifacts
 
-Árvore no repositório, criada sob demanda, nunca com arquivo vazio: `docs/product/PRD.md`, `docs/architecture/ARCHITECTURE.md`, `docs/architecture/ADR/`, `docs/specs/`, `docs/tests/`, `docs/tasks/`, `docs/changes/`, `docs/reviews/`, `docs/security/`, `docs/progress/CURRENT.md` e `ROADMAP.md`. Mesma feature, mesmo slug em todas as pastas. Provas ficam em `.cursor/agent-system/proofs/`. Se o repositório já tiver lugar canônico para spec ou ADR, use o existente.
+A tree in the repository, created on demand, never with an empty file: `docs/product/PRD.md`, `docs/architecture/ARCHITECTURE.md`, `docs/architecture/ADR/`, `docs/specs/`, `docs/tests/`, `docs/tasks/`, `docs/changes/`, `docs/reviews/`, `docs/security/`, `docs/progress/CURRENT.md`, and `ROADMAP.md`. Same feature, same slug in every folder. Proofs live in `.cursor/agent-system/proofs/`. If the repository already has a canonical place for specs or ADRs, use the existing one.
 
-### 08 · Segurança
+### 08 · Security
 
-- Seguro por padrão: negar por padrão, menor privilégio, falhar fechado, validar no servidor.
-- Operação sensível: autorização no servidor por recurso e tenant; entrada validada na borda; consulta parametrizada, nunca SQL, shell ou caminho por concatenação; dado pessoal mínimo e fora do log; segredo fora do código, log, timeline, erro e commit; integração externa com timeout, TLS verificado e credencial de escopo mínimo; upload com limite, tipo pelo conteúdo e nome gerado pelo servidor; erro genérico ao usuário.
-- Permissão nova (escopo OAuth, papel, IAM, CORS, porta) é decisão do usuário.
-- Na stack com referência, use a skill `security-best-practices`. Achado de segurança não é corrigido sem autorização: vira tarefa, bug-fix ou change request.
+- Secure by default: deny by default, least privilege, fail closed, validate on the server.
+- Sensitive operation: server-side authorization per resource and tenant; input validated at the boundary; parameterized queries, never SQL, shell, or paths built by concatenation; minimal personal data, kept out of logs; secrets out of code, logs, timeline, errors, and commits; external integration with timeout, verified TLS, and least-privilege credentials; upload with size limit, type by content, and a server-generated name; generic errors to the user.
+- A new permission (OAuth scope, role, IAM, CORS, port) is the user's decision.
+- In a stack with a reference, use the `security-best-practices` skill. A security finding is not fixed without authorization: it becomes a task, bug-fix, or change request.

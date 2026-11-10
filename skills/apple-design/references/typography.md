@@ -1,12 +1,12 @@
-# Tipografia: tamanho óptico, tracking e leading
+# Typography: optical size, tracking, and leading
 
-De *The Details of UI Typography* (WWDC 2020). A Apple desenha a fonte para mudar de forma conforme o tamanho; a mesma disciplina vale na web.
+From *The Details of UI Typography* (WWDC 2020). Apple designs the font to change shape with size; the same discipline applies on the web.
 
-- **Tracking (letter-spacing) depende do tamanho.** Texto grande de display pede tracking negativo, porque as letras parecem afastadas ao crescer; texto pequeno pede tracking levemente positivo. Um `letter-spacing` fixo está errado em algum tamanho. Aperte títulos, deixe o corpo perto de `0`.
-- **Leading (line-height) é inverso ao tamanho.** Apertado em títulos grandes, mais solto no corpo. Aumente para scripts com ascendentes e descendentes altos; aperte em UI densa de informação.
-- **Hierarquia vem de peso, tamanho e leading juntos**, não só de tamanho. Enfatize com peso: dá presença sem ocupar mais espaço.
-- **Respeite o tamanho de texto do usuário.** Escale o layout junto com o texto, com espaçamento em `rem`/`em`, não px fixo, para fonte maior não quebrar o layout.
-- **Comece pela fonte do sistema.** Ela já traz tamanho óptico, tabelas de tracking e ajuste de legibilidade. Troque só com motivo.
+- **Tracking (letter-spacing) depends on size.** Large display text needs negative tracking, because letters look spread apart as they grow; small text needs slightly positive tracking. A fixed `letter-spacing` is wrong at some size. Tighten headings, leave body text near `0`.
+- **Leading (line-height) is inverse to size.** Tight on large headings, looser on body text. Increase it for scripts with tall ascenders and descenders; tighten it in information-dense UI.
+- **Hierarchy comes from weight, size, and leading together**, not size alone. Emphasize with weight: it gives presence without taking more space.
+- **Respect the user's text size.** Scale the layout along with the text, with spacing in `rem`/`em`, not fixed px, so larger text does not break the layout.
+- **Start with the system font.** It already brings optical size, tracking tables, and legibility tuning. Swap it only with a reason.
 
 ```css
 :root { font: 100%/1.5 system-ui, sans-serif; }

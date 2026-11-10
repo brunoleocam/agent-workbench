@@ -121,9 +121,9 @@ def test_workflows() -> None:
         assert report["layout"]["adr_files"] == 1
         suggestions = (project / ".cursor" / "agent-system" / "SUGGESTIONS.md").read_text(encoding="utf-8")
         assert "frontend-reviewer" in suggestions
-        assert "nenhum teste encontrado" in suggestions
+        assert "no tests found" in suggestions
         assert not (project / ".cursor" / "agents" / "frontend-reviewer.md").exists()
-        assert "PRD ou PDR já existe" in suggestions
+        assert "A PRD or PDR already exists" in suggestions
         assert (project / ".cursor" / "rules" / "local.mdc").exists()
         assert "existing.py" in (project / ".cursor" / "hooks.json").read_text(encoding="utf-8")
         assert (project / ".cursor" / "hooks.json.bak-agent-system").exists()
@@ -135,7 +135,7 @@ def test_workflows() -> None:
 
         (project / "docs" / "progress").mkdir(parents=True)
         (project / "docs" / "progress" / "ROADMAP.md").write_text(
-            "# Roadmap\n\n> Você está aqui: Fase 2 — API · TASK-008\n\n"
+            "# Roadmap\n\n> You are here: Phase 2 — API · TASK-008\n\n"
             "## Fase 1\n- [x] TASK-001 Modelo\n\n## Fase 2\n- [~] TASK-008 Reserva\n- [!] TASK-009 Pagamento\n- [ ] TASK-010 Webhook\n",
             encoding="utf-8",
         )
@@ -150,11 +150,11 @@ def test_workflows() -> None:
             }
         )
         assert "additional_context" in started
-        assert "Fase 2 — API · TASK-008 | 1/4 feitas, 1 em andamento, 1 bloqueadas" in started["additional_context"]
+        assert "Phase 2 — API · TASK-008 | 1/4 done, 1 in progress, 1 blocked" in started["additional_context"]
         status = run("status_cmd.py", ["--root", str(project)])
         assert status.returncode == 0, status.stderr
         roadmap_line = next(line for line in status.stdout.splitlines() if line.startswith("Roadmap: "))
-        assert "TASK-008 | 1/4 feitas, 1 em andamento, 1 bloqueadas" in roadmap_line
+        assert "TASK-008 | 1/4 done, 1 in progress, 1 blocked" in roadmap_line
 
         edited = hook_at(
             project_hook,

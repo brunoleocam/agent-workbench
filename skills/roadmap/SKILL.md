@@ -1,40 +1,40 @@
 ---
 name: roadmap
-description: Cria, mostra e atualiza o roadmap do projeto em docs/progress/ROADMAP.md, com fases, tarefas, status e a posição atual; opcionalmente gera uma visão em Canvas. Use quando o usuário quer saber em que etapa está, o que foi feito e o que falta, ou ao planejar trabalho grande em projeto com /init-agent-system (roadmap, em que etapa estou, o que falta, progresso do plano).
+description: Creates, shows, and updates the project roadmap in docs/progress/ROADMAP.md, with phases, tasks, status, and the current position; optionally renders a Canvas view. Use when the user wants to know which stage they are in, what is done and what is left, or when planning large work in a project with /init-agent-system (roadmap, em que etapa estou, o que falta, progresso do plano).
 ---
 
 # Roadmap
 
-Arquivo único: `docs/progress/ROADMAP.md`, na raiz do projeto. Vale só em projeto com `.cursor/agent-system/state.json`. Sem ele, diga para rodar `/init-agent-system` e pare.
+A single file: `docs/progress/ROADMAP.md`, at the project root. It applies only in a project with `.cursor/agent-system/state.json`. Without it, tell the user to run `/init-agent-system` and stop.
 
-## Formato
+## Format
 
 ```markdown
-# Roadmap — <projeto ou frente>
+# Roadmap — <project or front>
 
-> Você está aqui: Fase 2 — API · TASK-008
+> You are here: Phase 2 — API · TASK-008
 
-Legenda: [x] feito · [~] em andamento · [ ] pendente · [!] bloqueado
+Legend: [x] done · [~] in progress · [ ] pending · [!] blocked
 
-## Fase 1 — Dados
-- [x] TASK-001 Modelo de pedido — spec: docs/specs/pedido.md
-- [x] TASK-002 Migração
+## Phase 1 — Data
+- [x] TASK-001 Order model — spec: docs/specs/order.md
+- [x] TASK-002 Migration
 
-## Fase 2 — API
-- [~] TASK-008 Reserva de estoque — depende de TASK-002
-- [!] TASK-009 Pagamento — bloqueado: credencial do gateway
-- [ ] TASK-010 Webhook — depende de TASK-009
+## Phase 2 — API
+- [~] TASK-008 Inventory reservation — depends on TASK-002
+- [!] TASK-009 Payment — blocked: gateway credential
+- [ ] TASK-010 Webhook — depends on TASK-009
 ```
 
-- Uma linha por tarefa: status, ID, título curto, dependência ou bloqueio, link para spec ou task se houver.
-- Fases em ordem de dependência. Os IDs são os mesmos de `docs/tasks/`.
-- A linha "Você está aqui" aponta a fase e a tarefa em andamento. O hook de início de chat e o `/agent-status` leem essa linha e contam os `[x]`, `[~]`, `[ ]` e `[!]`.
+- One line per task: status, ID, short title, dependency or blocker, a link to the spec or task if any.
+- Phases in dependency order. The IDs are the same as in `docs/tasks/`.
+- The "You are here" line points to the phase and the task in progress. The session-start hook and `/agent-status` read this line and count the `[x]`, `[~]`, `[ ]`, and `[!]`. (The Portuguese marker "Você está aqui" is still read in existing roadmaps.)
 
-## Modos
+## Modes
 
-Sem argumento: mostrar. Com "criar", "atualizar" ou "visual": o modo pedido.
+No argument: show. With "create", "update", or "visual": the requested mode.
 
-- **Mostrar**: leia só o `ROADMAP.md`. Responda com a linha "Você está aqui", a contagem por status, as tarefas em andamento e bloqueadas e as próximas 3 pendentes cujas dependências já estão feitas. Não liste as tarefas feitas.
-- **Criar**: a partir do plano aprovado ou das tarefas em `docs/tasks/`. Se não houver plano, use `/staged-task` ou o `planner` antes. Se já existe roadmap, estenda; não reescreva itens feitos.
-- **Atualizar**: edite só as linhas que mudaram e a linha "Você está aqui". Status `[x]` só com evidência (teste, comando ou review). Tarefa nova de change request entra na fase certa, com a dependência.
-- **Visual**: leia a skill `canvas` e gere um canvas a partir do `ROADMAP.md`, com fases como colunas ou trilhas, tarefas coloridas por status, dependências e a posição atual em destaque. O arquivo continua sendo a fonte de verdade; o canvas é só a visão.
+- **Show**: read only `ROADMAP.md`. Reply with the "You are here" line, the count by status, the tasks in progress and blocked, and the next 3 pending ones whose dependencies are already done. Do not list the done tasks.
+- **Create**: from the approved plan or the tasks in `docs/tasks/`. If there is no plan, use `/staged-task` or the `planner` first. If a roadmap already exists, extend it; do not rewrite done items.
+- **Update**: edit only the lines that changed and the "You are here" line. Status `[x]` only with evidence (test, command, or review). A new task from a change request goes in the right phase, with its dependency.
+- **Visual**: read the `canvas` skill and generate a canvas from `ROADMAP.md`, with phases as columns or lanes, tasks colored by status, dependencies, and the current position highlighted. The file remains the source of truth; the canvas is only the view.

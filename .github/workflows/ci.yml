@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Python ${{ matrix.python }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Manifests and hook files are valid JSON
+        run: >
+          python -I -c "import json,pathlib;
+          [json.loads(p.read_text(encoding='utf-8')) for p in [*pathlib.Path('.').glob('.*-plugin/*.json'), *pathlib.Path('hooks').glob('*.json'), pathlib.Path('agent-system/agents.json')]]"
+      - name: Test suite
+        run: python -I agent-system/scripts/test_system.py
+      - name: Deterministic evals
+        run: python -I agent-system/scripts/run_evals.py
