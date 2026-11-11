@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -170,11 +171,19 @@ def test_result(command: str, output: str) -> tuple[str, str] | None:
     return kind, "inferred from output: " + (redact(text, 100) or ("failed" if failed else "no failure text"))
 
 
+# Summary lines of common runners. A bare "error:" or "failed" in a log line is not a failure: a passing run can print both.
+FAIL_COUNT = re.compile(r"\b(\d+)\s+(?:failed|failures?|errors?)\b|\b(?:failed|failures|errors)\s*[=:]\s*(\d+)\b", re.IGNORECASE)
+FAIL_LINE = re.compile(
+    r"^\s*(?:\[(?:INFO|ERROR)\]\s*)?(?:FAIL(?:ED)?\b|--- FAIL\b|not ok\b|\[FAIL\]|(?:BUILD\s+)?FAILURE\b|BUILD FAILED\b|Test Run Failed|npm ERR! (?:Test failed|code ELIFECYCLE))",
+    re.MULTILINE,
+)
+
+
 def re_failed(text: str) -> bool:
-    lowered = text.lower()
-    if "0 failed" in lowered or "failed=0" in lowered:
-        return False
-    return "failed" in lowered or "error:" in lowered
+    for found in FAIL_COUNT.finditer(text):
+        if int(found.group(1) or found.group(2)) > 0:
+            return True
+    return bool(FAIL_LINE.search(text))
 
 
 def handle(payload: dict) -> dict:
@@ -217,7 +226,7 @@ def handle(payload: dict) -> dict:
             context = f"Agent system state: task={task}; phase={state.get('phase')}; next={nxt}"
             roadmap = roadmap_summary(root)
             if roadmap:
-                context += f". Roadmap ({ROADMAP_REL}): {roadmap}. Atualize a linha da tarefa ao mudar o status."
+                context += f". Roadmap ({ROADMAP_REL}): {roadmap}. Update the task line when its status changes."
             lessons = confirmed_lessons(root)
             if lessons:
                 context += f". {lessons}"

@@ -1,6 +1,6 @@
 {
   "base": "complete-feature",
-  "description": "Plano com ciclo, dependência inexistente e tarefa bloqueada sem causa é reprovado antes de implementar.",
+  "description": "A plan with a cycle, a nonexistent dependency, and a blocked task without a cause is rejected before implementing.",
   "steps": [
     {
       "script": "validate_tasks.py",

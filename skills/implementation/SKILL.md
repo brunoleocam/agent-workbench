@@ -3,28 +3,29 @@ name: implementation
 description: Executes one independently verifiable implementation step tied to a requirement and its tests. Use when implementing a specified task, continuing planned work, or applying Red-Green-Refactor to a single slice (implementar tarefa, próximo passo, TDD).
 ---
 
-# Implementação
+# Implementation
 
-Um passo. Não implemente fatias grandes nem partes sem relação com o requisito deste passo.
+One step. Do not implement large slices or parts unrelated to this step's requirement.
 
-## Por passo
+## Per step
 
-1. Aponte o requisito ou critério de aceite exato. Se não existir para comportamento não trivial, volte para `feature` ou `new-project` e escreva a spec antes.
-2. Aponte os testes ou evals que provam esse requisito.
-3. Siga `tdd`: o menor teste útil falha pelo motivo certo antes de código de produção.
-4. Green: a menor mudança coerente faz o teste passar.
-5. Rode a verificação alvo e a regressão relevante.
-6. Refatore sem mudar o comportamento pretendido.
-7. Atualize o status da tarefa e os artefatos do projeto.
+0. If the plan stamped a `Baseline` for the task, run `check_drift.py --feature <slug> --task <TASK-ID> --strict` first; on exit 1, stop and report instead of editing.
+1. Point to the exact requirement or acceptance criterion. If none exists for non-trivial behavior, go back to `feature` or `new-project` and write the spec first.
+2. Point to the tests or evals that prove that requirement.
+3. Follow `tdd`: the smallest useful test fails for the right reason before production code.
+4. Green: the smallest coherent change makes the test pass.
+5. Run the target verification and the relevant regression.
+6. Refactor without changing the intended behavior.
+7. Update the task status and the project artifacts.
 
-Não declare o passo completo com teste exigido falhando.
+Do not declare the step complete with a required test failing.
 
 ## Handoff
 
-Quem executa é o `implementer`. Verificação vai ao `tester`. Review independente vai ao `reviewer`. Mudança de escopo para no orchestrator.
+The `implementer` executes. Verification goes to the `tester`. Independent review goes to the `reviewer`. A scope change stops at the orchestrator.
 
-Se aparecer ideia, bug, requisito ou dependência nova, pare e use `change-request`.
+If a new idea, bug, requirement, or dependency appears, stop and use `change-request`.
 
-Ao fechar o passo, grave o checkpoint (regra `06-checkpoint-and-progress`): o que entrou, spec atendida, testes e resultados, review, achados, correções, restante, bloqueios, próximo passo. O próximo passo sai do grafo de tarefas.
+When closing the step, write the checkpoint (rule `06-checkpoint-and-progress`): what went in, spec met, tests and results, review, findings, fixes, what remains, blockers, next step. The next step comes from the task graph.
 
-Mudança significativa: depois deste passo verde e da regressão, use `code-review` antes de chamar o trabalho de pronto.
+Significant change: after this step is green and the regression passes, use `code-review` before calling the work done.

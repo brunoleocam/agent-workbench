@@ -3,19 +3,19 @@ name: investigation
 description: Explores an existing system and records findings without implementing. Use when the user asks to investigate, understand, explore, spike, or explain how the current system works before changing it (investigar, entender, explorar, spike, como funciona).
 ---
 
-# Investigação
+# Investigation
 
-Não implemente. Não "aproveite" para corrigir ou refatorar. Achado que exija mudança vira tarefa, bug ou change request separado.
+Do not implement. Do not "take the opportunity" to fix or refactor. A finding that requires a change becomes a separate task, bug, or change request.
 
-## Fluxo
+## Flow
 
-1. Declare a pergunta que a investigação responde.
-2. Leia código, testes, specs e ADRs existentes. O chat não substitui esses artefatos.
-3. Responda com evidência (arquivo, símbolo, teste), não com suposição.
-4. Grave o resultado onde o projeto já documenta descobertas, ou em `docs/progress/CURRENT.md` / uma nota em `docs/specs/` se essa for a árvore do repo. Inclua:
-   - pergunta
-   - o que o sistema faz hoje
-   - restrições e riscos
-   - o que não foi verificado
-   - próximo passo recomendado (especificar, corrigir, refatorar ou parar)
-5. Se o usuário quiser agir em seguida, classifique de novo e troque de skill. Não continue codando a partir da investigação sem spec quando o comportamento for não trivial.
+1. State the question the investigation answers.
+2. Read the existing code, tests, specs, and ADRs. The chat does not replace those artifacts.
+3. Answer with evidence (file, symbol, test), not assumption.
+4. Write the result where the project already documents discoveries, or in `docs/progress/CURRENT.md` / a note in `docs/specs/` if that is the repo's tree. Include:
+   - the question
+   - what the system does today
+   - constraints and risks
+   - what was not verified
+   - recommended next step (specify, fix, refactor, or stop)
+5. If the user wants to act next, classify again and switch skills. Do not keep coding from the investigation without a spec when the behavior is non-trivial.

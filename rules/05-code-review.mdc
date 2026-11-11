@@ -1,26 +1,26 @@
 ---
-description: Revisão independente de mudança significativa contra requisitos, spec, critérios de aceite e testes. Use depois da verificação ou quando o usuário pedir review.
+description: Independent review of a significant change against requirements, spec, acceptance criteria, and tests. Use after verification or when the user asks for a review.
 alwaysApply: false
 ---
 
-# Revisão independente
+# Independent review
 
-Depois da implementação e da verificação de uma mudança significativa, revise sem assumir que testes passando provam correção.
+After implementing and verifying a significant change, review without assuming that passing tests prove correctness.
 
-Compare, nesta ordem: requisitos → spec → critérios de aceite → testes/evals → implementação.
+Compare, in this order: requirements → spec → acceptance criteria → tests/evals → implementation.
 
-Procure: conformidade com requisito e spec, funcionalidade faltante, comportamento incorreto, violação de arquitetura, segurança, tratamento de erro, manutenibilidade, complexidade, performance, lacuna de teste, comportamento não intencional, mudança desnecessária.
+Look for: conformance to requirement and spec, missing functionality, incorrect behavior, architecture violations, security, error handling, maintainability, complexity, performance, test gaps, unintended behavior, unnecessary changes.
 
-Verification Audit: para cada critério, o teste falharia se o requisito estivesse errado? Há caso negativo, limite, assertion específica? Teste de resultado ou de detalhe interno? A prova é do código atual? Procure como a implementação poderia estar errada com todos os testes verdes. Lista completa no agente `reviewer`.
+Verification Audit: for each criterion, would the test fail if the requirement were wrong? Is there a negative case, a boundary, a specific assertion? Does the test check the result or an internal detail? Is the proof from the current code? Look for how the implementation could be wrong with every test green. The full list is in the `reviewer` agent.
 
-Em M ou maior, a review vai para `<reviews_dir>/<slug>.md` com front matter `status` e achados `### FIND-NNN` (formato em `agent-system/docs/artifacts.md`), que `validate_verification.py` lê. Security review (`security-reviewer`) complementa e não substitui esta revisão.
+For M or larger, the review goes to `<reviews_dir>/<slug>.md` with front matter `status` and `### FIND-NNN` findings (format in `agent-system/docs/artifacts.md`), which `validate_verification.py` reads. The security review (`security-reviewer`) complements this review and does not replace it.
 
-Status final: PASS, PASS_WITH_WARNINGS ou FAIL. O reviewer não implementa a correção, a menos que o orchestrator peça.
+Final status: PASS, PASS_WITH_WARNINGS, or FAIL. The reviewer does not implement the fix unless the orchestrator asks.
 
-Devolva achados explícitos com severidade e evidência:
+Return explicit findings with severity and evidence:
 
-- **blocker** — incorreto, inseguro ou fora do aceite
-- **major** — lacuna relevante ou risco claro
-- **minor** — clareza ou simplificação
+- **blocker** — incorrect, unsafe, or outside acceptance
+- **major** — relevant gap or clear risk
+- **minor** — clarity or simplification
 
-Achado válido: analisar → corrigir → testar → regressão → revisar de novo. Não apenas reconheça o achado. Dispense só com registro explícito do porquê, no checkpoint ou no review.
+Valid finding: analyze → fix → test → regression → review again. Do not just acknowledge the finding. Dismiss it only with an explicit record of why, in the checkpoint or the review.

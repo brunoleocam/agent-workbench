@@ -1,22 +1,22 @@
 ---
-description: Define verificação antes ou junto da implementação e não declara pronto com teste obrigatório falhando. Use ao escrever testes, evals, TDD ou ao validar comportamento.
+description: Defines verification before or alongside implementation and never declares done with a required test failing. Use when writing tests, evals, doing TDD, or validating behavior.
 alwaysApply: false
 ---
 
-# Testes e verificação
+# Tests and verification
 
-Para mudança relevante, defina a verificação antes ou junto da implementação. Teste é evidência de correção, não documentação.
+For a relevant change, define the verification before or alongside the implementation. A test is evidence of correctness, not documentation.
 
-Escolha o nível que o risco pede: unidade, integração, contrato, ponta a ponta, aceite, property-based, ou eval quando o comportamento for probabilístico ou dependente de modelo.
+Choose the level the risk calls for: unit, integration, contract, end-to-end, acceptance, property-based, or an eval when the behavior is probabilistic or model-dependent.
 
-TDD preferido: Red → Green → Refactor.
+Preferred TDD: Red → Green → Refactor.
 
-1. Escreva o menor teste útil que falha.
-2. Implemente o mínimo para passar.
-3. Refatore sem mudar o comportamento pretendido.
+1. Write the smallest useful failing test.
+2. Implement the minimum to make it pass.
+3. Refactor without changing the intended behavior.
 
-Não marque o trabalho como completo enquanto um teste ou eval exigido falhar. Depois do teste alvo, rode a regressão relevante.
+Do not mark the work complete while a required test or eval fails. After the target test, run the relevant regression.
 
-Evidência é exit code real. Em feature com `TEST-NNN`, rode `check_proofs.py --feature <slug>`: ele grava stdout, stderr, exit code e o fingerprint do workspace. O resultado de teste capturado pelo hook de shell é só inferido do texto e não conta como prova. Prova de outro estado do código é obsoleta. O `Command` do TEST chama o runner ou um arquivo de teste do projeto, não código inline; `--allow-inline` e `--allow-shell` só com autorização do usuário.
+Evidence is a real exit code. For a feature with `TEST-NNN`, run `check_proofs.py --feature <slug>`: it records stdout, stderr, exit code, and the workspace fingerprint. A test result captured by the shell hook is only inferred from text and does not count as proof. A proof from a different state of the code is stale. The TEST `Command` calls the project's runner or a test file, not inline code; `--allow-inline` and `--allow-shell` only with the user's authorization.
 
-Estratégia de verificação fica em `docs/tests/` quando o projeto usar a árvore spec-driven. Código de teste executável fica na árvore de testes do projeto, não em `docs/`.
+The verification strategy lives in `docs/tests/` when the project uses the spec-driven tree. Executable test code lives in the project's test tree, not in `docs/`.

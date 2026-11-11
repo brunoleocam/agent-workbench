@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -189,7 +191,8 @@ def load_state(root: Path) -> dict:
 
 
 ROADMAP_REL = "docs/progress/ROADMAP.md"
-ROADMAP_POSITION = re.compile(r"voc[eê]\s+est[aá]\s+aqui\s*:\s*(.+)", re.IGNORECASE)
+# "You are here:" is the marker; the Portuguese form is still read so existing roadmaps keep working.
+ROADMAP_POSITION = re.compile(r"(?:you\s+are\s+here|voc[eê]\s+est[aá]\s+aqui)\s*:\s*(.+)", re.IGNORECASE)
 ROADMAP_ITEM = re.compile(r"^\s*[-*]\s+\[([xX~ !])\]")
 
 
@@ -213,12 +216,12 @@ def roadmap_summary(root: Path) -> str:
     total = sum(counts.values())
     if not position and not total:
         return ""
-    parts = [f"{counts['x']}/{total} feitas"]
+    parts = [f"{counts['x']}/{total} done"]
     if counts["~"]:
-        parts.append(f"{counts['~']} em andamento")
+        parts.append(f"{counts['~']} in progress")
     if counts["!"]:
-        parts.append(f"{counts['!']} bloqueadas")
-    return redact(f"{position or 'posição não marcada'} | {', '.join(parts)}", 200)
+        parts.append(f"{counts['!']} blocked")
+    return redact(f"{position or 'position not set'} | {', '.join(parts)}", 200)
 
 
 def confirmed_lessons(root: Path, limit: int = 5) -> str:
@@ -233,33 +236,89 @@ def confirmed_lessons(root: Path, limit: int = 5) -> str:
         return ""
     items.sort(key=lambda item: str(item.get("confirmed_at") or ""), reverse=True)
     shown = "; ".join(f"[{item.get('category')}] {redact(str(item.get('title') or ''), 90)}" for item in items[:limit])
-    more = f" (+{len(items) - limit} em lessons.py list --status confirmed)" if len(items) > limit else ""
-    return f"Lições confirmadas: {shown}{more}"
+    more = f" (+{len(items) - limit} more: lessons.py list --status confirmed)" if len(items) > limit else ""
+    return f"Confirmed lessons: {shown}{more}"
+
+
+LOCK_STALE_S = 10.0
+
+
+@contextmanager
+def file_lock(target: Path, timeout: float = 2.0):
+    """Best-effort cross-process lock (exclusive create of `<target>.lock`).
+
+    Hooks from parallel subagents can read-modify-write the same JSON file. If the lock cannot be taken in
+    `timeout` seconds, or the lock file cannot be created at all, the block still runs: hooks fail open.
+    A lock older than LOCK_STALE_S is treated as left behind by a crashed process and removed.
+    """
+    lock = target.with_name(target.name + ".lock")
+    held = False
+    deadline = time.monotonic() + timeout
+    try:
+        lock.parent.mkdir(parents=True, exist_ok=True)
+        while True:
+            try:
+                os.close(os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+                held = True
+                break
+            except FileExistsError:
+                try:
+                    if time.time() - lock.stat().st_mtime > LOCK_STALE_S:
+                        lock.unlink()
+                        continue
+                except OSError:
+                    pass
+                if time.monotonic() >= deadline:
+                    break
+                time.sleep(0.02)
+    except OSError:
+        pass
+    try:
+        yield held
+    finally:
+        if held:
+            try:
+                lock.unlink()
+            except OSError:
+                pass
 
 
 def save_state(root: Path, state: dict) -> None:
-    write_json(state_path(root), state)
+    path = state_path(root)
+    with file_lock(path):
+        write_json(path, state)
 
 
 def append_event(root: Path, event: dict) -> None:
     path = root / ".cursor" / "timeline" / "events.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
-    line = json.dumps(event, ensure_ascii=False)
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(line + "\n")
+    data = (json.dumps(event, ensure_ascii=False) + "\n").encode("utf-8")
+    # One O_APPEND write per event; the lock covers Windows, where O_APPEND is not atomic across processes.
+    with file_lock(path):
+        fd = os.open(str(path), os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, "O_BINARY", 0), 0o644)
+        try:
+            os.write(fd, data)
+        finally:
+            os.close(fd)
 
 
 def should_skip_duplicate_edit(root: Path, file_path: str, window_s: int = 20) -> bool:
     agg_path = root / ".cursor" / "agent-system" / "agg.json"
     now = datetime.now(timezone.utc).timestamp()
-    agg = read_json(agg_path, {})
-    last = agg.get(file_path)
-    if isinstance(last, (int, float)) and now - last < window_s:
-        return True
-    agg[file_path] = now
-    if len(agg) > 200:
-        agg = dict(sorted(agg.items(), key=lambda item: item[1])[-100:])
-    write_json(agg_path, agg)
+    with file_lock(agg_path):
+        try:
+            agg = read_json(agg_path, {})
+        except (OSError, json.JSONDecodeError):
+            agg = {}
+        if not isinstance(agg, dict):
+            agg = {}
+        last = agg.get(file_path)
+        if isinstance(last, (int, float)) and now - last < window_s:
+            return True
+        agg[file_path] = now
+        if len(agg) > 200:
+            agg = dict(sorted(agg.items(), key=lambda item: item[1])[-100:])
+        write_json(agg_path, agg)
     return False
 
 

@@ -1,38 +1,38 @@
-# PHP — segurança
+# PHP — security
 
-Última revisão: 2026-11-03
+Last reviewed: 2026-11-03
 
-Escopo: PHP 8.1+ em aplicação web sem framework, ou com framework sem referência dedicada (Slim, CodeIgniter, código legado). Para Laravel use `php-laravel-security.md`.
+Scope: PHP 8.1+ in a web application without a framework, or with a framework that has no dedicated reference (Slim, CodeIgniter, legacy code). For Laravel use `php-laravel-security.md`.
 
-## Recomendações
+## Recommendations
 
-- Banco: PDO ou mysqli com prepared statements. No PDO, `PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION` e `PDO::ATTR_EMULATE_PREPARES => false`. Nome de tabela, coluna ou direção de `ORDER BY` não aceita placeholder: use allowlist.
-- Saída HTML: `htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')` no ponto de saída. Em atributo `href`, valide também o esquema (`https:`), porque escapar não bloqueia `javascript:`.
-- Senha: `password_hash($senha, PASSWORD_DEFAULT)` e `password_verify()`. Chame `password_needs_rehash()` no login para migrar o algoritmo.
-- Aleatoriedade: `random_bytes()` e `random_int()`. Nunca `rand()`, `mt_rand()` ou `uniqid()` para token.
-- Comparação de segredo: `hash_equals()`. Comparações em geral com `===`.
-- Sessão: `session.use_strict_mode=1`, `session.cookie_httponly=1`, `session.cookie_secure=1`, `session.cookie_samesite=Lax` (ou `Strict`). `session_regenerate_id(true)` após login e troca de privilégio.
-- CSRF: token por sessão em todo formulário que muda estado, conferido com `hash_equals()`. SameSite ajuda, não substitui.
-- Produção: `display_errors=Off`, `log_errors=On`, `expose_php=Off`. Erro detalhado só no log.
-- Upload: tamanho máximo, tipo verificado pelo conteúdo (`finfo_file`), nome gerado pelo servidor, gravação fora do document root, `move_uploaded_file()`.
-- Comando externo: evite. Se inevitável, `escapeshellarg()` por argumento, ou `proc_open()` com array de argumentos (PHP 7.4+), que não passa pelo shell.
-- Desserialização: `json_decode()` para dado externo. `unserialize()` só em dado confiável, com `['allowed_classes' => false]`.
-- `include`/`require` nunca com caminho vindo do usuário; mapeie por allowlist.
-- Dependências: `composer audit` (Composer 2.4+) no CI.
+- Database: PDO or mysqli with prepared statements. In PDO, `PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION` and `PDO::ATTR_EMULATE_PREPARES => false`. A table name, column, or `ORDER BY` direction does not accept a placeholder: use an allowlist.
+- HTML output: `htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')` at the point of output. In an `href` attribute, also validate the scheme (`https:`), because escaping does not block `javascript:`.
+- Password: `password_hash($password, PASSWORD_DEFAULT)` and `password_verify()`. Call `password_needs_rehash()` at login to migrate the algorithm.
+- Randomness: `random_bytes()` and `random_int()`. Never `rand()`, `mt_rand()`, or `uniqid()` for a token.
+- Secret comparison: `hash_equals()`. Other comparisons with `===`.
+- Session: `session.use_strict_mode=1`, `session.cookie_httponly=1`, `session.cookie_secure=1`, `session.cookie_samesite=Lax` (or `Strict`). `session_regenerate_id(true)` after login and on privilege change.
+- CSRF: a per-session token on every state-changing form, checked with `hash_equals()`. SameSite helps, it does not replace it.
+- Production: `display_errors=Off`, `log_errors=On`, `expose_php=Off`. Detailed errors only in the log.
+- Upload: maximum size, type verified by content (`finfo_file`), server-generated name, stored outside the document root, `move_uploaded_file()`.
+- External command: avoid. If unavoidable, `escapeshellarg()` per argument, or `proc_open()` with an argument array (PHP 7.4+), which does not go through the shell.
+- Deserialization: `json_decode()` for external data. `unserialize()` only on trusted data, with `['allowed_classes' => false]`.
+- `include`/`require` never with a user-supplied path; map through an allowlist.
+- Dependencies: `composer audit` (Composer 2.4+) in CI.
 
-## Vulnerabilidades comuns
+## Common vulnerabilities
 
-- SQL injection por interpolação de variável na query.
-- XSS por `echo` sem escape, inclusive em mensagem de erro e atributo.
-- Object injection via `unserialize()` em cookie ou parâmetro, explorando magic methods (`__wakeup`, `__destruct`) de classes carregadas.
-- Local/remote file inclusion por `include $_GET['page']`.
-- Path traversal em download: `readfile('files/' . $_GET['f'])` com `../`.
-- Session fixation por não regenerar o ID no login.
-- Type juggling em comparação frouxa (`==`) de hash ou token.
-- Upload de `.php` executável no document root.
-- Command injection com `exec`, `system`, `shell_exec` ou crase.
+- SQL injection by interpolating a variable into the query.
+- XSS by `echo` without escaping, including in error messages and attributes.
+- Object injection via `unserialize()` on a cookie or parameter, exploiting magic methods (`__wakeup`, `__destruct`) of loaded classes.
+- Local/remote file inclusion by `include $_GET['page']`.
+- Path traversal in downloads: `readfile('files/' . $_GET['f'])` with `../`.
+- Session fixation by not regenerating the ID at login.
+- Type juggling in a loose (`==`) comparison of a hash or token.
+- Upload of an executable `.php` in the document root.
+- Command injection with `exec`, `system`, `shell_exec`, or backticks.
 
-## Implementação segura
+## Secure implementation
 
 ```php
 $pdo = new PDO($dsn, $user, $pass, [
@@ -53,26 +53,26 @@ if ($path === false || !str_starts_with($path, $base . DIRECTORY_SEPARATOR)) {
 }
 ```
 
-## Implementação inadequada e risco
+## Inadequate implementation and risk
 
 ```php
 $rows = $pdo->query("SELECT * FROM users WHERE email = '{$_GET['email']}'");
-echo "Olá, " . $_GET['name'];
+echo "Hello, " . $_GET['name'];
 $prefs = unserialize($_COOKIE['prefs']);
 ```
 
-Risco: a primeira linha permite ler ou alterar o banco (`' OR '1'='1`); a segunda executa script no navegador da vítima por link; a terceira entrega ao atacante a criação de objetos arbitrários, que pode chegar a execução de código conforme as classes disponíveis.
+Risk: the first line allows reading or changing the database (`' OR '1'='1`); the second runs script in the victim's browser through a link; the third lets the attacker create arbitrary objects, which can lead to code execution depending on the available classes.
 
-## Testes de segurança
+## Security tests
 
-- Para cada query com entrada externa, um teste com aspas, `--` e `' OR '1'='1` que prova ausência de efeito.
-- Saída com `<script>` e `"><img src=x onerror=...>` aparece escapada.
-- Download com `../` e caminho absoluto retorna 404.
-- ID de sessão muda após login.
-- POST sem token CSRF ou com token errado é rejeitado.
-- Ferramentas opcionais, se já estiverem no projeto: `composer audit`, Psalm com `--taint-analysis`, Semgrep.
+- For each query with external input, a test with quotes, `--`, and `' OR '1'='1` that proves no effect.
+- Output with `<script>` and `"><img src=x onerror=...>` appears escaped.
+- A download with `../` and an absolute path returns 404.
+- The session ID changes after login.
+- A POST without a CSRF token or with a wrong one is rejected.
+- Optional tools, if already in the project: `composer audit`, Psalm with `--taint-analysis`, Semgrep.
 
-## Fontes
+## Sources
 
 - https://cheatsheetseries.owasp.org/cheatsheets/PHP_Configuration_Cheat_Sheet.html
 - https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html

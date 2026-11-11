@@ -1,39 +1,39 @@
-# Express — segurança
+# Express — security
 
-Última revisão: 2026-11-03
+Last reviewed: 2026-11-03
 
-Escopo: Express 4 e 5 em Node.js LTS (20+), JavaScript ou TypeScript, servindo API JSON ou páginas renderizadas no servidor. Front React fica em `javascript-typescript-react-security.md`.
+Scope: Express 4 and 5 on Node.js LTS (20+), JavaScript or TypeScript, serving a JSON API or server-rendered pages. The React front end is in `javascript-typescript-react-security.md`.
 
-## Recomendações
+## Recommendations
 
-- Use versão mantida de Express e Node. No Express 5, promessa rejeitada em handler vai para o error handler; no 4, envolva handlers async ou trate o erro, senão o processo pode ficar com requisição pendurada.
-- Headers: `helmet()` dá um conjunto razoável (CSP, `X-Content-Type-Options`, HSTS etc.). Revise a CSP para a aplicação real. `app.disable('x-powered-by')` se não usar helmet.
-- Corpo: `express.json({ limit: '100kb' })` ou o limite que o caso exige. Valide o corpo com schema (zod, joi, ajv) e rejeite campos não previstos.
-- Autorização em cada rota que acessa recurso de um dono, no handler ou em middleware que confere o dono, não só "está logado".
-- Sessão com `express-session`: `secret` forte vindo do ambiente, store persistente (o MemoryStore padrão não é para produção), cookie `httpOnly`, `secure`, `sameSite`. `req.session.regenerate()` após login.
-- CSRF: Express não tem proteção nativa e o `csurf` está deprecado. Com cookie de sessão, use token sincronizado de biblioteca mantida ou verifique `Origin` em métodos que mudam estado, além de `sameSite`.
-- `app.set('trust proxy', ...)` com o número de proxies ou as faixas reais, nunca `true` sem necessidade; afeta `req.ip`, rate limit e `req.secure`.
-- Rate limit (`express-rate-limit`) em login, reset e endpoints caros.
-- CORS (`cors`): lista explícita de origens. Nunca refletir qualquer `Origin` com `credentials: true`.
-- MongoDB: rejeite objetos onde se espera string (`{ "$ne": null }` no login). Valide tipo antes da query.
-- Arquivos: `res.sendFile(nome, { root: dir })` com nome validado; nunca concatene caminho do usuário.
-- Prototype pollution: não faça merge profundo de JSON externo em objetos; use schema ou `Object.create(null)` para mapas.
-- Regex sobre entrada externa sem backtracking catastrófico (ReDoS).
-- Erros: handler final que loga detalhes e devolve mensagem genérica; `NODE_ENV=production`.
-- Dependências: `npm audit` (ou equivalente do gerenciador) no CI; lockfile commitado.
+- Use a maintained version of Express and Node. In Express 5, a rejected promise in a handler goes to the error handler; in 4, wrap async handlers or handle the error, otherwise the process may be left with a hanging request.
+- Headers: `helmet()` gives a reasonable set (CSP, `X-Content-Type-Options`, HSTS, etc.). Review the CSP for the real application. `app.disable('x-powered-by')` if you do not use helmet.
+- Body: `express.json({ limit: '100kb' })` or the limit the case requires. Validate the body with a schema (zod, joi, ajv) and reject unexpected fields.
+- Authorization on every route that accesses a resource that has an owner, in the handler or in middleware that checks the owner, not just "is logged in".
+- Session with `express-session`: a strong `secret` from the environment, a persistent store (the default MemoryStore is not for production), `httpOnly`, `secure`, `sameSite` cookie. `req.session.regenerate()` after login.
+- CSRF: Express has no native protection and `csurf` is deprecated. With a session cookie, use a synchronized token from a maintained library or verify `Origin` on state-changing methods, in addition to `sameSite`.
+- `app.set('trust proxy', ...)` with the number of proxies or the real ranges, never `true` without need; it affects `req.ip`, rate limiting, and `req.secure`.
+- Rate limit (`express-rate-limit`) on login, reset, and expensive endpoints.
+- CORS (`cors`): an explicit list of origins. Never reflect any `Origin` with `credentials: true`.
+- MongoDB: reject objects where a string is expected (`{ "$ne": null }` at login). Validate the type before the query.
+- Files: `res.sendFile(name, { root: dir })` with a validated name; never concatenate a user path.
+- Prototype pollution: do not deep-merge external JSON into objects; use a schema or `Object.create(null)` for maps.
+- Regex over external input without catastrophic backtracking (ReDoS).
+- Errors: a final handler that logs details and returns a generic message; `NODE_ENV=production`.
+- Dependencies: `npm audit` (or the package manager's equivalent) in CI; lockfile committed.
 
-## Vulnerabilidades comuns
+## Common vulnerabilities
 
-- NoSQL injection por operador Mongo no corpo ou na query string.
-- IDOR em `GET /api/orders/:id` sem filtro por dono.
-- Mass assignment: `User.update(req.body)` gravando `role`.
-- Path traversal em `res.sendFile(path.join(dir, req.params.file))` sem conferência.
-- SSRF ao buscar URL informada pelo usuário (webhook, preview, import).
-- Command injection com `child_process.exec` e string montada.
-- Stack trace exposto em resposta de erro.
-- JWT aceito sem fixar algoritmo, ou sem verificar expiração.
+- NoSQL injection through a Mongo operator in the body or query string.
+- IDOR in `GET /api/orders/:id` without an owner filter.
+- Mass assignment: `User.update(req.body)` writing `role`.
+- Path traversal in `res.sendFile(path.join(dir, req.params.file))` without a check.
+- SSRF when fetching a user-supplied URL (webhook, preview, import).
+- Command injection with `child_process.exec` and a built string.
+- Stack trace exposed in an error response.
+- A JWT accepted without pinning the algorithm, or without verifying expiry.
 
-## Implementação segura
+## Secure implementation
 
 ```js
 const express = require('express');
@@ -50,7 +50,7 @@ app.post('/login', loginLimiter, async (req, res, next) => {
   const parsed = LoginBody.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: 'invalid_body' });
   const user = await users.findOne({ email: parsed.data.email });
-  // verificar senha com bcrypt/argon2, depois req.session.regenerate(...)
+  // verify the password with bcrypt/argon2, then req.session.regenerate(...)
 });
 
 app.get('/api/orders/:id', requireAuth, async (req, res) => {
@@ -60,7 +60,7 @@ app.get('/api/orders/:id', requireAuth, async (req, res) => {
 });
 ```
 
-## Implementação inadequada e risco
+## Inadequate implementation and risk
 
 ```js
 app.post('/login', async (req, res) => {
@@ -70,19 +70,19 @@ app.post('/login', async (req, res) => {
 app.get('/files/:name', (req, res) => res.sendFile(__dirname + '/uploads/' + req.params.name));
 ```
 
-Risco: `{"email":"a@b.c","password":{"$ne":null}}` autentica sem senha (e a senha está em texto puro no banco); a resposta devolve o documento inteiro do usuário; a rota de arquivos lê fora de `uploads/` com nome codificado contendo `..`.
+Risk: `{"email":"a@b.c","password":{"$ne":null}}` authenticates without a password (and the password is plain text in the database); the response returns the user's whole document; the files route reads outside `uploads/` with an encoded name containing `..`.
 
-## Testes de segurança
+## Security tests
 
-- Supertest: corpo com operador `$ne`/`$gt` é rejeitado com 400.
-- Usuário B acessando recurso de A recebe 404 ou 403.
-- Campo extra (`role`) no corpo é rejeitado ou ignorado.
-- Nome de arquivo com `..%2f` não sai do diretório.
-- Erro forçado não devolve stack trace.
-- Headers de segurança presentes na resposta.
-- Ferramentas opcionais: `npm audit`, `eslint-plugin-security`, Semgrep.
+- Supertest: a body with a `$ne`/`$gt` operator is rejected with 400.
+- User B accessing A's resource gets 404 or 403.
+- An extra field (`role`) in the body is rejected or ignored.
+- A file name with `..%2f` does not leave the directory.
+- A forced error does not return a stack trace.
+- Security headers are present in the response.
+- Optional tools: `npm audit`, `eslint-plugin-security`, Semgrep.
 
-## Fontes
+## Sources
 
 - https://cheatsheetseries.owasp.org/cheatsheets/Nodejs_Security_Cheat_Sheet.html
 - https://cheatsheetseries.owasp.org/cheatsheets/NPM_Security_Cheat_Sheet.html

@@ -1,24 +1,24 @@
-# Contratos de CLI
+# CLI contracts
 
-Todos os scripts usam só a biblioteca padrão do Python 3.10+, rodam em Windows, macOS e Linux, e não fazem rede, commit, push nem instalação. No projeto, rode as cópias em `.cursor/agent-system/scripts/` a partir da raiz. No plugin, os mesmos arquivos ficam em `agent-system/scripts/`.
+All scripts use only the Python 3.10+ standard library, run on Windows, macOS, and Linux, and make no network calls, commits, pushes, or installs. In a project, run the copies in `.cursor/agent-system/scripts/` from the root. In the plugin, the same files live in `agent-system/scripts/`.
 
-## Contrato comum dos validadores
+## Common validator contract
 
-| Opção | Efeito |
+| Option | Effect |
 | --- | --- |
-| `--root PATH` | raiz do projeto (padrão: diretório atual) |
-| `--feature SLUG` | nome de arquivo comum a spec, tasks, reviews e security |
-| `--spec`, `--tasks`, `--tests`, `--review`, `--security` | caminho explícito, relativo à raiz; ganha de `--feature` |
-| `--json` | saída estruturada (`ok`, `failures`, `warnings`, `results[]`) |
-| `--strict` | avisos também reprovam |
-| `--no-record` | não grava evento na timeline |
-| `--help` | ajuda do argparse |
+| `--root PATH` | project root (default: current directory) |
+| `--feature SLUG` | file name shared by spec, tasks, reviews, and security |
+| `--spec`, `--tasks`, `--tests`, `--review`, `--security` | explicit path, relative to the root; wins over `--feature` |
+| `--json` | structured output (`ok`, `failures`, `warnings`, `results[]`) |
+| `--strict` | warnings also fail |
+| `--no-record` | do not write an event to the timeline |
+| `--help` | argparse help |
 
-Exit codes: `0` sucesso, `1` validação ou gate reprovado, `2` erro de configuração, argumento, arquivo ausente, JSON inválido ou caminho fora da raiz.
+Exit codes: `0` success, `1` validation or gate failed, `2` configuration error, bad argument, missing file, invalid JSON, or a path outside the root.
 
-Saída em texto: uma linha por resultado (`[PASS]`, `[WARN]`, `[FAIL]`, `[INFO]`) e a linha final `<check> passed.` ou `<check> failed.`.
+Text output: one line per result (`[PASS]`, `[WARN]`, `[FAIL]`, `[INFO]`) and the final line `<check> passed.` or `<check> failed.`.
 
-Em projeto inicializado, cada validador grava o próprio evento (`SPEC_VALIDATION_COMPLETED`, `TASK_VALIDATION_COMPLETED`, `PROOF_EXECUTION_STARTED`/`COMPLETED`, `VERIFICATION_COMPLETED`) com `feature` e o resultado, e atualiza `state.json → verification.<slug>`. Falha ao gravar a timeline não muda o exit code.
+In an initialized project, each validator writes its own event (`SPEC_VALIDATION_COMPLETED`, `TASK_VALIDATION_COMPLETED`, `PROOF_EXECUTION_STARTED`/`COMPLETED`, `VERIFICATION_COMPLETED`) with `feature` and the result, and updates `state.json → verification.<slug>`. A failure to write the timeline does not change the exit code.
 
 ## validate_spec.py
 
@@ -26,9 +26,9 @@ Em projeto inicializado, cada validador grava o próprio evento (`SPEC_VALIDATIO
 python .cursor/agent-system/scripts/validate_spec.py --feature reset-password --require-approval
 ```
 
-FAIL: front matter sem `status` ou com valor inválido, `complexity` ou `security_risk` inválidos, nenhum REQ ou AC, ID duplicado, AC sem REQ, AC com REQ inexistente, item sem texto, `--require-approval` sem `status: approved`.
-WARN: REQ sem AC, sem seção de premissas ou restrições, spec aprovada com pergunta `- [ ]` aberta, REQ ou AC citado e não definido, ADR citado sem arquivo, `security_risk` ausente em M+, NONE com gatilhos.
-INFO: quantos requisitos usam EARS.
+FAIL: front matter without `status` or with an invalid value, invalid `complexity` or `security_risk`, no REQ or AC, duplicate ID, AC without a REQ, AC with a nonexistent REQ, item without text, `--require-approval` without `status: approved`.
+WARN: REQ without an AC, no assumptions or constraints section, approved spec with an open `- [ ]` question, REQ or AC cited but not defined, ADR cited without a file, `security_risk` missing for M+, NONE with triggers.
+INFO: how many requirements use EARS.
 
 ## validate_tasks.py
 
@@ -36,8 +36,8 @@ INFO: quantos requisitos usam EARS.
 python .cursor/agent-system/scripts/validate_tasks.py --feature reset-password
 ```
 
-FAIL: ID duplicado, tarefa sem título, sem REQ nem AC, com REQ/AC fora da spec, sem verificação, sem `Done when`, status ausente ou desconhecido, dependência inexistente ou circular, `blocked` sem causa, `done` sem prova PASS ou `Evidence`; TEST sem `Command` (se obrigatório), sem AC, com AC ou tarefa inexistente.
-WARN: tarefa sem AC, sem `Gate`, `done` antes da dependência, AC sem tarefa ou sem TEST, spec não encontrada.
+FAIL: duplicate ID, task without a title, without a REQ or AC, with a REQ/AC outside the spec, without verification, without `Done when`, missing or unknown status, nonexistent or circular dependency, `blocked` without a cause, `done` without a PASS proof or `Evidence`; TEST without `Command` (if required), without an AC, with a nonexistent AC or task.
+WARN: task without an AC, without `Gate`, `done` before its dependency, AC without a task or without a TEST, spec not found.
 
 ## check_proofs.py
 
@@ -49,17 +49,29 @@ python .cursor/agent-system/scripts/check_proofs.py --feature reset-password --d
 python .cursor/agent-system/scripts/check_proofs.py --fingerprint
 ```
 
-Opções extras: `--only TEST-NNN` e `--task TASK-NNN` (repetíveis), `--timeout` (padrão 600 s; `Timeout` do TEST tem prioridade), `--allow EXE` (repetível; também `proof_allow` no layout), `--allow-shell`, `--allow-inline`, `--dry-run`, `--fingerprint`. `--allow-shell` e `--allow-inline` só com autorização do usuário.
+Extra options: `--only TEST-NNN` and `--task TASK-NNN` (repeatable), `--timeout` (default 600 s; the TEST's `Timeout` takes priority), `--allow EXE` (repeatable; also `proof_allow` in the layout), `--allow-shell`, `--allow-inline`, `--dry-run`, `--fingerprint`. `--allow-shell` and `--allow-inline` only with the user's authorization.
 
-Status por TEST: `PASS` (exit 0), `FAIL` (exit ≠ 0), `TIMEOUT` (árvore de processos encerrada), `ERROR` (executável ausente ou falha ao iniciar: ambiente), `REFUSED` (política). Exit: `1` se houver FAIL ou TIMEOUT, senão `2` se houver ERROR ou REFUSED, senão `0`.
+Status per TEST: `PASS` (exit 0), `FAIL` (exit ≠ 0), `TIMEOUT` (process tree terminated), `ERROR` (missing executable or failure to start: environment), `REFUSED` (policy). Exit: `1` if there is any FAIL or TIMEOUT, otherwise `2` if there is any ERROR or REFUSED, otherwise `0`.
 
-Política (ADR-0002): executa sem shell, a partir da raiz ou de `Cwd`. Só executáveis da lista (python, python3, py, pytest, uv, poetry, tox, nox, hatch, node, npm, pnpm, yarn, bun, deno, vitest, jest, tsc, dotnet, go, cargo, mvn, mvnw, gradle, gradlew, java, php, composer, phpunit, pest, ruby, bundle, rake, rspec, make, ctest). `npx`, `dlx`, `npm exec`, `npm x` e `bun x` ficam fora porque baixam pacote. A recusa de instalação é de melhor esforço, por nome de subcomando: recusa quando o subcomando instala, publica ou remove (`npm install`, `python -m pip install`, `uv pip install`, `make install`, `cargo publish`, `dotnet add`...), `yarn` e `bundle` sem subcomando, e operadores de shell sem `Shell: yes`. No Windows, um `.cmd`/`.bat` (como `npm.cmd`) roda pelo `cmd.exe`, então argumentos com `& | < > ^ %` são recusados nesse caso. Recusa código inline (melhor esforço, por análise de argumentos; uma flag desconhecida cujo valor parece arquivo, como `node --env-file .env -e`, ainda esconde o código): `python -c` (inclusive `-Bc`), `python -m` fora da lista de módulos de teste (pytest, unittest, coverage, tox, mypy, ruff...) e dos módulos do próprio projeto, `node -e/--eval/-p`, `node --import data:/http:`, `bun -e`, `deno eval`, `deno run <URL>`, `ruby -e` (inclusive `-we`), `rake -e`, `php -r`, `make --eval`, `bash/sh -c` (inclusive `-ec`), `pwsh -Command` e `cmd /c`, `perl -e`, `deno run npm:/jsr:`, também quando iniciados por `npm`/`pnpm`/`yarn`/`bun` (`yarn run node -e`, `pnpm node -e`) ou chamados por `uv run`, `poetry run`, `hatch run`, `pnpm exec`, `yarn exec/node` ou `bundle exec` (o comando interno passa pela mesma política). Um TEST aprovado chama o runner do projeto (`pytest`, `npm test`, `dotnet test`, `python -m pytest`...) ou um arquivo de teste versionado (`python tests/check_x.py`). `--allow-inline` libera código inline numa execução, com autorização do usuário. Com `Shell: yes` e `--allow-shell`, as recusas de instalação e de código inline valem para cada trecho do comando (também depois de `env`, `xargs` e similares), e substituição de shell (`$(...)`, crase, `<(...)`), heredoc e pipe para interpretador sem script (`curl x | sh`) são recusados sem `--allow-inline`. A política separa teste de comando arbitrário, mas não é sandbox: um arquivo de teste executa o que contiver.
+Policy (ADR-0002): runs without a shell, from the root or from `Cwd`. Only executables on the list (python, python3, py, pytest, uv, poetry, tox, nox, hatch, node, npm, pnpm, yarn, bun, deno, vitest, jest, tsc, dotnet, go, cargo, mvn, mvnw, gradle, gradlew, java, php, composer, phpunit, pest, ruby, bundle, rake, rspec, make, ctest). `npx`, `dlx`, `npm exec`, `npm x`, and `bun x` are out because they download packages. The install refusal is best effort, by subcommand name: it refuses when the subcommand installs, publishes, or removes (`npm install`, `python -m pip install`, `uv pip install`, `make install`, `cargo publish`, `dotnet add`...), `yarn` and `bundle` without a subcommand, and shell operators without `Shell: yes`. On Windows, a `.cmd`/`.bat` (like `npm.cmd`) runs through `cmd.exe`, so arguments with `& | < > ^ %` are refused in that case. It refuses inline code (best effort, by argument analysis; an unknown flag whose value looks like a file, such as `node --env-file .env -e`, still hides the code): `python -c` (including `-Bc`), `python -m` outside the list of test modules (pytest, unittest, coverage, tox, mypy, ruff...) and the project's own modules, `node -e/--eval/-p`, `node --import data:/http:`, `bun -e`, `deno eval`, `deno run <URL>`, `ruby -e` (including `-we`), `rake -e`, `php -r`, `make --eval`, `bash/sh -c` (including `-ec`), `pwsh -Command` and `cmd /c`, `perl -e`, `deno run npm:/jsr:`, also when started by `npm`/`pnpm`/`yarn`/`bun` (`yarn run node -e`, `pnpm node -e`) or called by `uv run`, `poetry run`, `hatch run`, `pnpm exec`, `yarn exec/node`, or `bundle exec` (the inner command goes through the same policy). An approved TEST calls the project's runner (`pytest`, `npm test`, `dotnet test`, `python -m pytest`...) or a versioned test file (`python tests/check_x.py`). `--allow-inline` allows inline code in one run, with the user's authorization. With `Shell: yes` and `--allow-shell`, the install and inline-code refusals apply to each part of the command (also after `env`, `xargs`, and similar), and shell substitution (`$(...)`, backticks, `<(...)`), heredocs, and piping into an interpreter with no script (`curl x | sh`) are refused without `--allow-inline`. The policy separates a test from an arbitrary command, but it is not a sandbox: a test file executes whatever it contains.
 
-A prova guarda o fingerprint de antes da execução. Se o workspace mudar enquanto os testes rodam (edição paralela ou arquivo gerado fora do `.gitignore`), o script avisa e o gate passa a tratar as provas como obsoletas; com `--strict`, sai com 1.
+The proof stores the fingerprint from before the run. If the workspace changes while the tests run (a parallel edit or a generated file outside `.gitignore`), the script warns and the gate treats the proofs as stale; with `--strict`, it exits with 1.
 
-Saída: `.cursor/agent-system/proofs/<slug>.json` (fonte de verdade) e `<slug>.md`. Cada prova guarda TEST, REQ, AC, tarefa, comando (redigido), exit code, status, motivo, horários, duração, as últimas 20 000 letras de stdout e stderr com segredos mascarados, e o fingerprint. Rodar só alguns TESTs mantém as provas dos outros. As provas são evidência local, presa ao fingerprint: não versione a pasta (o plugin a ignora no `.gitignore`; faça o mesmo no projeto). Num projeto que é subpasta de um repositório git, o fingerprint considera só os arquivos da subpasta.
+Output: `.cursor/agent-system/proofs/<slug>.json` (source of truth) and `<slug>.md`. Each proof stores TEST, REQ, AC, task, command (redacted), exit code, status, reason, timestamps, duration, the last 20,000 characters of stdout and stderr with secrets masked, and the fingerprint. Running only some TESTs keeps the proofs of the others. Proofs are local evidence, tied to the fingerprint: do not version the folder (the plugin ignores it in `.gitignore`; do the same in the project). In a project that is a subfolder of a git repository, the fingerprint considers only the subfolder's files.
 
-Fingerprint: o blob id do git de cada arquivo do projeto (índice para arquivo sem mudança, `git hash-object` para modificado ou não rastreado), sem `.cursor/`, caches e Markdown das pastas de doc do harness. Não usa o HEAD: commitar o mesmo conteúdo mantém o fingerprint, e uma review registrada antes do commit continua válida. Sem git, hash dos arquivos do projeto (até 5 000 arquivos). Não exige commit.
+Fingerprint: the git blob id of each project file (the index for an unchanged file, `git hash-object` for a modified or untracked one), excluding `.cursor/`, caches, and the Markdown of the harness's doc folders. It does not use HEAD: committing the same content keeps the fingerprint, and a review recorded before the commit stays valid. Without git, a hash of the project's files (up to 5,000 files). It does not require a commit.
+
+## check_drift.py
+
+```powershell
+python .cursor/agent-system/scripts/check_drift.py --feature reset-password --stamp
+python .cursor/agent-system/scripts/check_drift.py --feature reset-password --task TASK-002 --strict
+python .cursor/agent-system/scripts/check_drift.py --feature reset-password --stamp --refresh --task TASK-002
+```
+
+Detects plan drift: files that a pending task will touch and that changed after the plan was written. `--stamp` writes a `- Baseline:` line (`path=digest`, 10 hex characters of a SHA-256 of the content; line-ending differences are ignored; `absent` for a file the task will create) after the `- Files:` line of each todo or blocked task that has none; `--refresh` rewrites existing ones after an intentional re-plan. The default run compares the digests with the working tree for todo and blocked tasks and takes the common validator options (`--task` is repeatable, `--json`, `--strict`).
+
+A changed file is *expected* (INFO) when another task of the same plan that is done or in progress lists it in `Files:`; otherwise it is drift (WARN, FAIL with `--strict`, exit 1). A file added to `Files:` after the stamp is also a WARN. A task without a Baseline is INFO. The check reads files only and never writes a timeline event. Idea adapted from [shadcn/improve](https://github.com/shadcn/improve) (MIT).
 
 ## validate_verification.py
 
@@ -67,8 +79,8 @@ Fingerprint: o blob id do git de cada arquivo do projeto (índice para arquivo s
 python .cursor/agent-system/scripts/validate_verification.py --feature reset-password
 ```
 
-Inclui as falhas estruturais de `validate_spec` e `validate_tasks`. FAIL: AC obrigatório sem TEST, TEST obrigatório sem prova, prova diferente de PASS, prova de outro fingerprint, comando do TEST alterado depois da prova, tarefa que não está `done` nem `cancelled`, review ausente em M+ ou com status FAIL, revisão de segurança ausente com risco HIGH/CRITICAL ou com status FAIL, review ou revisão de segurança obrigatória sem `fingerprint` ou com fingerprint diferente do workspace atual (comparação exata), achado bloqueante aberto, risco aceito sem justificativa.
-WARN: review ou revisão de segurança não obrigatória com fingerprint de outro estado, achado `major`/`MEDIUM` aberto, AC coberto só por TEST opcional.
+Includes the structural failures of `validate_spec` and `validate_tasks`. FAIL: required AC without a TEST, required TEST without a proof, a proof other than PASS, a proof from another fingerprint, TEST command changed after the proof, a task that is neither `done` nor `cancelled`, missing review at M+ or one with status FAIL, missing security review with HIGH/CRITICAL risk or one with status FAIL, a required review or security review without a `fingerprint` or with a fingerprint different from the current workspace (exact comparison), open blocking finding, accepted risk without justification.
+WARN: a non-required review or security review with a fingerprint from another state, open `major`/`MEDIUM` finding, AC covered only by an optional TEST.
 
 ## lessons.py
 
@@ -80,16 +92,16 @@ python .cursor/agent-system/scripts/lessons.py reject --id LESSON-002 --reason "
 python .cursor/agent-system/scripts/lessons.py render
 ```
 
-Categorias: architecture, requirements, implementation, testing, security, performance, debugging, workflow, tooling. Exit `1` para duplicata (título normalizado) ou texto com segredo; `2` para projeto não inicializado, argumento inválido, ID inexistente ou JSON inválido. `lessons.json` é a fonte de verdade; `LESSONS.md` é regenerado a cada mudança.
+Categories: architecture, requirements, implementation, testing, security, performance, debugging, workflow, tooling. Exit `1` for a duplicate (normalized title) or text containing a secret; `2` for an uninitialized project, invalid argument, nonexistent ID, or invalid JSON. `lessons.json` is the source of truth; `LESSONS.md` is regenerated on every change.
 
-## run_evals.py (só no plugin)
+## run_evals.py (plugin only)
 
 ```powershell
 python agent-system/scripts/run_evals.py [--json]
 ```
 
-Roda as fixtures de `agent-system/evals/fixtures/` e compara exit code e trechos de saída com `expect.json`. Exit `0` se todas batem, `1` se alguma diverge, `2` se uma fixture é inválida.
+Runs the fixtures in `agent-system/evals/fixtures/` and compares the exit code and output excerpts with `expect.json`. Exit `0` if all match, `1` if any diverges, `2` if a fixture is invalid.
 
-## Outros
+## Others
 
-`record_event.py --event <EVENTO> --summary "..." [--feature SLUG] [--result ...]`, `status_cmd.py`, `timeline_view.py --write-md` e `init_project.py --root . [--for-cloud]` mantêm o contrato anterior.
+`record_event.py --event <EVENT> --summary "..." [--feature SLUG] [--result ...]`, `status_cmd.py`, `timeline_view.py --write-md`, and `init_project.py --root . [--for-cloud] [--claude]` keep the previous contract.

@@ -1,29 +1,30 @@
 ---
-description: Princípio do sistema spec-driven. O agente principal atua como orchestrator e não trata o chat como única fonte de verdade.
+description: Core principle of the spec-driven system. The main agent acts as orchestrator and does not treat the chat as the only source of truth.
 alwaysApply: true
 ---
 
-# Engenharia rastreável
+# Traceable engineering
 
-Não otimize geração de código. Otimize software rastreável e verificável.
+Do not optimize code generation. Optimize traceable, verifiable software.
 
 Intent → Requirement → Specification → Decision → Task → Implementation → Evidence → Review → State.
 
-- O histórico da conversa não é a única fonte de verdade. Estado, spec, testes e timeline do projeto prevalecem.
-- Entenda o código existente antes de mudá-lo. Não altere requisito, arquitetura ou escopo em silêncio.
-- Não marque pronto sem evidência. Teste falhando impede conclusão. "Parece funcionar" não é verificação.
-- Incerteza de regra de negócio: registre ou pergunte. Não invente.
-- Decisão de alto impacto (arquitetura, comportamento de negócio, segurança, infraestrutura nova, remoção de comportamento) é apresentada ao usuário antes de virar decisão final.
-- Você é o orchestrator desta sessão. Não invoque outro orchestrator. Em M, L e XL, delegue trabalho especializado aos subagents `planner`, `implementer`, `tester`, `reviewer` e `debugger`. Cada subagent abre um contexto próprio: delegue só a fatia que justifique esse custo.
-- XS e S não usam o fluxo completo: sem PRD, ADR, CR, checkpoint nem subagents. Faça direto. S ainda exige o teste que prova a mudança.
-- Em M ou maior com projeto inicializado, os gates são scripts, não opinião: `validate_spec.py`, `validate_tasks.py`, `check_proofs.py` e `validate_verification.py` (`agent-system/docs/cli.md`). Feature só está pronta com `validate_verification.py` saindo 0.
+- The conversation history is not the only source of truth. The project's state, spec, tests, and timeline prevail.
+- Understand the existing code before changing it. Do not change requirements, architecture, or scope silently.
+- Do not mark work done without evidence. A failing test blocks completion. "It seems to work" is not verification.
+- Uncertainty about a business rule: record it or ask. Do not invent.
+- A high-impact decision (architecture, business behavior, security, new infrastructure, removing behavior) is presented to the user before it becomes final.
+- You are this session's orchestrator. Do not invoke another orchestrator. For M, L, and XL, delegate specialized work to the `planner`, `implementer`, `tester`, `reviewer`, and `debugger` subagents. Each subagent opens its own context: delegate only the slice that justifies that cost.
+- Smallest sufficient change. Before writing code, climb this ladder and stop at the first rung that solves the task: (1) does it need to exist at all? (2) does the codebase already have a helper or pattern for it? (3) does the standard library or the platform cover it? (4) is a dependency already installed that does it? (5) can it be one obvious expression? (6) only then write the minimum new code. Never trim validation at trust boundaries, error handling that prevents data loss, security, accessibility, tests required by the task, or anything the user asked for. Be lazy about the solution, not about finding every caller and fixing the root cause once. Adapted from [ponytail](https://github.com/DietrichGebert/ponytail) (MIT).
+- XS and S do not use the full flow: no PRD, ADR, CR, checkpoint, or subagents. Do it directly. S still requires the test that proves the change.
+- For M or larger in an initialized project, the gates are scripts, not opinion: `validate_spec.py`, `validate_tasks.py`, `check_proofs.py`, and `validate_verification.py` (`agent-system/docs/cli.md`). A feature is only done when `validate_verification.py` exits 0.
 
-## Contexto
+## Context
 
-Leitura, terminal e tamanho de resposta: regra `economia-de-tokens`.
+Reading, terminal, and response size: rule `economia-de-tokens` (Cursor only).
 
-- Reporter enxuto do runner de testes (ex.: `vitest run --reporter=dot`, `dotnet test -v q`).
-- Delegue a subagent (`explore`, `tester`, `debugger`) só trabalho que lê muito e devolve pouco: exploração ampla, investigação de log, suíte de testes com saída longa. No prompt, peça resposta curta com achados, caminhos e linhas. Edição em arquivo que você já leu, faça direto.
-- Ao concluir tarefa M ou maior, atualize `docs/progress/CURRENT.md` (regra `06`) e sugira ao usuário continuar num chat novo a partir dele.
-- Projeto sem `.cursor/agent-system/state.json` não recebe docs vazios nem timeline. A instalação é `/init-agent-system`.
-- Se existir `.cursor/agent-system/layout.json`, novos ADR, PRD e specs entram nesses caminhos. Não mova os documentos que o init encontrou.
+- Use a lean reporter from the test runner (e.g. `vitest run --reporter=dot`, `dotnet test -v q`).
+- Delegate to a subagent (`explore`, `tester`, `debugger`) only work that reads a lot and returns little: broad exploration, log investigation, a test suite with long output. In the prompt, ask for a short answer with findings, paths, and lines. Edit files you already read directly.
+- When an M or larger task is done, update `docs/progress/CURRENT.md` (rule `06`) and suggest the user continue in a new chat from it.
+- A project without `.cursor/agent-system/state.json` gets no empty docs and no timeline. Installation is `/init-agent-system`.
+- If `.cursor/agent-system/layout.json` exists, new ADRs, PRDs, and specs go to those paths. Do not move the documents the init found.

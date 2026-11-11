@@ -1,39 +1,39 @@
-# Python web — segurança
+# Python web — security
 
-Última revisão: 2026-11-03
+Last reviewed: 2026-11-03
 
-Escopo: Python 3.10+ em aplicação web sem referência dedicada (Flask, Starlette puro, scripts que atendem HTTP, workers). FastAPI e Django têm referências próprias; esta cobre a base da linguagem e da biblioteca padrão.
+Scope: Python 3.10+ in a web application without a dedicated reference (Flask, bare Starlette, scripts that serve HTTP, workers). FastAPI and Django have their own references; this one covers the language and standard library base.
 
-## Recomendações
+## Recommendations
 
-- SQL: parâmetros do driver DB-API (`cursor.execute(sql, params)`), com o placeholder do driver (`%s` no psycopg, `?` no sqlite3). No SQLAlchemy, `text()` com `bindparams`/dicionário. Nunca f-string ou `%` para montar SQL.
-- Templates: Jinja2 com `autoescape` ligado para HTML (o Flask liga por padrão em `.html`). `Markup()` e `|safe` só em conteúdo sanitizado.
-- Comandos: `subprocess.run([...], shell=False, check=True)` com lista de argumentos. `shell=True` com entrada externa é injeção.
-- Desserialização: `json` para dado externo. `pickle`, `marshal` e `shelve` só com dado confiável. YAML com `yaml.safe_load`.
-- XML externo: `defusedxml` em vez dos parsers da biblioteca padrão.
-- Aleatoriedade: `secrets.token_urlsafe()` e `secrets.choice()`. O módulo `random` não é para segurança.
-- Comparação de token: `hmac.compare_digest()`.
-- Senha: argon2 (`argon2-cffi`) ou bcrypt; nunca hash simples (`hashlib.sha256`) sem KDF.
-- Arquivos: resolva com `pathlib` e confirme que fica dentro da base (`resolved.is_relative_to(base)`). Em `tarfile`, use `filter='data'` (Python 3.12+ e releases de segurança com backport); em `zipfile`, valide cada nome antes de extrair.
-- HTTP de saída: `timeout` sempre (requests não tem padrão). URL do usuário só após allowlist de host e bloqueio de IPs internos, contra SSRF.
-- `eval`, `exec` e `compile` nunca sobre entrada externa. `ast.literal_eval` só para literais simples.
-- Flask: `SECRET_KEY` do ambiente; `SESSION_COOKIE_SECURE`, `SESSION_COOKIE_HTTPONLY`, `SESSION_COOKIE_SAMESITE`; CSRF via extensão (ex.: Flask-WTF) em formulários; `debug=False` em produção (o debugger do Werkzeug executa código).
-- Logs sem senha, token ou documento completo.
-- Dependências: `pip-audit` no CI e versões fixadas.
+- SQL: DB-API driver parameters (`cursor.execute(sql, params)`), with the driver's placeholder (`%s` in psycopg, `?` in sqlite3). In SQLAlchemy, `text()` with `bindparams`/a dictionary. Never an f-string or `%` to build SQL.
+- Templates: Jinja2 with `autoescape` on for HTML (Flask turns it on by default for `.html`). `Markup()` and `|safe` only on sanitized content.
+- Commands: `subprocess.run([...], shell=False, check=True)` with an argument list. `shell=True` with external input is injection.
+- Deserialization: `json` for external data. `pickle`, `marshal`, and `shelve` only with trusted data. YAML with `yaml.safe_load`.
+- External XML: `defusedxml` instead of the standard library parsers.
+- Randomness: `secrets.token_urlsafe()` and `secrets.choice()`. The `random` module is not for security.
+- Token comparison: `hmac.compare_digest()`.
+- Password: argon2 (`argon2-cffi`) or bcrypt; never a plain hash (`hashlib.sha256`) without a KDF.
+- Files: resolve with `pathlib` and confirm it stays inside the base (`resolved.is_relative_to(base)`). With `tarfile`, use `filter='data'` (Python 3.12+ and security releases with a backport); with `zipfile`, validate each name before extracting.
+- Outbound HTTP: always a `timeout` (requests has no default). A user URL only after a host allowlist and blocking of internal IPs, against SSRF.
+- `eval`, `exec`, and `compile` never over external input. `ast.literal_eval` only for simple literals.
+- Flask: `SECRET_KEY` from the environment; `SESSION_COOKIE_SECURE`, `SESSION_COOKIE_HTTPONLY`, `SESSION_COOKIE_SAMESITE`; CSRF via an extension (e.g. Flask-WTF) on forms; `debug=False` in production (the Werkzeug debugger executes code).
+- Logs without passwords, tokens, or whole documents.
+- Dependencies: `pip-audit` in CI and pinned versions.
 
-## Vulnerabilidades comuns
+## Common vulnerabilities
 
-- SQL injection com f-string em `execute`.
-- Command injection em `os.system` ou `subprocess(..., shell=True)` com nome de arquivo do usuário.
-- Execução de código via `pickle.loads` em cookie, fila ou cache.
-- `yaml.load` sem `Loader` seguro.
-- XXE ou "billion laughs" com `xml.etree` sobre XML externo.
-- Path traversal em `send_file(os.path.join(base, nome))`.
-- Zip slip ao extrair arquivo enviado.
-- Debugger do Werkzeug exposto em produção.
-- SSRF em importação por URL.
+- SQL injection with an f-string in `execute`.
+- Command injection in `os.system` or `subprocess(..., shell=True)` with a user file name.
+- Code execution via `pickle.loads` on a cookie, queue, or cache.
+- `yaml.load` without a safe `Loader`.
+- XXE or "billion laughs" with `xml.etree` over external XML.
+- Path traversal in `send_file(os.path.join(base, name))`.
+- Zip slip when extracting an uploaded archive.
+- The Werkzeug debugger exposed in production.
+- SSRF in an import by URL.
 
-## Implementação segura
+## Secure implementation
 
 ```python
 import secrets
@@ -59,7 +59,7 @@ def thumbnail(src: Path, dst: Path) -> None:
 reset_token = secrets.token_urlsafe(32)
 ```
 
-## Implementação inadequada e risco
+## Inadequate implementation and risk
 
 ```python
 cur.execute(f"SELECT * FROM users WHERE email = '{email}'")
@@ -67,17 +67,17 @@ os.system(f"convert {filename} thumb.png")
 data = pickle.loads(base64.b64decode(request.cookies["state"]))
 ```
 
-Risco: injeção de SQL; nome de arquivo `x.png; rm -rf ~` executa comando no servidor; cookie forjado com pickle executa código arbitrário no processo.
+Risk: SQL injection; a file name `x.png; rm -rf ~` runs a command on the server; a forged cookie with pickle executes arbitrary code in the process.
 
-## Testes de segurança
+## Security tests
 
-- pytest com payloads de SQL e de shell (`;`, `$( )`, crase) provando que nada além do esperado acontece.
-- `safe_path('../../etc/passwd')` levanta erro.
-- Arquivo zip com entrada `../x` é recusado.
-- Requisição de saída para `127.0.0.1`, `169.254.169.254` e hosts fora da allowlist é bloqueada.
-- Ferramentas opcionais: Bandit, `pip-audit`, Semgrep.
+- pytest with SQL and shell payloads (`;`, `$( )`, backticks) proving that nothing beyond what is expected happens.
+- `safe_path('../../etc/passwd')` raises an error.
+- A zip file with a `../x` entry is refused.
+- An outbound request to `127.0.0.1`, `169.254.169.254`, and hosts outside the allowlist is blocked.
+- Optional tools: Bandit, `pip-audit`, Semgrep.
 
-## Fontes
+## Sources
 
 - https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html
 - https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html

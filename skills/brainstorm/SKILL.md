@@ -5,19 +5,19 @@ description: Refines a rough idea into an approved design through structured Soc
 
 # Brainstorm
 
-Use antes de criar ou desenvolver comportamento, produto ou interface, e antes de escrever código ou plano de implementação, quando ainda não houver design aprovado.
+Use before creating or developing behavior, a product, or an interface, and before writing code or an implementation plan, when there is no approved design yet.
 
-Não use quando o usuário mandou executar spec ou plano já aprovados, quando o pedido é só investigação, review, commit, push ou correção trivial.
+Do not use when the user told you to execute an already approved spec or plan, when the request is only investigation, review, commit, push, or a trivial fix.
 
-Não escreva código, não scaffolde projeto e não chame `implementation-plan` nem `implementation` até o usuário aprovar o design.
+Do not write code, scaffold a project, or call `implementation-plan` or `implementation` until the user approves the design.
 
-## Fluxo
+## Flow
 
-1. Leia o contexto do repositório (código, spec, commits recentes) antes da primeira pergunta.
-2. Se a ideia couber em vários sistemas independentes, pare e proponha quebrar em partes. Brainstorm só da primeira.
-3. Faça uma pergunta por mensagem. Prefira escolha fechada. Objetivo, restrição e critério de sucesso.
-4. Proponha 2 ou 3 abordagens, com trade-off e uma recomendação.
-5. Apresente o design em partes curtas. Peça aprovação de cada parte antes da próxima.
-6. Com o design aprovado, grave a spec no lugar canônico do repo, ou em `docs/specs/` se essa for a árvore. Sem placeholder. Sem contradição com o que foi aprovado.
-7. Peça para o usuário revisar a spec. Ajuste se ele pedir.
-8. O próximo passo é `implementation-plan`. Não implemente neste turno.
+1. Read the repository context (code, spec, recent commits) before the first question.
+2. If the idea spans several independent systems, stop and propose splitting it into parts. Brainstorm only the first.
+3. Ask one question per message. Prefer a closed choice. Goal, constraint, and success criterion.
+4. Propose 2 or 3 approaches, with trade-offs and a recommendation.
+5. Present the design in short parts. Ask for approval of each part before the next.
+6. With the design approved, write the spec in the repo's canonical place, or in `docs/specs/` if that is the tree. No placeholders. No contradiction with what was approved.
+7. Ask the user to review the spec. Adjust if they ask.
+8. The next step is `implementation-plan`. Do not implement in this turn.

@@ -1,6 +1,6 @@
 {
   "base": "complete-feature",
-  "description": "AC-002 sem TEST: validate_tasks avisa (bloqueia com --strict) e o gate reprova.",
+  "description": "AC-002 without a TEST: validate_tasks warns (blocks with --strict) and the gate fails.",
   "steps": [
     {
       "script": "validate_tasks.py",

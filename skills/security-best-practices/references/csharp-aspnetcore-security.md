@@ -1,40 +1,40 @@
-# ASP.NET Core — segurança
+# ASP.NET Core — security
 
-Última revisão: 2026-11-03
+Last reviewed: 2026-11-03
 
-Escopo: ASP.NET Core 8 (LTS) e posteriores, C#, com MVC, Razor Pages ou Minimal APIs, e Entity Framework Core 8.
+Scope: ASP.NET Core 8 (LTS) and later, C#, with MVC, Razor Pages, or Minimal APIs, and Entity Framework Core 8.
 
-## Recomendações
+## Recommendations
 
-- Autorização por padrão: defina `FallbackPolicy` que exige usuário autenticado e libere o público com `[AllowAnonymous]` ou `.AllowAnonymous()`. Assim um endpoint novo nasce protegido.
-- Autorização por recurso: `IAuthorizationService.AuthorizeAsync(User, recurso, policy)` ou consulta filtrada pelo dono. `[Authorize]` sozinho só exige login.
-- Overposting: receba DTOs/view models com apenas os campos editáveis, nunca a entidade EF direto no binding.
-- EF Core: LINQ parametriza. `FromSql`/`FromSqlInterpolated` e `ExecuteSql` convertem a interpolação em parâmetros. `FromSqlRaw`/`ExecuteSqlRaw` só com parâmetros explícitos, nunca com string concatenada.
-- Razor escapa por padrão. `Html.Raw` e `MarkupString` (Blazor) só com HTML sanitizado.
-- Antiforgery: Razor Pages valida por padrão; em MVC use `AutoValidateAntiforgeryTokenAttribute` global ou `[ValidateAntiForgeryToken]`. Em .NET 8, Minimal APIs que fazem binding de formulário usam `app.UseAntiforgery()`. API só com bearer token no header não precisa de antiforgery; com cookie, precisa.
-- Cookies de autenticação: `HttpOnly`, `SecurePolicy = Always`, `SameSite` adequado.
-- JWT bearer: valide emissor, audiência, tempo de vida e chave (`TokenValidationParameters`); não desligue validações para "fazer funcionar".
-- HTTPS: `UseHttpsRedirection()` e `UseHsts()` fora de desenvolvimento.
-- Erros: `UseDeveloperExceptionPage` só em Development; produção com `UseExceptionHandler` e ProblemDetails sem stack trace.
-- Segredos: user-secrets em desenvolvimento; variáveis de ambiente ou cofre (ex.: Azure Key Vault) em produção. Nada em `appsettings.json` commitado.
-- Dados protegidos e tokens próprios: Data Protection API, com chaves persistidas e protegidas em ambiente com várias instâncias.
-- Rate limiting: middleware nativo (`AddRateLimiter`/`UseRateLimiter`, .NET 7+) em login e endpoints caros.
-- CORS: política nomeada com origens explícitas; não use `AllowAnyOrigin` com `AllowCredentials` (o framework recusa essa combinação).
-- Serialização: não use `BinaryFormatter` (obsoleto). Em `System.Text.Json`/Newtonsoft, não habilite tipagem polimórfica a partir do payload (`TypeNameHandling` diferente de `None`).
-- Uploads: `[RequestSizeLimit]`, nome gerado no servidor, armazenamento fora de `wwwroot`, validação de conteúdo.
-- Dependências: `dotnet list package --vulnerable` no CI.
+- Authorization by default: define a `FallbackPolicy` that requires an authenticated user and open up the public parts with `[AllowAnonymous]` or `.AllowAnonymous()`. That way a new endpoint is born protected.
+- Per-resource authorization: `IAuthorizationService.AuthorizeAsync(User, resource, policy)` or a query filtered by owner. `[Authorize]` alone only requires login.
+- Overposting: receive DTOs/view models with only the editable fields, never the EF entity directly in binding.
+- EF Core: LINQ parameterizes. `FromSql`/`FromSqlInterpolated` and `ExecuteSql` turn interpolation into parameters. `FromSqlRaw`/`ExecuteSqlRaw` only with explicit parameters, never with a concatenated string.
+- Razor escapes by default. `Html.Raw` and `MarkupString` (Blazor) only with sanitized HTML.
+- Antiforgery: Razor Pages validates by default; in MVC use a global `AutoValidateAntiforgeryTokenAttribute` or `[ValidateAntiForgeryToken]`. In .NET 8, Minimal APIs that bind form data use `app.UseAntiforgery()`. An API with only a bearer token in the header does not need antiforgery; with a cookie, it does.
+- Authentication cookies: `HttpOnly`, `SecurePolicy = Always`, appropriate `SameSite`.
+- JWT bearer: validate issuer, audience, lifetime, and key (`TokenValidationParameters`); do not turn off validations to "make it work".
+- HTTPS: `UseHttpsRedirection()` and `UseHsts()` outside development.
+- Errors: `UseDeveloperExceptionPage` only in Development; production with `UseExceptionHandler` and ProblemDetails without a stack trace.
+- Secrets: user-secrets in development; environment variables or a vault (e.g. Azure Key Vault) in production. Nothing in a committed `appsettings.json`.
+- Protected data and your own tokens: the Data Protection API, with keys persisted and protected in a multi-instance environment.
+- Rate limiting: the native middleware (`AddRateLimiter`/`UseRateLimiter`, .NET 7+) on login and expensive endpoints.
+- CORS: a named policy with explicit origins; do not use `AllowAnyOrigin` with `AllowCredentials` (the framework refuses that combination).
+- Serialization: do not use `BinaryFormatter` (obsolete). In `System.Text.Json`/Newtonsoft, do not enable polymorphic typing from the payload (`TypeNameHandling` other than `None`).
+- Uploads: `[RequestSizeLimit]`, a server-generated name, storage outside `wwwroot`, content validation.
+- Dependencies: `dotnet list package --vulnerable` in CI.
 
-## Vulnerabilidades comuns
+## Common vulnerabilities
 
-- Controller sem `[Authorize]` num app sem fallback policy.
-- IDOR: `_db.Orders.FindAsync(id)` sem checar `UserId`.
-- Overposting de `IsAdmin` ao bindar a entidade.
-- SQL injection com `FromSqlRaw($"... {nome}")`.
-- XSS por `@Html.Raw(Model.Bio)`.
-- `TypeNameHandling.All` no Newtonsoft com JSON externo.
-- Página de exceção de desenvolvimento ativa em produção.
+- A controller without `[Authorize]` in an app with no fallback policy.
+- IDOR: `_db.Orders.FindAsync(id)` without checking `UserId`.
+- Overposting of `IsAdmin` when binding the entity.
+- SQL injection with `FromSqlRaw($"... {name}")`.
+- XSS by `@Html.Raw(Model.Bio)`.
+- `TypeNameHandling.All` in Newtonsoft with external JSON.
+- The development exception page active in production.
 
-## Implementação segura
+## Secure implementation
 
 ```csharp
 builder.Services.AddAuthorization(o =>
@@ -57,7 +57,7 @@ public async Task<IActionResult> Update(int id, UpdateProfileDto dto)
 var users = await _db.Users.FromSql($"SELECT * FROM Users WHERE Email = {email}").ToListAsync();
 ```
 
-## Implementação inadequada e risco
+## Inadequate implementation and risk
 
 ```csharp
 [HttpPut("profile")]
@@ -71,17 +71,17 @@ public async Task<IActionResult> Update(Profile profile)
 var users = _db.Users.FromSqlRaw("SELECT * FROM Users WHERE Email = '" + email + "'");
 ```
 
-Risco: o cliente envia a entidade inteira e pode trocar `UserId`, `IsAdmin` ou o perfil de outra pessoa; a concatenação no SQL permite injeção.
+Risk: the client sends the whole entity and can change `UserId`, `IsAdmin`, or someone else's profile; the SQL concatenation allows injection.
 
-## Testes de segurança
+## Security tests
 
-- `WebApplicationFactory` (testes de integração): endpoint sem token → 401; usuário B no recurso de A → 404 ou 403.
-- Corpo com `IsAdmin=true` não altera o campo.
-- POST de formulário sem antiforgery token → 400.
-- Resposta de erro em ambiente Production sem stack trace.
-- Ferramentas opcionais: analisadores .NET (regras de segurança CA2100, CA3001 e afins), `dotnet list package --vulnerable`, Semgrep.
+- `WebApplicationFactory` (integration tests): an endpoint without a token → 401; user B on A's resource → 404 or 403.
+- A body with `IsAdmin=true` does not change the field.
+- A form POST without an antiforgery token → 400.
+- An error response in the Production environment without a stack trace.
+- Optional tools: .NET analyzers (security rules CA2100, CA3001, and the like), `dotnet list package --vulnerable`, Semgrep.
 
-## Fontes
+## Sources
 
 - https://cheatsheetseries.owasp.org/cheatsheets/DotNet_Security_Cheat_Sheet.html
 - https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html

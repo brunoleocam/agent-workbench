@@ -6,37 +6,37 @@ disable-model-invocation: true
 
 # /init-agent-system
 
-Instala o sistema spec-driven na raiz do projeto aberto. Não rode no diretório home.
+Installs the spec-driven system at the root of the open project. Do not run it in the home directory.
 
-`<plugin>` é a raiz do plugin agent-workbench. No Claude Code é `${CLAUDE_PLUGIN_ROOT}` (o caminho já chega substituído). No Cursor, fica dois níveis acima deste `SKILL.md`.
+`<plugin>` is the agent-workbench plugin root. In Claude Code it is `${CLAUDE_PLUGIN_ROOT}` (the path arrives already substituted). In Cursor, it is two levels above this `SKILL.md`.
 
-No Cursor:
+In Cursor:
 
 ```powershell
 python "<plugin>/agent-system/scripts/init_project.py" --root .
 ```
 
-No Claude Code, acrescente `--claude`:
+In Claude Code, add `--claude`:
 
 ```bash
 python "<plugin>/agent-system/scripts/init_project.py" --root . --claude
 ```
 
-Com `--claude`, o script não mexe em `.cursor/hooks.json` (o Claude Code usa os hooks do próprio plugin) e grava as rules `00` a `08` condensadas num bloco gerenciado do `CLAUDE.md` do projeto, entre os marcadores `agent-workbench:begin` e `agent-workbench:end`. Cria o `CLAUDE.md` se não existir, acrescenta o bloco ao final se existir e, num novo init, substitui só o conteúdo do bloco. Texto fora dos marcadores não é alterado. O campo `claude_md` do relatório diz o que aconteceu.
+With `--claude`, the script does not touch `.cursor/hooks.json` (Claude Code uses the plugin's own hooks) and writes the condensed rules `00` to `08` into a managed block of the project's `CLAUDE.md`, between the `agent-workbench:begin` and `agent-workbench:end` markers. It creates `CLAUDE.md` if missing, appends the block at the end if the file exists, and on a new init replaces only the block's content. Text outside the markers is not changed. The `claude_md` field of the report says what happened.
 
-O script cria o que falta e não substitui arquivo que já existe:
+The script creates what is missing and does not replace a file that already exists:
 
-- hooks do projeto, com backup de `hooks.json` se ele já existir (só no Cursor)
-- `state.json`, registro de agentes e scripts em `.cursor/agent-system/`: timeline, validadores (`validate_spec`, `validate_tasks`, `check_proofs`, `validate_verification`), e `lessons`
+- project hooks, with a backup of `hooks.json` if it already exists (Cursor only)
+- `state.json`, the agent registry, and the scripts in `.cursor/agent-system/`: timeline, validators (`validate_spec`, `validate_tasks`, `check_proofs`, `validate_verification`), and `lessons`
 
-Script do projeto sem a marca `agent-system-managed` e diferente do plugin é preservado. `state.json` existente ganha só as chaves novas. Em `layout.json`, `overrides` e `proof_allow` escritos por você sobrevivem a um novo init.
+A project script without the `agent-system-managed` mark that differs from the plugin's is preserved. An existing `state.json` gains only the new keys. In `layout.json`, the `overrides` and `proof_allow` you wrote survive a new init.
 
-Regras, skills e subagents já vêm do plugin e não são copiados, porque cópia no projeto carregaria tudo duas vezes. Para Cloud Agents do Cursor, que não carregam o plugin local, rode com `--for-cloud`: copia as rules `00` a `08` e os subagents (inclusive `security-reviewer`) sem sobrescrever os que já existem. Skills e referências de segurança não são copiadas; no Cloud, o agente segue as rules e os subagents.
+Rules, skills, and subagents already come from the plugin and are not copied, because a copy in the project would load everything twice. For Cursor Cloud Agents, which do not load the local plugin, run with `--for-cloud`: it copies rules `00` to `08` and the subagents (including `security-reviewer`) without overwriting existing ones. Skills and security references are not copied; in the Cloud, the agent follows the rules and subagents.
 
-Não cria PRD, spec ou ADR vazios. Não move documentação existente. Não commite.
+It does not create empty PRDs, specs, or ADRs. It does not move existing documentation. Do not commit.
 
-Num projeto já em andamento, o script procura PRD, PDR, ADR, arquitetura e specs onde eles estiverem e grava o mapa em `.cursor/agent-system/layout.json`. Também detecta frameworks (Express, Next.js, React, FastAPI, Django, Flask, Laravel, ASP.NET Core, Spring), as referências de segurança correspondentes e superfícies candidatas (autenticação, API, banco, upload, pagamento, criptografia, multi-tenant, infraestrutura). O trabalho seguinte usa esses caminhos. O init não resume o código nem reescreve os documentos.
+In a project already under way, the script looks for the PRD, PDR, ADR, architecture, and specs wherever they are and writes the map to `.cursor/agent-system/layout.json`. It also detects frameworks (Express, Next.js, React, FastAPI, Django, Flask, Laravel, ASP.NET Core, Spring), the matching security references, and candidate surfaces (authentication, API, database, upload, payment, cryptography, multi-tenant, infrastructure). Later work uses those paths. The init does not summarize the code or rewrite the documents.
 
-Mostre o JSON do script, inclusive `layout` e `suggestions`. Leia `.cursor/agent-system/SUGGESTIONS.md` e apresente as sugestões ao usuário.
+Show the script's JSON, including `layout` and `suggestions`. Read `.cursor/agent-system/SUGGESTIONS.md` and present the suggestions to the user.
 
-Não crie PRD, ADR, testes nem agentes novos por causa dessas sugestões. Espere o usuário pedir. Se `state.json` já existir, o estado é mantido e o mapa e as sugestões são atualizados.
+Do not create PRDs, ADRs, tests, or new agents because of those suggestions. Wait for the user to ask. If `state.json` already exists, the state is kept and the map and suggestions are updated.

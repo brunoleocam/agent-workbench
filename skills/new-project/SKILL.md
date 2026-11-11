@@ -3,19 +3,19 @@ name: new-project
 description: Scaffolds a spec-driven greenfield project with PRD, architecture, ADR, specs, tasks, and progress before implementation. Use when starting a new project, new repository, new product, or when the user asks to create a project from scratch (projeto novo, greenfield, do zero).
 ---
 
-# Novo projeto
+# New project
 
-Projeto greenfield. Não implemente comportamento antes de existir problema, requisitos e critérios de aceite.
+A greenfield project. Do not implement behavior before the problem, requirements, and acceptance criteria exist.
 
-## Antes de criar arquivos
+## Before creating files
 
-1. Confirme o nome do projeto. Sugira um padrão a partir do que foi descrito. Pergunte preferências de layout, git ou boilerplate só se o usuário quiser decidir; caso contrário, use defaults sensatos.
-2. Crie o diretório (prefira `~/Projects/` ou `~/Developer/` se existirem; senão o home), inicialize git e mova o agente para essa raiz antes de qualquer scaffolding.
-3. Não grave a árvore `docs/` no home nem no perfil do usuário. Não crie `AGENTS.md`. Ele só entra se o usuário pedir o processo versionado dentro do repositório.
+1. Confirm the project name. Suggest a default from what was described. Ask about layout, git, or boilerplate preferences only if the user wants to decide; otherwise use sensible defaults.
+2. Create the directory (prefer `~/Projects/` or `~/Developer/` if they exist; otherwise the home), initialize git, and move the agent to that root before any scaffolding.
+3. Do not write the `docs/` tree in the home or the user's profile. Do not create `AGENTS.md`. It only goes in if the user asks for the versioned process inside the repository.
 
-## Árvore
+## Tree
 
-Crie só o que tiver conteúdo:
+Create only what has content:
 
 ```
 docs/
@@ -29,29 +29,29 @@ docs/
 └── progress/CURRENT.md
 ```
 
-Se o usuário já indicou outra pasta canônica, use essa.
+If the user already indicated another canonical folder, use that one.
 
 ## PRD
 
-`docs/product/PRD.md` deve ter: problema, resultado desejado, usuários, requisitos funcionais, não funcionais quando couberem, restrições, premissas, fora de escopo, critérios de aceite, comportamento existente afetado (nenhum, se for greenfield).
+`docs/product/PRD.md` must have: problem, desired outcome, users, functional requirements, non-functional requirements where they fit, constraints, assumptions, out of scope, acceptance criteria, existing behavior affected (none, if greenfield).
 
-## Arquitetura
+## Architecture
 
-`docs/architecture/ARCHITECTURE.md`: visão, limites dos módulos, dados e integrações conhecidas.
+`docs/architecture/ARCHITECTURE.md`: overview, module boundaries, known data and integrations.
 
-ADR só para decisão já tomada. Arquivo `docs/architecture/ADR/0001-titulo.md` com: contexto, problema, decisão, alternativas, racional, consequências, riscos. Não reescreva ADR aceito; crie outro se a decisão mudar.
+An ADR only for a decision already made. File `docs/architecture/ADR/0001-title.md` with: context, problem, decision, alternatives, rationale, consequences, risks. Do not rewrite an accepted ADR; create another if the decision changes.
 
-## Spec, verificação e tarefas
+## Spec, verification, and tasks
 
-- `docs/specs/`: o que o sistema deve fazer, rastreável aos requisitos do PRD.
-- `docs/tests/VERIFICATION.md`: níveis (unidade, integração, contrato, e2e, aceite, property-based, eval) e o que cada critério de aceite exige.
-- `docs/tasks/`: passos pequenos. Cada tarefa cita o requisito, os testes e as dependências. Exemplo: `TASK-X` depende de `TASK-Z`.
-- `docs/progress/CURRENT.md`: fase atual, próximo passo, bloqueios. O próximo passo não é "continuar codando" por padrão.
+- `docs/specs/`: what the system must do, traceable to the PRD's requirements.
+- `docs/tests/VERIFICATION.md`: levels (unit, integration, contract, e2e, acceptance, property-based, eval) and what each acceptance criterion requires.
+- `docs/tasks/`: small steps. Each task cites the requirement, the tests, and the dependencies. Example: `TASK-X` depends on `TASK-Z`.
+- `docs/progress/CURRENT.md`: current phase, next step, blockers. The next step is not "keep coding" by default.
 
-## Verificar o design
+## Verify the design
 
-Antes de implementar, confira spec e arquitetura contra o PRD e os critérios de aceite. Corrija o artefato, não o código, se o design não fecha.
+Before implementing, check the spec and architecture against the PRD and the acceptance criteria. Fix the artifact, not the code, if the design does not hold.
 
-## Implementar
+## Implement
 
-Só depois do plano. Cada tarefa segue a skill `implementation`. Cerimônia proporcional: se o usuário pediu um esboço mínimo, entregue PRD curto, uma spec e a primeira tarefa, e pare para confirmar antes de expandir.
+Only after the plan. Each task follows the `implementation` skill. Proportional ceremony: if the user asked for a minimal sketch, deliver a short PRD, one spec, and the first task, and stop to confirm before expanding.

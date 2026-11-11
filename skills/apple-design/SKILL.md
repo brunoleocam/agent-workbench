@@ -3,25 +3,25 @@ name: apple-design
 description: Builds or reviews fluid, Apple-style interactive motion on the web — drag, swipe, sheets, carousels, spring animations, momentum, interruptible transitions, and reduced-motion fallbacks. Use when implementing or reviewing gesture-driven UI or spring animation (animação fluida, gesto, arrastar, swipe, sheet, drawer, spring, momentum, estilo Apple).
 ---
 
-# Apple design: motion interativo na web
+# Apple design: interactive motion on the web
 
-Baseada nas palestras de design da Apple na WWDC, principalmente *Designing Fluid Interfaces* (2018), traduzidas para a web: CSS, Pointer Events, `requestAnimationFrame` e bibliotecas de spring como Motion.
+Based on Apple's WWDC design talks, mainly *Designing Fluid Interfaces* (2018), translated to the web: CSS, Pointer Events, `requestAnimationFrame`, and spring libraries such as Motion.
 
-Complementa `ui-ux`: aquela constrói a tela e os estados; esta define como a interface se move e responde ao toque.
+It complements `ui-ux`: that one builds the screen and its states; this one defines how the interface moves and responds to touch.
 
-Princípio central: a interface parece viva quando o movimento parte do valor atual na tela, herda a velocidade do usuário, projeta o momentum adiante e pode ser agarrado e revertido a qualquer instante. Springs resolvem isso porque são interrompíveis e aceitam velocidade inicial.
+Core principle: an interface feels alive when movement starts from the value currently on screen, inherits the user's velocity, projects momentum forward, and can be grabbed and reversed at any instant. Springs solve this because they are interruptible and accept an initial velocity.
 
-Referências, carregue só quando o pedido tocar no assunto:
+References, load only when the request touches the subject:
 
-- [references/materials.md](references/materials.md): translucidez, profundidade, `backdrop-filter`, feedback com som e haptics.
-- [references/typography.md](references/typography.md): tracking, leading, tamanho óptico, fonte do sistema.
-- [references/principles.md](references/principles.md): os oito princípios de design da Apple, feedback, navegação e processo.
+- [references/materials.md](references/materials.md): translucency, depth, `backdrop-filter`, sound and haptic feedback.
+- [references/typography.md](references/typography.md): tracking, leading, optical size, the system font.
+- [references/principles.md](references/principles.md): Apple's eight design principles, feedback, navigation, and process.
 
-## 1. Resposta imediata
+## 1. Immediate response
 
-- Dê feedback no `pointerdown`, não no `click`. Destaque o botão no instante do toque; confirme a ação no `pointerup`.
-- Corte latência no caminho do input: debounce, timer artificial, espera de transição. Garanta `<meta name="viewport" content="width=device-width">` e `touch-action: manipulation` para não haver atraso de toque.
-- Em drag, slider ou drawer, atualize a interface 1:1 com o ponteiro durante todo o gesto, não só no fim.
+- Give feedback on `pointerdown`, not on `click`. Highlight the button at the instant of touch; confirm the action on `pointerup`.
+- Cut latency on the input path: debounce, artificial timers, waiting for a transition. Make sure `<meta name="viewport" content="width=device-width">` and `touch-action: manipulation` are set so there is no tap delay.
+- On a drag, slider, or drawer, update the interface 1:1 with the pointer throughout the gesture, not just at the end.
 
 ```css
 .button:active {
@@ -30,82 +30,82 @@ Referências, carregue só quando o pedido tocar no assunto:
 }
 ```
 
-No Safari do iOS, `:active` só dispara se houver um listener de toque na página. Em componente crítico, prefira uma classe aplicada no `pointerdown`.
+On iOS Safari, `:active` only fires if the page has a touch listener. For a critical component, prefer a class applied on `pointerdown`.
 
-## 2. Manipulação direta
+## 2. Direct manipulation
 
-O elemento acompanha o dedo a partir do ponto onde foi agarrado. Pular para o centro do elemento quebra a ilusão.
+The element follows the finger from the point where it was grabbed. Jumping to the element's center breaks the illusion.
 
-- Use Pointer Events com `setPointerCapture`, para o rastreamento continuar fora dos limites do elemento.
-- Guarde um histórico curto de posição e timestamp dos últimos `pointermove`; a velocidade de soltura sai daí.
+- Use Pointer Events with `setPointerCapture`, so tracking continues outside the element's bounds.
+- Keep a short history of position and timestamp from the last `pointermove` events; the release velocity comes from it.
 
 ```js
 el.addEventListener('pointerdown', (e) => {
   el.setPointerCapture(e.pointerId);
   const grabOffset = e.clientY - el.getBoundingClientRect().top;
-  // registrar posição + timestamp a cada pointermove para calcular a velocidade
+  // record position + timestamp on each pointermove to compute velocity
 });
 ```
 
-## 3. Interrupção
+## 3. Interruption
 
-O princípio mais importante: toda animação pode ser agarrada e redirecionada a qualquer momento. Um modal fechando que o usuário agarra de novo segue o dedo; não termina de fechar para depois reabrir.
+The most important principle: every animation can be grabbed and redirected at any moment. A closing modal that the user grabs again follows the finger; it does not finish closing and then reopen.
 
-- Nunca bloqueie input durante uma transição.
-- Anime sempre a partir do valor apresentado na tela, nunca do valor-alvo. Na interrupção, leia o transform atual e comece dali.
-- Para gesto, não use transition CSS nem `@keyframes`. Uma transition interrompida até reverte a partir do valor atual, mas perde a velocidade e dá um tranco. Springs carregam a velocidade no re-target.
-- Na reversão do gesto, a nova animação herda a velocidade atual. Trocar uma animação por outra do zero cria um "muro" de velocidade.
-- Movimento 2D: um spring independente para X e outro para Y. Um spring só sobre a distância 2D dessincroniza quando as velocidades diferem.
+- Never block input during a transition.
+- Always animate from the value presented on screen, never from the target value. On interruption, read the current transform and start from there.
+- For gestures, do not use CSS transitions or `@keyframes`. An interrupted transition does reverse from the current value, but it loses the velocity and jolts. Springs carry velocity on re-target.
+- When a gesture reverses, the new animation inherits the current velocity. Replacing one animation with another from zero creates a velocity "wall".
+- 2D movement: one independent spring for X and another for Y. A single spring over the 2D distance goes out of sync when the velocities differ.
 
-## 4. Springs em vez de duração fixa
+## 4. Springs instead of fixed duration
 
-Animação com duração fixa não responde a input novo. Num spring, input novo só muda o alvo e o movimento continua. Use spring para tudo que o usuário pode tocar.
+A fixed-duration animation does not respond to new input. In a spring, new input only changes the target and the motion continues. Use a spring for everything the user can touch.
 
-A Apple usa dois parâmetros em vez de massa, rigidez e amortecimento:
+Apple uses two parameters instead of mass, stiffness, and damping:
 
-- **Damping ratio**: controla o overshoot. `1.0` = criticamente amortecido, sem quique. Abaixo de `1.0`, quica; quanto menor, mais quica.
-- **Response**: rapidez para chegar ao alvo, em segundos. Menor = mais ágil. Não é duração; o tempo de assentar emerge dos parâmetros.
+- **Damping ratio**: controls overshoot. `1.0` = critically damped, no bounce. Below `1.0` it bounces; the lower, the more it bounces.
+- **Response**: how quickly it reaches the target, in seconds. Lower = snappier. It is not a duration; the settling time emerges from the parameters.
 
-Padrões:
+Defaults:
 
-- Comece com damping `1.0`.
-- Use damping perto de `0.8` só quando o gesto trouxe momentum (flick, arremesso, soltar um drag). Quique num menu que apenas apareceu fica errado; num card arremessado fica certo.
+- Start with damping `1.0`.
+- Use damping near `0.8` only when the gesture carried momentum (flick, throw, releasing a drag). Bounce on a menu that merely appeared is wrong; on a thrown card it is right.
 
-| Interação | Damping | Response |
+| Interaction | Damping | Response |
 | --- | --- | --- |
-| Mover / reposicionar (ex.: PiP) | `1.0` | `0.4` |
-| Rotação | `0.8` | `0.4` |
+| Move / reposition (e.g. PiP) | `1.0` | `0.4` |
+| Rotation | `0.8` | `0.4` |
 | Drawer / sheet | `0.8` | `0.3` |
 
-No Motion, `bounce` e `visualDuration` aproximam damping e response: `bounce ≈ 1 − damping` e `visualDuration ≈ response`. É uma aproximação; ajuste no olho.
+In Motion, `bounce` and `visualDuration` approximate damping and response: `bounce ≈ 1 − damping` and `visualDuration ≈ response`. It is an approximation; tune by eye.
 
 ```js
 import { animate } from 'motion';
 
 animate(el, { y: 0 }, { type: 'spring', bounce: 0, visualDuration: 0.4 });
 
-// quique leve, só porque um flick veio antes
+// light bounce, only because a flick came before
 animate(el, { y: target }, { type: 'spring', bounce: 0.2, visualDuration: 0.4, velocity: releaseVelocity });
 ```
 
-## 5. Passagem de velocidade
+## 5. Velocity handoff
 
-Quando o gesto termina, a animação continua na velocidade exata do dedo, sem emenda visível entre arrastar e animar. É o detalhe que mais separa "fluido" de "ok".
+When the gesture ends, the animation continues at the finger's exact velocity, with no visible seam between dragging and animating. This is the detail that most separates "fluid" from "okay".
 
-Passe a velocidade de soltura como velocidade inicial do spring. Motion aceita px/s absoluto na opção `velocity`. APIs que pedem velocidade relativa:
+Pass the release velocity as the spring's initial velocity. Motion accepts absolute px/s in the `velocity` option. For APIs that ask for relative velocity:
 
 ```
-velocidadeRelativa = velocidadeDoGesto / (alvo − valorAtual)
+relativeVelocity = gestureVelocity / (target − currentValue)
 ```
 
-Exemplo: elemento em `y=50`, alvo `y=150`, dedo a 50 px/s → `50 / 100 = 0.5`.
+Example: element at `y=50`, target `y=150`, finger at 50 px/s → `50 / 100 = 0.5`.
 
-## 6. Projeção de momentum
+## 6. Momentum projection
 
-Não escolha o ponto de encaixe mais próximo de onde o dedo soltou. Projete onde o elemento pararia, como na desaceleração do scroll, e encaixe no ponto mais próximo da projeção. Isso faz o flick parecer um arremesso.
+Do not pick the snap point closest to where the finger released. Project where the element would stop, like scroll deceleration, and snap to the point closest to the projection. This makes a flick feel like a throw.
 
 ```js
-// decelerationRate ≈ 0.998 para sensação de scroll normal; 0.99 para mais ágil
+// decelerationRate ≈ 0.998 for a normal scroll feel; 0.99 for snappier
 function project(initialVelocity /* px/s */, decelerationRate = 0.998) {
   return (initialVelocity / 1000) * decelerationRate / (1 - decelerationRate);
 }
@@ -115,18 +115,18 @@ const target = nearestSnapPoint(projectedEndpoint);
 animateSpringTo(target, { velocity: releaseVelocity });
 ```
 
-É a função do sample code da Apple. Não use a fórmula de física `v²/(2·desaceleração)`. Para decidir entre fechar e voltar, use o sinal da velocidade na soltura, não só a posição.
+This is the function from Apple's sample code. Do not use the physics formula `v²/(2·deceleration)`. To decide between closing and returning, use the sign of the velocity at release, not just the position.
 
-## 7. Consistência espacial
+## 7. Spatial consistency
 
-- Entra e sai pelo mesmo caminho. Painel que entra pela direita sai pela direita.
-- Ancore no gatilho: menu, popover ou sheet nasce do elemento que o abriu. Use `transform-origin` no lado do gatilho, não no centro.
-- O movimento intermediário aponta para o resultado. Os módulos do Control Center "crescem para cima e para fora, em direção ao dedo".
-- Em transição reversível sem gesto, espelhe a curva: ida e volta com pontos de controle de cubic-bézier invertidos. Com gesto, use spring.
+- Enter and leave by the same path. A panel that enters from the right leaves to the right.
+- Anchor to the trigger: a menu, popover, or sheet is born from the element that opened it. Use `transform-origin` on the trigger's side, not the center.
+- Intermediate motion points toward the result. The Control Center modules "grow up and out, toward the finger".
+- For a reversible transition without a gesture, mirror the curve: forward and back with inverted cubic-bézier control points. With a gesture, use a spring.
 
-## 8. Rubber-band nos limites
+## 8. Rubber-band at the limits
 
-No limite, resista de forma progressiva em vez de parar seco. Parada seca parece travamento; resistência contínua diz "responde, mas não há mais nada aqui".
+At the limit, resist progressively instead of stopping dead. A dead stop looks like a freeze; continuous resistance says "it responds, but there is nothing more here".
 
 ```js
 function rubberband(overshoot, dimension, constant = 0.55) {
@@ -134,25 +134,25 @@ function rubberband(overshoot, dimension, constant = 0.55) {
 }
 ```
 
-## 9. Detalhes de gesto
+## 9. Gesture details
 
-- Toque: destaque no down, confirme no up. Margem de uns 10px ao redor do alvo; permita cancelar arrastando para fora e voltar.
-- Drag e swipe: limiar de uns 10px antes de fixar a direção, depois rastreie 1:1.
-- Reconheça todos os gestos possíveis em paralelo desde o primeiro movimento e cancele os perdedores quando a intenção ficar clara. Evite recognizers que só informam o estado final (eventos tipo `swipeleft`).
-- Detectar duplo toque atrasa o toque simples. Só pague esse custo onde o duplo toque existe.
+- Tap: highlight on down, confirm on up. About 10px of margin around the target; allow canceling by dragging out and back.
+- Drag and swipe: a threshold of about 10px before locking the direction, then track 1:1.
+- Recognize all possible gestures in parallel from the first movement and cancel the losers once the intent is clear. Avoid recognizers that only report the final state (events like `swipeleft`).
+- Detecting a double tap delays the single tap. Only pay that cost where a double tap exists.
 
-## 10. Suavidade por frame
+## 10. Smoothness per frame
 
-- Anime só `transform` e `opacity`. Use `will-change` quando o movimento for iminente e remova depois.
-- `requestAnimationFrame` é o relógio sincronizado com a tela.
-- Mantenha o deslocamento por frame abaixo do limiar de percepção para evitar efeito estroboscópico. Em movimento muito rápido, um leve blur ou estiramento comunica velocidade melhor que um rastro nítido.
+- Animate only `transform` and `opacity`. Use `will-change` when motion is imminent and remove it afterward.
+- `requestAnimationFrame` is the clock synchronized with the screen.
+- Keep the per-frame displacement below the perception threshold to avoid a strobing effect. In very fast motion, a slight blur or stretch conveys speed better than a sharp trail.
 
 ## 11. Reduced motion
 
-Reduced motion não é ausência de feedback; é um equivalente sem movimento vestibular.
+Reduced motion is not the absence of feedback; it is an equivalent without vestibular motion.
 
-- Com `prefers-reduced-motion: reduce`, troque slide, spring e parallax por fade curto ou mudança instantânea. Tire o quique. Mantenha as mudanças de opacidade e cor que ajudam a entender.
-- Remova a animação, não a posição. Um sheet fechado com `translateY(100%)` continua fora da tela; só deixa de deslizar.
+- With `prefers-reduced-motion: reduce`, replace slide, spring, and parallax with a short fade or an instant change. Remove the bounce. Keep the opacity and color changes that help understanding.
+- Remove the animation, not the position. A sheet closed with `translateY(100%)` stays off screen; it just stops sliding.
 
 ```css
 @media (prefers-reduced-motion: reduce) {
@@ -168,35 +168,35 @@ animate(el, { y: target }, reduceMotion
   : { type: 'spring', bounce: 0, visualDuration: 0.4 });
 ```
 
-Evite também fundo em movimento ocupando a tela toda, oscilação lenta em loop (perto de 0,2 Hz) e salto brusco de brilho; suavize a troca entre tema claro e escuro.
+Also avoid full-screen moving backgrounds, slow looping oscillation (near 0.2 Hz), and abrupt brightness jumps; soften the switch between light and dark themes.
 
 ## Review
 
-Ao revisar uma interação, percorra a lista e reporte só o que falha, com arquivo e linha:
+When reviewing an interaction, go through the list and report only what fails, with file and line:
 
-1. Feedback aparece no `pointerdown`?
-2. O drag respeita o ponto onde o elemento foi agarrado e usa `setPointerCapture`?
-3. Dá para agarrar a animação no meio e reverter sem salto?
-4. A animação parte do valor na tela e herda a velocidade de soltura?
-5. O encaixe usa projeção de momentum e o sinal da velocidade?
-6. Quique só aparece depois de gesto com momentum?
-7. Limites usam rubber-band?
-8. Entrada e saída pelo mesmo caminho, ancoradas no gatilho?
-9. Só `transform` e `opacity` são animados?
-10. Com reduced motion, o elemento termina na posição certa, sem slide nem spring?
+1. Does feedback appear on `pointerdown`?
+2. Does the drag respect the point where the element was grabbed and use `setPointerCapture`?
+3. Can you grab the animation midway and reverse it without a jump?
+4. Does the animation start from the on-screen value and inherit the release velocity?
+5. Does snapping use momentum projection and the sign of the velocity?
+6. Does bounce only appear after a gesture with momentum?
+7. Do the limits use rubber-band?
+8. Entry and exit by the same path, anchored to the trigger?
+9. Are only `transform` and `opacity` animated?
+10. With reduced motion, does the element end up in the right position, with no slide or spring?
 
-Formato: `[falha] arquivo:linha — o que acontece — correção sugerida`. Se nada falhar, diga isso em uma linha.
+Format: `[fail] file:line — what happens — suggested fix`. If nothing fails, say so in one line.
 
-## Referência rápida
+## Quick reference
 
-| Necessidade | Técnica | Valor |
+| Need | Technique | Value |
 | --- | --- | --- |
-| Spring padrão | Criticamente amortecido | damping `1.0`, response `0.3–0.4` |
-| Spring após flick | Pouco quique | damping `~0.8`, response `0.3–0.4` |
-| Gesto → spring | Passar a velocidade de soltura | `velocidade / (alvo − atual)` se relativa |
-| Ponto de parada do flick | Projetar momentum | `atual + (v/1000)·d/(1−d)`, `d ≈ 0.998` |
-| Interromper | Partir do valor na tela | ler o transform atual |
-| Fechar ou voltar | Sinal da velocidade | na soltura |
-| Drag 1:1 | Pointer Events + capture | respeitar o ponto agarrado |
-| Limite | Rubber-band | resistência progressiva |
-| Reduced motion | Fade ou salto, posição mantida | `prefers-reduced-motion` |
+| Default spring | Critically damped | damping `1.0`, response `0.3–0.4` |
+| Spring after a flick | Slight bounce | damping `~0.8`, response `0.3–0.4` |
+| Gesture → spring | Pass the release velocity | `velocity / (target − current)` if relative |
+| Flick stopping point | Project momentum | `current + (v/1000)·d/(1−d)`, `d ≈ 0.998` |
+| Interrupt | Start from the on-screen value | read the current transform |
+| Close or return | Sign of the velocity | at release |
+| 1:1 drag | Pointer Events + capture | respect the grabbed point |
+| Limit | Rubber-band | progressive resistance |
+| Reduced motion | Fade or jump, position kept | `prefers-reduced-motion` |

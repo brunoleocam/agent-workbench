@@ -1,37 +1,37 @@
-# Django — segurança
+# Django — security
 
-Última revisão: 2026-11-03
+Last reviewed: 2026-11-03
 
-Escopo: Django 4.2 LTS e 5.x, Python 3.10+, com ORM, templates e middleware padrão. Django REST Framework coberto no essencial. Regras gerais de Python estão em `python-general-web-security.md`.
+Scope: Django 4.2 LTS and 5.x, Python 3.10+, with the ORM, templates, and default middleware. Django REST Framework covered in the essentials. General Python rules are in `python-general-web-security.md`.
 
-## Recomendações
+## Recommendations
 
-- Produção: `DEBUG = False`, `SECRET_KEY` do ambiente, `ALLOWED_HOSTS` explícito. Rode `python manage.py check --deploy` e trate os avisos.
-- HTTPS: `SECURE_SSL_REDIRECT`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, `SECURE_HSTS_SECONDS` (comece baixo e aumente). Atrás de proxy TLS, `SECURE_PROXY_SSL_HEADER` só se o proxy sobrescrever o header.
-- Middleware: mantenha `SecurityMiddleware`, `CsrfViewMiddleware`, `XFrameOptionsMiddleware`.
-- CSRF: `{% csrf_token %}` em formulários POST. `@csrf_exempt` só para endpoint com outra autenticação (assinatura de webhook). Em Django 4.0+, origens HTTPS confiáveis em `CSRF_TRUSTED_ORIGINS` precisam do esquema.
-- Templates: autoescape ligado. `|safe`, `mark_safe` e `{% autoescape off %}` só em HTML sanitizado. Dado para JS via `json_script`.
-- ORM parametriza. Em `raw()`, `RawSQL` e `cursor.execute`, passe `params`. Evite `extra()`. Nome de campo vindo do usuário em `order_by` só por allowlist.
-- Autorização por objeto: `get_object_or_404(Invoice, pk=pk, owner=request.user)` ou queryset filtrado. `@login_required` e `LoginRequiredMixin` não checam dono. Django 5.1 tem `LoginRequiredMiddleware` para exigir login por padrão.
-- Forms: `ModelForm` com `fields` explícito, nunca `"__all__"` em form exposto a usuário comum.
-- DRF: `DEFAULT_PERMISSION_CLASSES` restritivo (o padrão é `AllowAny`), `get_queryset()` filtrado pelo usuário, serializers com `fields` explícitos e `read_only_fields` para campos privilegiados, throttling em autenticação.
-- Senhas: hashers padrão (PBKDF2, ou Argon2 instalando `argon2-cffi`) e `AUTH_PASSWORD_VALIDATORS` ativos.
-- Redirect: valide `next` com `url_has_allowed_host_and_scheme()`.
-- Uploads: `FILE_UPLOAD_MAX_MEMORY_SIZE` e `DATA_UPLOAD_MAX_MEMORY_SIZE` adequados, validação de tipo, `MEDIA_ROOT` servido sem execução e, para arquivo privado, por view autorizada.
-- Admin: URL não óbvia não é controle; exija usuários staff com senha forte e, se possível, MFA e restrição de rede.
-- Dependências: `pip-audit` no CI; atualize dentro da série LTS.
+- Production: `DEBUG = False`, `SECRET_KEY` from the environment, explicit `ALLOWED_HOSTS`. Run `python manage.py check --deploy` and address the warnings.
+- HTTPS: `SECURE_SSL_REDIRECT`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, `SECURE_HSTS_SECONDS` (start low and increase). Behind a TLS proxy, `SECURE_PROXY_SSL_HEADER` only if the proxy overwrites the header.
+- Middleware: keep `SecurityMiddleware`, `CsrfViewMiddleware`, `XFrameOptionsMiddleware`.
+- CSRF: `{% csrf_token %}` in POST forms. `@csrf_exempt` only for an endpoint with other authentication (a webhook signature). In Django 4.0+, trusted HTTPS origins in `CSRF_TRUSTED_ORIGINS` need the scheme.
+- Templates: autoescape on. `|safe`, `mark_safe`, and `{% autoescape off %}` only on sanitized HTML. Data for JS via `json_script`.
+- The ORM parameterizes. In `raw()`, `RawSQL`, and `cursor.execute`, pass `params`. Avoid `extra()`. A field name from the user in `order_by` only through an allowlist.
+- Per-object authorization: `get_object_or_404(Invoice, pk=pk, owner=request.user)` or a filtered queryset. `@login_required` and `LoginRequiredMixin` do not check ownership. Django 5.1 has `LoginRequiredMiddleware` to require login by default.
+- Forms: `ModelForm` with explicit `fields`, never `"__all__"` on a form exposed to ordinary users.
+- DRF: a restrictive `DEFAULT_PERMISSION_CLASSES` (the default is `AllowAny`), `get_queryset()` filtered by the user, serializers with explicit `fields` and `read_only_fields` for privileged fields, throttling on authentication.
+- Passwords: default hashers (PBKDF2, or Argon2 by installing `argon2-cffi`) and `AUTH_PASSWORD_VALIDATORS` active.
+- Redirect: validate `next` with `url_has_allowed_host_and_scheme()`.
+- Uploads: appropriate `FILE_UPLOAD_MAX_MEMORY_SIZE` and `DATA_UPLOAD_MAX_MEMORY_SIZE`, type validation, `MEDIA_ROOT` served without execution and, for private files, through an authorized view.
+- Admin: a non-obvious URL is not a control; require staff users with strong passwords and, if possible, MFA and network restriction.
+- Dependencies: `pip-audit` in CI; update within the LTS series.
 
-## Vulnerabilidades comuns
+## Common vulnerabilities
 
-- `DEBUG = True` em produção expondo settings e traceback.
-- IDOR: `Invoice.objects.get(pk=pk)` em view com `@login_required`.
-- XSS por `{{ bio|safe }}`.
-- SQL injection em `raw(f"... {q}")` ou `extra(where=[...])` montado com string.
-- ViewSet DRF sem permissão, herdando `AllowAny`.
-- Serializer `fields = "__all__"` aceitando `is_staff`.
-- Open redirect por `?next=` sem validação.
+- `DEBUG = True` in production exposing settings and tracebacks.
+- IDOR: `Invoice.objects.get(pk=pk)` in a view with `@login_required`.
+- XSS by `{{ bio|safe }}`.
+- SQL injection in `raw(f"... {q}")` or `extra(where=[...])` built with a string.
+- A DRF ViewSet without permissions, inheriting `AllowAny`.
+- A serializer `fields = "__all__"` accepting `is_staff`.
+- Open redirect through `?next=` without validation.
 
-## Implementação segura
+## Secure implementation
 
 ```python
 from django.contrib.auth.decorators import login_required
@@ -53,7 +53,7 @@ def after_login(request):
 rows = Invoice.objects.raw("SELECT * FROM billing_invoice WHERE number = %s", [number])
 ```
 
-## Implementação inadequada e risco
+## Inadequate implementation and risk
 
 ```python
 @login_required
@@ -64,18 +64,18 @@ def invoice_detail(request, pk):
 rows = Invoice.objects.raw(f"SELECT * FROM billing_invoice WHERE number = '{number}'")
 ```
 
-Risco: qualquer usuário logado lê a fatura de outro trocando o `pk`; a query crua permite injeção de SQL com o número informado.
+Risk: any logged-in user reads another user's invoice by changing the `pk`; the raw query allows SQL injection with the supplied number.
 
-## Testes de segurança
+## Security tests
 
-- `TestCase` com dois usuários: B recebe 404 ao acessar objeto de A em views e endpoints DRF.
-- `Client(enforce_csrf_checks=True)`: POST sem token retorna 403.
-- Template renderizado com `<script>` mostra o texto escapado.
-- `next=https://evil.example` cai no fallback.
-- `manage.py check --deploy` sem avisos não justificados.
-- Ferramentas opcionais: Bandit, `pip-audit`, Semgrep.
+- `TestCase` with two users: B gets 404 when accessing A's object in views and DRF endpoints.
+- `Client(enforce_csrf_checks=True)`: a POST without a token returns 403.
+- A template rendered with `<script>` shows the escaped text.
+- `next=https://evil.example` falls back to the default.
+- `manage.py check --deploy` with no unjustified warnings.
+- Optional tools: Bandit, `pip-audit`, Semgrep.
 
-## Fontes
+## Sources
 
 - https://cheatsheetseries.owasp.org/cheatsheets/Django_Security_Cheat_Sheet.html
 - https://cheatsheetseries.owasp.org/cheatsheets/Django_REST_Framework_Cheat_Sheet.html

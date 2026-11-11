@@ -1,6 +1,6 @@
 {
   "base": "complete-feature",
-  "description": "Código alterado depois da prova: o gate reprova até check_proofs rodar de novo e a review ser registrada para o novo estado.",
+  "description": "Code changed after the proof: the gate fails until check_proofs runs again and the review is recorded for the new state.",
   "steps": [
     {
       "script": "check_proofs.py",

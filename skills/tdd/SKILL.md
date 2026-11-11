@@ -5,18 +5,18 @@ description: Implements behavior by writing a failing test, making it pass, then
 
 # TDD
 
-Nenhum código de produção sem um teste falhando antes, pelo motivo certo.
+No production code without a failing test first, failing for the right reason.
 
-## Ciclo
+## Cycle
 
-1. Red. Escreva o menor teste que expressa o critério de aceite. Rode. Confirme que falha pelo motivo esperado, não por erro de setup.
-2. Green. Escreva o mínimo para passar. Rode o teste alvo.
-3. Refactor. Melhore o código sem mudar o comportamento. A suíte relevante continua verde.
+1. Red. Write the smallest test that expresses the acceptance criterion. Run it. Confirm it fails for the expected reason, not because of a setup error.
+2. Green. Write the minimum to pass. Run the target test.
+3. Refactor. Improve the code without changing behavior. The relevant suite stays green.
 
-Se o código de produção foi escrito antes do teste, apague esse código e recomece pelo teste. Não adapte o teste para caber no código já feito.
+If production code was written before the test, delete that code and start over from the test. Do not adapt the test to fit the code already done.
 
-Bug: o teste vermelho é a reprodução. Correção vem depois.
+Bug: the red test is the reproduction. The fix comes after.
 
-Não use quando o usuário pedir protótipo descartável, ou quando não existir runner. Nesse caso, diga o que não foi verificado. Dúvida de "só desta vez" em código que vai ficar: faça o ciclo.
+Do not use when the user asks for a throwaway prototype, or when no runner exists. In that case, say what was not verified. Doubts of "just this once" on code that will stay: do the cycle.
 
-Higiene do teste: skill `test-hygiene`.
+Test hygiene: the `test-hygiene` skill.

@@ -3,54 +3,54 @@ name: code-review
 description: Independently reviews an implementation against requirements, specification, acceptance criteria, and tests, and returns findings with severity and evidence. Use when the user asks for a code review, or after a meaningful change has been implemented and verified (revisão, code review, conformidade com a spec).
 ---
 
-# Revisão independente
+# Independent review
 
-Revise a mudança. Testes passando não fecham a revisão.
+Review the change. Passing tests do not close the review.
 
-Compare nesta ordem:
+Compare in this order:
 
-1. Requisitos
+1. Requirements
 2. Spec
-3. Critérios de aceite
-4. Testes e evals
-5. Implementação
+3. Acceptance criteria
+4. Tests and evals
+5. Implementation
 
-## Procure
+## Look for
 
-Conformidade com requisito e spec, funcionalidade faltante, comportamento incorreto, violação de arquitetura, segurança, tratamento de erro, manutenibilidade, complexidade, performance, lacuna de teste, comportamento não intencional, mudança desnecessária.
+Conformance to requirement and spec, missing functionality, incorrect behavior, architecture violations, security, error handling, maintainability, complexity, performance, test gaps, unintended behavior, unnecessary changes.
 
 ## Verification Audit
 
-Não assuma que o trabalho do tester está correto. Para cada critério de aceite e seus TESTs:
+Do not assume the tester's work is correct. For each acceptance criterion and its TESTs:
 
-1. O teste corresponde ao critério?
-2. Verifica o comportamento esperado ou só que o código roda?
-3. Falharia se o requisito estivesse implementado errado? Diga qual mutação passaria.
-4. Há caso negativo?
-5. Há caso-limite relevante?
-6. As assertions são específicas?
-7. Verifica resultado ou detalhe de implementação?
-8. Alguma condição importante está sem teste?
-9. A prova é do código atual? (`validate_verification.py` aponta prova obsoleta.)
+1. Does the test match the criterion?
+2. Does it verify the expected behavior or only that the code runs?
+3. Would it fail if the requirement were implemented wrong? Say which mutation would slip through.
+4. Is there a negative case?
+5. Is there a relevant boundary case?
+6. Are the assertions specific?
+7. Does it check the result or an implementation detail?
+8. Is any important condition untested?
+9. Is the proof from the current code? (`validate_verification.py` flags a stale proof.)
 
-Procure uma forma de a implementação estar errada com todos os testes verdes. Teste que não falharia com o requisito errado é achado `major` ou `blocker`, mesmo com o gate verde.
+Look for a way the implementation could be wrong with every test green. A test that would not fail with the wrong requirement is a `major` or `blocker` finding, even with the gate green.
 
-## Saída
+## Output
 
-Para cada achado:
+For each finding:
 
-- severidade: `blocker`, `major` ou `minor`
-- evidência: arquivo, comportamento ou critério violado
-- o que falta para ficar correto
+- severity: `blocker`, `major`, or `minor`
+- evidence: file, behavior, or criterion violated
+- what is missing to be correct
 
-Se não houver achado, diga isso e cite o que foi comparado (requisito, spec, testes executados).
+If there is no finding, say so and cite what was compared (requirement, spec, tests run).
 
-Em M ou maior, grave `<reviews_dir>/<slug>.md` (padrão `docs/reviews/`): front matter `status`, `reviewer` e `fingerprint` (de `check_proofs.py --fingerprint`), a seção Verification Audit e um `### FIND-NNN` por achado com `- Severity:`, `- Status:` (open, resolved, accepted) e, se aceito, `- Justification:`. Formato em `agent-system/docs/artifacts.md`. `validate_verification.py` lê esse arquivo.
+For M or larger, write `<reviews_dir>/<slug>.md` (default `docs/reviews/`): front matter `status`, `reviewer`, and `fingerprint` (from `check_proofs.py --fingerprint`), the Verification Audit section, and one `### FIND-NNN` per finding with `- Severity:`, `- Status:` (open, resolved, accepted) and, if accepted, `- Justification:`. Format in `agent-system/docs/artifacts.md`. `validate_verification.py` reads this file.
 
-Achado válido não se encerra com um "ciente". Corrija, teste, rode regressão e revise de novo. Só dispense um achado com o motivo escrito no checkpoint ou na nota de review.
+A valid finding is not closed with an "acknowledged". Fix it, test it, run the regression, and review again. Dismiss a finding only with the reason written in the checkpoint or the review note.
 
-Não substitua esta revisão por Bugbot, pelo subagent built-in `security-review` do Cursor nem pela skill `/security-review` do plugin. Segurança especializada é complementar (`security-reviewer`). Esta skill é o confronto requisito → código.
+Do not replace this review with Bugbot, Cursor's built-in `security-review` subagent, or the plugin's `/security-review` skill. Specialized security is complementary (`security-reviewer`). This skill is the requirement → code comparison.
 
 ## Handoff
 
-O subagent `reviewer` faz esta revisão. Ele não implementa a correção. FAIL volta ao `implementer` e ao `tester`, depois ao reviewer de novo.
+The `reviewer` subagent does this review. It does not implement the fix. FAIL goes back to the `implementer` and `tester`, then to the reviewer again.

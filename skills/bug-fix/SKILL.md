@@ -3,20 +3,20 @@ name: bug-fix
 description: Diagnoses a defect, reproduces it with a failing test, applies the smallest fix, and checks regressions. Use when the user reports a bug, regression, incorrect behavior, or asks to fix a defect (bug, defeito, correção, regressão).
 ---
 
-# Correção de defeito
+# Defect fix
 
-## Fluxo
+## Flow
 
-1. Siga `debug` até a causa ter evidência. Registre com `root-cause`. Só então escreva o menor teste que falha pelo motivo certo, via `tdd`.
-2. Localize a causa no código existente. Não reescreva o módulo para "aproveitar".
-3. Se a correção mudar comportamento aceito, requisito ou arquitetura, pare e use `change-request`. Correção local segue nesta skill.
-4. Implemente o mínimo para o teste passar. Depois refatore só se o comportamento pretendido permanecer.
-5. Rode o teste alvo e a regressão relevante.
-6. Não declare corrigido com teste obrigatório falhando.
-7. Para defeito não trivial, revise com `code-review` (o teste passar não basta) e atualize `docs/progress/CURRENT.md` se o projeto tiver progresso spec-driven.
+1. Follow `debug` until the cause has evidence. Record it with `root-cause`. Only then write the smallest test that fails for the right reason, via `tdd`.
+2. Locate the cause in the existing code. Do not rewrite the module to "take advantage".
+3. If the fix changes accepted behavior, a requirement, or architecture, stop and use `change-request`. A local fix stays in this skill.
+4. Implement the minimum for the test to pass. Then refactor only if the intended behavior remains.
+5. Run the target test and the relevant regression.
+6. Do not declare it fixed with a required test failing.
+7. For a non-trivial defect, review with `code-review` (the test passing is not enough) and update `docs/progress/CURRENT.md` if the project has spec-driven progress.
 
-Informe: causa, teste que prova a correção, resultado da regressão, risco residual.
+Report: cause, the test that proves the fix, the regression result, residual risk.
 
 ## Handoff
 
-`debugger` confirma a causa. `tester` traz a evidência. `reviewer` revisa sem corrigir. Escopo novo volta ao orchestrator via `change-request`.
+The `debugger` confirms the cause. The `tester` brings the evidence. The `reviewer` reviews without fixing. New scope goes back to the orchestrator via `change-request`.

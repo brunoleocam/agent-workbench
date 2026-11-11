@@ -1,37 +1,37 @@
-# FastAPI — segurança
+# FastAPI — security
 
-Última revisão: 2026-11-03
+Last reviewed: 2026-11-03
 
-Escopo: FastAPI 0.100+ com Pydantic v2, Python 3.10+, ASGI (Uvicorn ou similar), banco via SQLAlchemy 2.x ou similar. Regras gerais de Python (subprocess, pickle, arquivos) estão em `python-general-web-security.md`.
+Scope: FastAPI 0.100+ with Pydantic v2, Python 3.10+, ASGI (Uvicorn or similar), database via SQLAlchemy 2.x or similar. General Python rules (subprocess, pickle, files) are in `python-general-web-security.md`.
 
-## Recomendações
+## Recommendations
 
-- Entrada: modelos Pydantic com tipos e limites (`Field(max_length=...)`, `conint`, `EmailStr`). Para corpo que não deve aceitar campos extras, `model_config = ConfigDict(extra="forbid")`.
-- Saída: declare `response_model` (ou anotação de retorno com modelo de saída) para filtrar campos. Nunca devolva o objeto ORM com hash de senha ou campos internos.
-- Autenticação como dependência (`Depends(get_current_user)`). `OAuth2PasswordBearer` só extrai o token do header; a validação (assinatura, expiração, emissor, audiência) é sua.
-- JWT: fixe a lista de algoritmos ao decodificar (PyJWT: `jwt.decode(token, key, algorithms=["HS256"])`), exija `exp`, use chave forte do ambiente.
-- Autorização por recurso: a dependência entrega o usuário; a consulta filtra por dono (`where(Order.owner_id == user.id)`). Use dependências reutilizáveis para papéis.
-- Mass assignment: não faça `Model(**payload.model_dump())` com o modelo de entrada amplo. Tenha modelos separados de criação/atualização sem campos privilegiados.
-- SQL: ORM ou `text()` com parâmetros nomeados. Nunca f-string na query.
-- CORS (`CORSMiddleware`): `allow_origins` explícito. Não combine curinga com `allow_credentials=True`.
-- `TrustedHostMiddleware` com os hosts reais quando a aplicação gera URLs a partir do `Host`.
-- Documentação: em produção pública, desligue ou proteja `/docs`, `/redoc` e `/openapi.json` (`FastAPI(docs_url=None, redoc_url=None, openapi_url=None)`) se a API não for pública.
-- Upload (`UploadFile`): FastAPI não limita tamanho por padrão. Limite no proxy ou leia em blocos com teto; valide tipo pelo conteúdo; gere o nome no servidor.
-- Rate limit não vem embutido: aplique no proxy/gateway ou com biblioteca, principalmente em login e reset.
-- Erros: handler que não devolve stack trace; `debug=False` em produção.
-- Dependências: `pip-audit` no CI.
+- Input: Pydantic models with types and limits (`Field(max_length=...)`, `conint`, `EmailStr`). For a body that must not accept extra fields, `model_config = ConfigDict(extra="forbid")`.
+- Output: declare `response_model` (or a return annotation with an output model) to filter fields. Never return the ORM object with a password hash or internal fields.
+- Authentication as a dependency (`Depends(get_current_user)`). `OAuth2PasswordBearer` only extracts the token from the header; validation (signature, expiry, issuer, audience) is yours.
+- JWT: pin the list of algorithms when decoding (PyJWT: `jwt.decode(token, key, algorithms=["HS256"])`), require `exp`, use a strong key from the environment.
+- Authorization per resource: the dependency delivers the user; the query filters by owner (`where(Order.owner_id == user.id)`). Use reusable dependencies for roles.
+- Mass assignment: do not do `Model(**payload.model_dump())` with the broad input model. Have separate create/update models without privileged fields.
+- SQL: ORM or `text()` with named parameters. Never an f-string in the query.
+- CORS (`CORSMiddleware`): explicit `allow_origins`. Do not combine a wildcard with `allow_credentials=True`.
+- `TrustedHostMiddleware` with the real hosts when the application generates URLs from `Host`.
+- Documentation: in a public production deployment, turn off or protect `/docs`, `/redoc`, and `/openapi.json` (`FastAPI(docs_url=None, redoc_url=None, openapi_url=None)`) if the API is not public.
+- Upload (`UploadFile`): FastAPI does not limit size by default. Limit at the proxy or read in chunks with a ceiling; validate type by content; generate the name on the server.
+- Rate limiting is not built in: apply it at the proxy/gateway or with a library, mainly on login and reset.
+- Errors: a handler that does not return a stack trace; `debug=False` in production.
+- Dependencies: `pip-audit` in CI.
 
-## Vulnerabilidades comuns
+## Common vulnerabilities
 
-- Endpoint que usa `Depends(get_current_user)` mas busca o recurso só pelo ID (IDOR).
-- `response_model` ausente devolvendo `hashed_password`.
-- JWT decodificado sem verificar assinatura ou com algoritmo vindo do token.
-- `UserUpdate` com `is_admin` aceito do cliente.
-- CORS aberto com credenciais.
-- Upload sem limite consumindo memória ou disco.
-- `/docs` público expondo endpoints internos.
+- An endpoint that uses `Depends(get_current_user)` but fetches the resource only by ID (IDOR).
+- A missing `response_model` returning `hashed_password`.
+- A JWT decoded without verifying the signature or with the algorithm taken from the token.
+- A `UserUpdate` that accepts `is_admin` from the client.
+- Open CORS with credentials.
+- An upload without a limit consuming memory or disk.
+- A public `/docs` exposing internal endpoints.
 
-## Implementação segura
+## Secure implementation
 
 ```python
 from fastapi import Depends, FastAPI, HTTPException
@@ -59,7 +59,7 @@ async def update_note(note_id: int, body: NoteUpdate,
     return note
 ```
 
-## Implementação inadequada e risco
+## Inadequate implementation and risk
 
 ```python
 @app.patch("/notes/{note_id}")
@@ -71,17 +71,17 @@ async def update_note(note_id: int, body: dict, db=Depends(get_db)):
     return note
 ```
 
-Risco: sem autenticação nem filtro por dono, qualquer cliente altera qualquer nota e qualquer coluna (inclusive `owner_id`), e a resposta devolve o objeto inteiro.
+Risk: with no authentication or owner filter, any client changes any note and any column (including `owner_id`), and the response returns the whole object.
 
-## Testes de segurança
+## Security tests
 
-- `TestClient`/`httpx`: sem token → 401; token de outro usuário → 404 ou 403; token expirado ou com assinatura trocada → 401; token com `alg` diferente → 401.
-- Corpo com campo extra → 422.
-- Resposta não contém campos fora do `response_model`.
-- Upload acima do limite é recusado.
-- Ferramentas opcionais: Bandit, `pip-audit`, Semgrep.
+- `TestClient`/`httpx`: no token → 401; another user's token → 404 or 403; an expired token or one with a swapped signature → 401; a token with a different `alg` → 401.
+- A body with an extra field → 422.
+- The response does not contain fields outside the `response_model`.
+- An upload above the limit is refused.
+- Optional tools: Bandit, `pip-audit`, Semgrep.
 
-## Fontes
+## Sources
 
 - https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html
 - https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html

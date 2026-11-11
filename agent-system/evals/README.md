@@ -1,18 +1,18 @@
-# Evals do harness
+# Harness evals
 
-Fixtures determinísticas dos gates, sem API externa nem serviço pago. Comportamento do modelo (classificação, qualidade de spec, review) não é avaliado aqui.
+Deterministic fixtures for the gates, with no external API or paid service. Model behavior (classification, spec quality, review) is not evaluated here.
 
-`python agent-system/scripts/run_evals.py` copia cada fixture para uma pasta temporária, troca `__PYTHON__` pelo interpretador atual, executa os passos e compara exit code, `contains` e `not_contains`. Passo `write` altera um arquivo (por exemplo, para tornar uma prova obsoleta). Passo `stamp` grava no front matter de um relatório o fingerprint atual (`check_proofs.py --fingerprint`), como o revisor faz. `base` herda o projeto de outra fixture. Os TESTs das fixtures rodam arquivos de teste em `checks/`, como um projeto real; nada usa `python -c`.
+`python agent-system/scripts/run_evals.py` copies each fixture to a temporary folder, replaces `__PYTHON__` with the current interpreter, runs the steps, and compares the exit code, `contains`, and `not_contains`. A `write` step changes a file (for example, to make a proof stale). A `stamp` step writes the current fingerprint (`check_proofs.py --fingerprint`) into a report's front matter, as the reviewer does. `base` inherits the project from another fixture. The fixtures' TESTs run test files in `checks/`, like a real project; nothing uses `python -c`.
 
-| Fixture | O que prova |
+| Fixture | What it proves |
 | --- | --- |
-| `complete-feature` | feature M completa passa em todos os gates |
-| `ambiguous-spec` | pergunta aberta e REQ sem AC viram aviso; `--strict` reprova |
-| `dependency-cycle` | ciclo, dependência inexistente e bloqueio sem causa reprovam o plano |
-| `proof-fails` | falha da aplicação (FAIL) e do ambiente (ERROR) são separadas |
-| `stale-proof` | código mudou depois da prova; doc do harness não invalida |
-| `security-blocking` | risco HIGH exige revisão; achado HIGH aberto e risco aceito sem justificativa bloqueiam |
-| `criterion-without-test` | AC sem TEST reprova o gate |
-| `weak-test-passes-gate` | limite conhecido: teste sem asserção passa no gate; só a Verification Audit pega |
+| `complete-feature` | a complete M feature passes every gate |
+| `ambiguous-spec` | an open question and a REQ without an AC become a warning; `--strict` fails |
+| `dependency-cycle` | a cycle, a nonexistent dependency, and a block without a cause fail the plan |
+| `proof-fails` | an application failure (FAIL) and an environment failure (ERROR) are kept separate |
+| `stale-proof` | code changed after the proof; harness docs do not invalidate it |
+| `security-blocking` | HIGH risk requires a review; an open HIGH finding and accepted risk without justification block |
+| `criterion-without-test` | an AC without a TEST fails the gate |
+| `weak-test-passes-gate` | known limit: a test without an assertion passes the gate; only the Verification Audit catches it |
 
-`test_system.py` também roda `run_evals.py`.
+`test_system.py` also runs `run_evals.py`.

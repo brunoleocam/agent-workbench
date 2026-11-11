@@ -1,16 +1,16 @@
-# Materiais, profundidade e feedback multimodal
+# Materials, depth, and multimodal feedback
 
-## Translucidez indica hierarquia
+## Translucency signals hierarchy
 
-A Apple usa materiais translúcidos como uma camada funcional flutuante, que organiza sem roubar o foco. Na web, aproxime com `backdrop-filter`.
+Apple uses translucent materials as a functional floating layer that organizes without stealing focus. On the web, approximate it with `backdrop-filter`.
 
-- Barras de navegação, toolbars e sheets como camadas translúcidas (`backdrop-filter: blur()` + fundo semitransparente) com o conteúdo rolando por baixo, não barras opacas ocupando uma faixa fixa.
-- O peso do material codifica hierarquia: materiais mais escuros e densos separam regiões estruturais (sidebars); mais claros chamam atenção para elementos interativos (botões). Nunca empilhe uma superfície translúcida clara sobre outra; a legibilidade desaba.
-- Superfície maior parece mais espessa: blur mais forte e sombra mais funda que em chips pequenos. Sombra mais pesada sobre conteúdo movimentado ou texto; mais leve sobre fundo liso.
-- Escureça para focar, separe para manter o fluxo. Tarefa modal: superfície com scrim escuro e fundo empurrado para trás. Painel paralelo, não bloqueante: translucidez e deslocamento, sem scrim. Em sheets empilhados, escureça e empurre cada camada pai progressivamente.
-- Texto sobre superfície translúcida: nada de cinza chapado. Use mais contraste, peso um pouco maior e um leve aumento de letter-spacing. Cor vai numa camada sólida, não no primeiro plano translúcido.
-- Em vez de divisória de 1px sob um header fixo, use um leve blur ou máscara de gradiente onde o conteúdo encontra o elemento flutuante, só onde há sobreposição de fato.
-- Materialize, não só faça fade: em superfícies com blur, anime raio do blur e escala juntos na entrada e na saída.
+- Navigation bars, toolbars, and sheets as translucent layers (`backdrop-filter: blur()` + a semi-transparent background) with the content scrolling underneath, not opaque bars taking up a fixed strip.
+- A material's weight encodes hierarchy: darker, denser materials separate structural regions (sidebars); lighter ones draw attention to interactive elements (buttons). Never stack a light translucent surface on another; legibility collapses.
+- A larger surface looks thicker: stronger blur and a deeper shadow than on small chips. A heavier shadow over busy content or text; a lighter one over a plain background.
+- Darken to focus, separate to keep the flow. A modal task: a surface with a dark scrim and the background pushed back. A parallel, non-blocking panel: translucency and displacement, no scrim. In stacked sheets, progressively darken and push back each parent layer.
+- Text on a translucent surface: no flat gray. Use more contrast, slightly heavier weight, and a slight increase in letter-spacing. Color goes on a solid layer, not on the translucent foreground.
+- Instead of a 1px divider under a fixed header, use a slight blur or a gradient mask where the content meets the floating element, only where there is real overlap.
+- Materialize, don't just fade: on blurred surfaces, animate the blur radius and scale together on entry and exit.
 
 ```css
 .toolbar {
@@ -20,12 +20,12 @@ A Apple usa materiais translúcidos como uma camada funcional flutuante, que org
 }
 ```
 
-## Acessibilidade dos materiais
+## Material accessibility
 
-- `prefers-reduced-transparency: reduce`: superfície mais sólida, fundo mais opaco, sem blur.
-- `prefers-contrast: more`: fundo quase sólido e borda definida e contrastante.
+- `prefers-reduced-transparency: reduce`: a more solid surface, a more opaque background, no blur.
+- `prefers-contrast: more`: a nearly solid background and a defined, contrasting border.
 
-`prefers-reduced-transparency` ainda não tem suporte amplo entre navegadores. O visual padrão precisa ser legível sem depender dessa media query.
+`prefers-reduced-transparency` does not have wide browser support yet. The default look must be legible without depending on that media query.
 
 ```css
 @media (prefers-reduced-transparency: reduce) {
@@ -33,12 +33,12 @@ A Apple usa materiais translúcidos como uma camada funcional flutuante, que org
 }
 ```
 
-## Feedback multimodal: movimento, som e haptics
+## Multimodal feedback: motion, sound, and haptics
 
-Três regras, de *Designing Audio-Haptic Experiences*:
+Three rules, from *Designing Audio-Haptic Experiences*:
 
-1. **Causalidade**: fica óbvio o que causou o feedback. Dispare no evento causal real (o toggle virou, o item encaixou) e combine o caráter do feedback com a fisicalidade da ação.
-2. **Harmonia**: visual, som e haptic no mesmo frame. Atraso entre eles quebra a ilusão; não deixe uma transition CSS atrasar o som ou a vibração.
-3. **Utilidade**: só onde vale a pena. Reserve som e haptic para momentos relevantes (sucesso, erro, confirmação, encaixe). Excesso ensina o usuário a ignorar tudo.
+1. **Causality**: it is obvious what caused the feedback. Fire on the real causal event (the toggle flipped, the item snapped) and match the character of the feedback to the physicality of the action.
+2. **Harmony**: visual, sound, and haptic in the same frame. A delay between them breaks the illusion; do not let a CSS transition delay the sound or the vibration.
+3. **Utility**: only where it is worth it. Reserve sound and haptics for relevant moments (success, error, confirmation, snapping). Excess teaches the user to ignore everything.
 
-A Vibration API não funciona no Safari do iOS. Na web, haptic é bônus em Android; o feedback visual tem de bastar sozinho.
+The Vibration API does not work on iOS Safari. On the web, haptics are a bonus on Android; the visual feedback must be enough on its own.

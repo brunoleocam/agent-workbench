@@ -1,20 +1,20 @@
-# ADR-0003: Papéis de verificação e segurança
+# ADR-0003: Verification and security roles
 
-Status: aceito
-Data: 2026-11-03
+Status: accepted
+Date: 2026-11-03
 
-## Contexto
+## Context
 
-O TLC tem um Verifier separado. O Workbench já tem um `reviewer` independente que compara requisito, spec, critério, teste e código. Segurança hoje é um item genérico da review. O Cursor tem um subagent built-in chamado `security-review`.
+TLC has a separate Verifier. The Workbench already has an independent `reviewer` that compares requirement, spec, criterion, test, and code. Security today is a generic item in the review. Cursor has a built-in subagent called `security-review`.
 
-## Decisão
+## Decision
 
-- Não criar Verifier. O `reviewer` ganha a Verification Audit: questiona se cada teste prova o critério e procura como o código poderia estar errado com os testes verdes. A independência continua: o reviewer não corrige e o implementer não faz a revisão final.
-- Criar `security-reviewer`, porque segurança exige referências por stack e um relatório próprio (`SEC-NNN`, severidade CRITICAL a INFORMATIONAL, confiança, classificação). Ele é chamado só quando o risco do pedido pede, ou por `/security-review`.
-- O nome `security-reviewer` evita conflito com o built-in `security-review`. A skill `/security-review` é do plugin e delega ao `security-reviewer`.
-- Code review e security review são complementares; nenhum substitui o outro.
+- Do not create a Verifier. The `reviewer` gains the Verification Audit: it questions whether each test proves the criterion and looks for how the code could be wrong with the tests green. Independence remains: the reviewer does not fix and the implementer does not do the final review.
+- Create `security-reviewer`, because security requires stack references and its own report (`SEC-NNN`, severity CRITICAL to INFORMATIONAL, confidence, classification). It is called only when the request's risk calls for it, or by `/security-review`.
+- The name `security-reviewer` avoids a conflict with the built-in `security-review`. The `/security-review` skill belongs to the plugin and delegates to `security-reviewer`.
+- Code review and security review are complementary; neither replaces the other.
 
-## Consequências
+## Consequences
 
-- Um agente novo no registro e no `--for-cloud`.
-- Mudança XS e S sem superfície sensível não chama o `security-reviewer`.
+- One new agent in the registry and in `--for-cloud`.
+- An XS or S change without a sensitive surface does not call the `security-reviewer`.

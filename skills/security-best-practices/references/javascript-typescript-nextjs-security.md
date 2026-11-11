@@ -1,37 +1,37 @@
-# Next.js — segurança
+# Next.js — security
 
-Última revisão: 2026-11-03
+Last reviewed: 2026-11-03
 
-Escopo: Next.js 14+ com App Router (Server Components, Server Actions, Route Handlers, Middleware), JavaScript ou TypeScript. As regras de JSX e DOM de `javascript-typescript-react-security.md` também valem aqui; esta referência cobre o que é específico do servidor do Next.
+Scope: Next.js 14+ with the App Router (Server Components, Server Actions, Route Handlers, Middleware), JavaScript or TypeScript. The JSX and DOM rules in `javascript-typescript-react-security.md` also apply here; this reference covers what is specific to the Next server.
 
-## Recomendações
+## Recommendations
 
-- Server Action é um endpoint POST público. Dentro de cada action: autentique, autorize sobre o recurso e valide os argumentos com schema. Esconder o botão não protege a action.
-- Route Handler (`app/**/route.ts`) também é endpoint público; mesma regra.
-- Middleware não deve ser a única barreira de autorização. Repita a checagem perto do dado (action, handler, camada de acesso a dados). Mantenha o Next atualizado: houve bypass de middleware por header interno (CVE-2025-29927, corrigido em 14.2.25 e 15.2.3).
-- Centralize o acesso a dados numa camada só de servidor que já filtra por usuário e devolve DTOs com os campos necessários. Marque esses módulos com `import 'server-only'` para o build falhar se forem importados por Client Component.
-- Props passadas de Server para Client Component são serializadas e chegam ao navegador. Não passe o objeto inteiro do banco (hash de senha, tokens, campos internos).
-- Variáveis `NEXT_PUBLIC_*` vão para o bundle do cliente. Segredo nunca leva esse prefixo.
-- CSRF: Server Actions só aceitam POST e o Next compara `Origin` com o host; atrás de proxy reverso com outro domínio, configure `serverActions.allowedOrigins` em vez de desligar a checagem. Route Handlers que mudam estado com cookie de sessão precisam da sua própria verificação (Origin ou token).
-- `redirect()` com destino vindo do usuário: só caminhos relativos internos ou allowlist.
-- Imagens remotas: `images.remotePatterns` restrito aos hosts reais; padrão amplo transforma o otimizador num proxy.
-- Headers: CSP (com nonce via middleware se usar scripts inline), HSTS e demais em `next.config` `headers()` ou no middleware.
-- Cookies de sessão via `cookies()` com `httpOnly`, `secure`, `sameSite`.
-- Cache: dado por usuário não pode cair em cache compartilhado. Rotas que leem `cookies()`/`headers()` são dinâmicas; ao usar `fetch` com cache ou `unstable_cache`, não inclua dado de um usuário em entrada servida a outro.
-- Erros: mensagem genérica ao cliente; detalhe só no log do servidor.
+- A Server Action is a public POST endpoint. Inside each action: authenticate, authorize over the resource, and validate the arguments with a schema. Hiding the button does not protect the action.
+- A Route Handler (`app/**/route.ts`) is also a public endpoint; same rule.
+- Middleware must not be the only authorization barrier. Repeat the check close to the data (action, handler, data access layer). Keep Next updated: there was a middleware bypass through an internal header (CVE-2025-29927, fixed in 14.2.25 and 15.2.3).
+- Centralize data access in a server-only layer that already filters by user and returns DTOs with the needed fields. Mark those modules with `import 'server-only'` so the build fails if a Client Component imports them.
+- Props passed from a Server to a Client Component are serialized and reach the browser. Do not pass the whole database object (password hash, tokens, internal fields).
+- `NEXT_PUBLIC_*` variables go into the client bundle. A secret never carries that prefix.
+- CSRF: Server Actions only accept POST and Next compares `Origin` with the host; behind a reverse proxy with another domain, configure `serverActions.allowedOrigins` instead of turning the check off. Route Handlers that change state with a session cookie need their own verification (Origin or token).
+- `redirect()` with a user-supplied destination: only internal relative paths or an allowlist.
+- Remote images: `images.remotePatterns` restricted to the real hosts; a broad pattern turns the optimizer into a proxy.
+- Headers: CSP (with a nonce via middleware if you use inline scripts), HSTS, and others in `next.config` `headers()` or in middleware.
+- Session cookies through `cookies()` with `httpOnly`, `secure`, `sameSite`.
+- Cache: per-user data cannot land in a shared cache. Routes that read `cookies()`/`headers()` are dynamic; when using `fetch` with cache or `unstable_cache`, do not include one user's data in an entry served to another.
+- Errors: a generic message to the client; detail only in the server log.
 
-## Vulnerabilidades comuns
+## Common vulnerabilities
 
-- Server Action sem checagem de permissão (`deletePost(id)` chamável por qualquer um).
-- IDOR em Route Handler `GET /api/invoices/[id]`.
-- Vazamento de campos sensíveis em props de Client Component.
-- Segredo exposto por prefixo `NEXT_PUBLIC_`.
-- Autorização feita só no middleware, com matcher que não cobre todas as rotas.
+- A Server Action without a permission check (`deletePost(id)` callable by anyone).
+- IDOR in the Route Handler `GET /api/invoices/[id]`.
+- Leaking sensitive fields in Client Component props.
+- A secret exposed by the `NEXT_PUBLIC_` prefix.
+- Authorization done only in middleware, with a matcher that does not cover every route.
 - Open redirect via `?callbackUrl=`.
-- SSRF em action que busca URL informada pelo usuário.
-- XSS por `dangerouslySetInnerHTML` com conteúdo do CMS.
+- SSRF in an action that fetches a user-supplied URL.
+- XSS by `dangerouslySetInnerHTML` with CMS content.
 
-## Implementação segura
+## Secure implementation
 
 ```ts
 'use server';
@@ -52,7 +52,7 @@ export async function deletePost(raw: unknown) {
 }
 ```
 
-## Implementação inadequada e risco
+## Inadequate implementation and risk
 
 ```ts
 'use server';
@@ -61,18 +61,18 @@ export async function deletePost(postId: string) {
 }
 ```
 
-Risco: qualquer visitante, mesmo sem login, pode invocar a action com o ID de qualquer post e apagá-lo, porque a action é um endpoint POST acessível fora da UI.
+Risk: any visitor, even without logging in, can invoke the action with any post's ID and delete it, because the action is a POST endpoint reachable outside the UI.
 
-## Testes de segurança
+## Security tests
 
-- Teste unitário de cada action e handler: sem sessão → recusa; sessão de outro usuário → recusa; argumento malformado → erro de validação.
-- Inspecionar o payload RSC/HTML da página e confirmar que campos sensíveis não aparecem.
-- Buscar `NEXT_PUBLIC_` no código e conferir que nenhum é segredo.
-- `callbackUrl=https://evil.example` não redireciona para fora.
-- Conferir a versão do Next contra avisos de segurança publicados.
-- Ferramentas opcionais: ESLint com `eslint-config-next`, `npm audit`, Semgrep.
+- A unit test for each action and handler: no session → refused; another user's session → refused; a malformed argument → validation error.
+- Inspect the page's RSC/HTML payload and confirm that sensitive fields do not appear.
+- Search for `NEXT_PUBLIC_` in the code and check that none is a secret.
+- `callbackUrl=https://evil.example` does not redirect outside.
+- Check the Next version against published security advisories.
+- Optional tools: ESLint with `eslint-config-next`, `npm audit`, Semgrep.
 
-## Fontes
+## Sources
 
 - https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
 - https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html

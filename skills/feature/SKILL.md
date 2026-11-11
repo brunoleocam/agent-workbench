@@ -5,4 +5,4 @@ description: Specifies and implements a feature or behavior change in an existin
 
 # Feature
 
-Siga a skill `feature-development`. `/feature` e `/feature-development` são o mesmo fluxo.
+Follow the `feature-development` skill. `/feature` and `/feature-development` are the same flow.

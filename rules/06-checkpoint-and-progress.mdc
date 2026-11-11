@@ -1,28 +1,28 @@
 ---
-description: Checkpoint e progresso persistente ao fim de cada passo relevante. Use ao encerrar um passo, retomar trabalho ou atualizar docs/progress/CURRENT.md.
+description: Persistent checkpoint and progress at the end of each relevant step. Use when closing a step, resuming work, or updating docs/progress/CURRENT.md.
 alwaysApply: false
 ---
 
-# Checkpoint e progresso
+# Checkpoint and progress
 
-Ao fim de cada passo relevante de implementação, grave um checkpoint curto em `docs/progress/CURRENT.md` (ou anexe ao arquivo da tarefa). Inclua:
+At the end of each relevant implementation step, write a short checkpoint to `docs/progress/CURRENT.md` (or append it to the task file). Include:
 
-- O que foi implementado
-- Requisitos, specs e ADRs
-- Testes e evals, com resultado
-- Status do review, achados e correções
-- Pendências, blockers, dependências e o próximo passo
+- What was implemented
+- Requirements, specs, and ADRs
+- Tests and evals, with results
+- Review status, findings, and fixes
+- Pending items, blockers, dependencies, and the next step
 
-O próximo passo sai do grafo de tarefas, das dependências e do estado do projeto. Não assuma que é "continuar codando".
+The next step comes from the task graph, the dependencies, and the project state. Do not assume it is "keep coding".
 
 ## Roadmap
 
-Projeto com `/init-agent-system` e trabalho M ou maior tem `docs/progress/ROADMAP.md` (formato na skill `roadmap`): fases, tarefas com status e a linha "Você está aqui".
+A project with `/init-agent-system` and M or larger work has `docs/progress/ROADMAP.md` (format in the `roadmap` skill): phases, tasks with status, and the "You are here" line.
 
-- Ao mudar o status de uma tarefa, edite só a linha dela e a linha "Você está aqui". Não reescreva o arquivo.
-- Tarefa nova, dividida ou removida por change request entra no roadmap na mesma hora.
-- `CURRENT.md` diz o detalhe do último passo; o roadmap diz onde ele fica no todo. Não copie um no outro.
+- When a task's status changes, edit only its line and the "You are here" line. Do not rewrite the file.
+- A task added, split, or removed by a change request goes into the roadmap right away.
+- `CURRENT.md` holds the detail of the last step; the roadmap says where it sits in the whole. Do not copy one into the other.
 
-## Passagem de bastão
+## Handoff
 
-Mantenha `docs/progress/CURRENT.md` como o estado para retomar em outra sessão sem reler o chat. Ele é a passagem de bastão para um chat novo: precisa bastar sozinho, com caminhos de arquivo e comandos de verificação, sem depender do histórico.
+Keep `docs/progress/CURRENT.md` as the state needed to resume in another session without rereading the chat. It is the handoff to a new chat: it must be enough on its own, with file paths and verification commands, without depending on the history.

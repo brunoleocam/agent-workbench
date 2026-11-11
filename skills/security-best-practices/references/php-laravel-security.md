@@ -1,37 +1,37 @@
-# Laravel — segurança
+# Laravel — security
 
-Última revisão: 2026-11-03
+Last reviewed: 2026-11-03
 
-Escopo: Laravel 10+ e 11 em PHP 8.1+ (Laravel 11 exige PHP 8.2+), com Eloquent, Blade e o stack padrão de middleware. Regras de PHP puro estão em `php-general-web-security.md`.
+Scope: Laravel 10+ and 11 on PHP 8.1+ (Laravel 11 requires PHP 8.2+), with Eloquent, Blade, and the default middleware stack. Plain PHP rules are in `php-general-web-security.md`.
 
-## Recomendações
+## Recommendations
 
-- Autorização: Policies ou Gates em toda ação sobre recurso de um dono. `Gate::authorize('update', $post)` ou `$this->authorize(...)` quando o controller usa `AuthorizesRequests` (o controller base do Laravel 11 não inclui o trait por padrão). Middleware `auth` só autentica, não autoriza.
-- Escopo por dono: prefira `$request->user()->orders()->findOrFail($id)` a `Order::findOrFail($id)`.
-- Mass assignment: declare `$fillable` (ou `$guarded` restrito) em todo model. Use `$request->validated()` ou `$request->safe()->only([...])`, nunca `$request->all()` em `create`/`update`. Não desligue a proteção com `Model::unguard()` fora de seeders.
-- Validação: Form Requests com regras explícitas. Em `exists`/`unique`, restrinja colunas e escopo.
-- SQL: Query Builder e Eloquent parametrizam. Em `whereRaw`, `selectRaw`, `orderByRaw` e `DB::raw`, passe bindings (`whereRaw('price > ?', [$min])`). Coluna de ordenação vinda do usuário só por allowlist.
-- Blade: `{{ }}` escapa. `{!! !!}` só com HTML sanitizado no servidor. Dado para JavaScript via `@json` / `Js::from`.
-- CSRF: `@csrf` em formulários. No Laravel 11, exceções ficam em `bootstrap/app.php` (`$middleware->validateCsrfTokens(except: [...])`); no 10, em `VerifyCsrfToken::$except`. Exceção só para webhook com assinatura verificada.
-- Configuração: `APP_DEBUG=false` e `APP_ENV=production` em produção. `APP_KEY` secreto, fora do repositório; trocá-lo invalida dados criptografados e sessões.
-- Senha: `Hash::make()` e `Hash::check()` (bcrypt ou argon2 conforme `config/hashing.php`). Reset de senha pelo broker nativo.
-- Rate limit: `throttle` em login, reset de senha, OTP e endpoints caros (`RateLimiter::for`).
-- Upload: regras `file`, `mimes`/`mimetypes`, `max`. `$file->store('dir')` gera nome aleatório; não use `getClientOriginalName()` como caminho. Disco privado para arquivo sensível; entrega por rota autorizada ou `temporaryUrl`.
-- Links sensíveis: `URL::signedRoute()` / `temporarySignedRoute()` com middleware `signed`.
-- Redirect: `redirect()->intended()` ou rotas nomeadas; não redirecione para URL arbitrária do request.
-- Dependências: `composer audit` no CI.
+- Authorization: Policies or Gates on every action over a resource that has an owner. `Gate::authorize('update', $post)` or `$this->authorize(...)` when the controller uses `AuthorizesRequests` (Laravel 11's base controller does not include the trait by default). The `auth` middleware only authenticates, it does not authorize.
+- Owner scoping: prefer `$request->user()->orders()->findOrFail($id)` over `Order::findOrFail($id)`.
+- Mass assignment: declare `$fillable` (or a restrictive `$guarded`) on every model. Use `$request->validated()` or `$request->safe()->only([...])`, never `$request->all()` in `create`/`update`. Do not turn off the protection with `Model::unguard()` outside seeders.
+- Validation: Form Requests with explicit rules. In `exists`/`unique`, restrict columns and scope.
+- SQL: the Query Builder and Eloquent parameterize. In `whereRaw`, `selectRaw`, `orderByRaw`, and `DB::raw`, pass bindings (`whereRaw('price > ?', [$min])`). A sort column coming from the user only through an allowlist.
+- Blade: `{{ }}` escapes. `{!! !!}` only with HTML sanitized on the server. Data for JavaScript via `@json` / `Js::from`.
+- CSRF: `@csrf` in forms. In Laravel 11, exceptions go in `bootstrap/app.php` (`$middleware->validateCsrfTokens(except: [...])`); in 10, in `VerifyCsrfToken::$except`. An exception only for a webhook with a verified signature.
+- Configuration: `APP_DEBUG=false` and `APP_ENV=production` in production. `APP_KEY` secret and outside the repository; changing it invalidates encrypted data and sessions.
+- Password: `Hash::make()` and `Hash::check()` (bcrypt or argon2 per `config/hashing.php`). Password reset through the native broker.
+- Rate limit: `throttle` on login, password reset, OTP, and expensive endpoints (`RateLimiter::for`).
+- Upload: the `file`, `mimes`/`mimetypes`, and `max` rules. `$file->store('dir')` generates a random name; do not use `getClientOriginalName()` as a path. A private disk for sensitive files; delivery through an authorized route or `temporaryUrl`.
+- Sensitive links: `URL::signedRoute()` / `temporarySignedRoute()` with the `signed` middleware.
+- Redirect: `redirect()->intended()` or named routes; do not redirect to an arbitrary URL from the request.
+- Dependencies: `composer audit` in CI.
 
-## Vulnerabilidades comuns
+## Common vulnerabilities
 
-- IDOR por route model binding sem policy (`/invoices/{invoice}`).
-- Mass assignment de `is_admin`, `role` ou `user_id` via `$request->all()`.
-- XSS por `{!! $comentario !!}`.
-- SQL injection em `whereRaw("name = '$name'")` ou `orderBy($request->sort)`.
-- `APP_DEBUG=true` em produção expondo stack trace, variáveis de ambiente e queries.
-- `.env` acessível pela web quando o document root não aponta para `public/`.
-- Webhook excluído do CSRF sem verificar assinatura.
+- IDOR through route model binding without a policy (`/invoices/{invoice}`).
+- Mass assignment of `is_admin`, `role`, or `user_id` via `$request->all()`.
+- XSS by `{!! $comment !!}`.
+- SQL injection in `whereRaw("name = '$name'")` or `orderBy($request->sort)`.
+- `APP_DEBUG=true` in production exposing stack traces, environment variables, and queries.
+- `.env` reachable from the web when the document root does not point to `public/`.
+- A webhook excluded from CSRF without verifying the signature.
 
-## Implementação segura
+## Secure implementation
 
 ```php
 public function update(UpdatePostRequest $request, Post $post)
@@ -48,7 +48,7 @@ $posts = Post::query()
     ->paginate();
 ```
 
-## Implementação inadequada e risco
+## Inadequate implementation and risk
 
 ```php
 public function update(Request $request, $id)
@@ -58,18 +58,18 @@ public function update(Request $request, $id)
 }
 ```
 
-Risco: qualquer usuário autenticado altera post de outro (IDOR), e campos não previstos no formulário, como `user_id` ou `published`, são gravados se o model não os proteger.
+Risk: any authenticated user changes another user's post (IDOR), and fields not expected in the form, such as `user_id` or `published`, are written if the model does not protect them.
 
-## Testes de segurança
+## Security tests
 
-- Feature test: usuário B tenta ler, editar e apagar recurso de A e recebe 403 ou 404.
-- Payload com campo extra (`is_admin=1`) não altera o atributo.
-- Rota de login retorna 429 após o limite.
-- POST sem token CSRF retorna 419.
-- Upload com extensão permitida e conteúdo diferente é rejeitado.
-- Ferramentas opcionais: `composer audit`, Psalm com `--taint-analysis`, Semgrep.
+- Feature test: user B tries to read, edit, and delete A's resource and gets 403 or 404.
+- A payload with an extra field (`is_admin=1`) does not change the attribute.
+- The login route returns 429 after the limit.
+- A POST without a CSRF token returns 419.
+- An upload with an allowed extension and different content is rejected.
+- Optional tools: `composer audit`, Psalm with `--taint-analysis`, Semgrep.
 
-## Fontes
+## Sources
 
 - https://cheatsheetseries.owasp.org/cheatsheets/Laravel_Cheat_Sheet.html
 - https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html

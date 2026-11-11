@@ -3,46 +3,46 @@ name: create-skill
 description: Creates a personal skill for the agent-workbench plugin (Cursor or Claude Code), with a slash name and a /help entry. Use when the user asks to create, add, or author a skill (criar skill, nova skill, comando novo).
 ---
 
-# Criar skill
+# Create a skill
 
-Skill nova do plugin agent-workbench, disponível em qualquer repositório e em qualquer máquina com o plugin. Não crie skill dentro do repositório aberto, a menos que o usuário peça skill do projeto.
+A new skill for the agent-workbench plugin, available in any repository and on any machine with the plugin. Do not create a skill inside the open repository unless the user asks for a project skill.
 
-Não grave em `~/.cursor/skills-cursor/`. Esse diretório é do Cursor.
+Do not write to `~/.cursor/skills-cursor/`. That directory belongs to Cursor.
 
-## Destino
+## Destination
 
-`<plugin>/skills/<nome>/SKILL.md`, onde `<plugin>` é a raiz do plugin agent-workbench, dois níveis acima deste `SKILL.md`. O `name` do frontmatter é igual ao nome da pasta. Skill específica de empresa ou linguagem não entra no plugin, que é público: pergunte onde gravar.
+`<plugin>/skills/<name>/SKILL.md`, where `<plugin>` is the agent-workbench plugin root, two levels above this `SKILL.md`. The frontmatter `name` equals the folder name. A company- or language-specific skill does not go in the plugin, which is public: ask where to write it.
 
-Se o usuário pedir skill só daquele repositório, aí sim use `.cursor/skills/<nome>/SKILL.md` do projeto (no Claude Code, `.claude/skills/<nome>/SKILL.md`).
+If the user asks for a skill only for that repository, then use the project's `.cursor/skills/<name>/SKILL.md` (in Claude Code, `.claude/skills/<name>/SKILL.md`).
 
-No Claude Code, `<plugin>` é `${CLAUDE_PLUGIN_ROOT}`. Instalado de um marketplace remoto, esse diretório é uma cópia em cache que o próximo update substitui: pergunte o caminho do clone local do repositório agent-workbench e grave lá. Sem clone, grave em `~/.claude/skills/<nome>/SKILL.md` e avise que a skill fica fora do plugin.
+In Claude Code, `<plugin>` is `${CLAUDE_PLUGIN_ROOT}`. Installed from a remote marketplace, that directory is a cached copy that the next update replaces: ask for the path of the local clone of the agent-workbench repository and write there. Without a clone, write to `~/.claude/skills/<name>/SKILL.md` and warn that the skill stays outside the plugin.
 
-## Antes de escrever
+## Before writing
 
-1. Extraia do pedido: o que a skill faz, quando dispara, e se é comando explícito (`/nome`) ou se o agente deve puxá-la sozinho.
-2. Nome: minúsculas, números e hífen, no máximo 64 caracteres. O nome é o comando.
-3. Se o texto da skill foi dado pelo usuário para usar exatamente, copie esse texto. Não parafraseie.
-4. Não duplique uma skill do perfil que já cubra o mesmo trabalho. Estenda a existente se for o mesmo comando.
+1. Extract from the request: what the skill does, when it triggers, and whether it is an explicit command (`/name`) or the agent should pull it in on its own.
+2. Name: lowercase letters, numbers, and single hyphens (no leading, trailing, or doubled hyphen), at most 64 characters, equal to the folder name. The name is the command. The `description` is at most 1024 characters. These limits come from the [Agent Skills specification](https://agentskills.io/specification); `agent-system/tests/test_audit.py` checks every skill against it, so run the test suite after adding one.
+3. If the user supplied the skill's text to be used exactly, copy that text. Do not paraphrase.
+4. Do not duplicate a profile skill that already covers the same work. Extend the existing one if it is the same command.
 
 ## SKILL.md
 
 ```markdown
 ---
-name: nome-da-skill
-description: O que faz e quando usar, em terceira pessoa, com o gatilho em português entre parênteses.
+name: skill-name
+description: What it does and when to use it, in the third person, with optional trigger words in other languages in parentheses.
 ---
 ```
 
-`disable-model-invocation: true` só quando a skill deve rodar exclusivamente porque a pessoa digitou `/nome` (como `/help`). Sem esse campo, o agente pode aplicar a skill quando o pedido combinar com a description.
+`disable-model-invocation: true` only when the skill must run exclusively because the person typed `/name` (like `/help`). Without that field, the agent may apply the skill when the request matches the description.
 
-Corpo em pt-BR. Passos acionáveis. Abaixo de 500 linhas. Detalhe longo vai para um arquivo ao lado, linkado uma vez a partir do `SKILL.md`. Sem path Windows no texto da skill.
+Body in English. Actionable steps. Under 500 lines. Long detail goes in a file alongside, linked once from the `SKILL.md`. No Windows paths in the skill text.
 
-Description: o que faz e quando usar. Inclua as palavras com que a pessoa pede isso.
+Description: what it does and when to use it. Include the words people use to ask for it.
 
-## Depois de criar
+## After creating
 
-1. Acrescente um item em `skills/help/SKILL.md`, na lista de comandos: o que o comando faz e o que ele não faz.
-2. Se a skill mudar a classificação de pedido de código, uma linha na regra `01-request-classification`. Não inflar essa regra com skill que não escolhe fluxo de implementação.
-3. Não crie `AGENTS.md`. Não commite, a menos que o usuário peça.
+1. Add an item to `skills/help/SKILL.md`, in the command list: what the command does and what it does not do.
+2. If the skill changes the classification of a code request, add a line to rule `01-request-classification`. Do not bloat that rule with a skill that does not choose an implementation flow.
+3. Do not create `AGENTS.md`. Do not commit unless the user asks.
 
-Responda com o comando (`/nome`) e em que situação ele entra.
+Reply with the command (`/name`) and the situation it applies to.

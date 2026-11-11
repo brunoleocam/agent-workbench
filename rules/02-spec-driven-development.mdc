@@ -1,34 +1,34 @@
 ---
-description: Requisitos, especificação e ADR antes de comportamento novo ou mudança relevante. Use ao especificar feature, PRD, spec, arquitetura ou decisão de design.
+description: Requirements, specification, and ADR before new behavior or a relevant change. Use when specifying a feature, PRD, spec, architecture, or design decision.
 alwaysApply: false
 ---
 
-# Requisitos, spec e arquitetura
+# Requirements, spec, and architecture
 
-A spec descreve o que o sistema deve fazer. A implementação deve ser rastreável até ela.
+The spec describes what the system must do. The implementation must be traceable to it.
 
-Para funcionalidade nova ou mudança relevante de comportamento, registre:
+For a new feature or a relevant behavior change, record:
 
-- Problema e resultado desejado
-- Requisitos funcionais
-- Requisitos não funcionais, quando importarem
-- Restrições e premissas
-- Critérios de aceite
-- Comportamento existente afetado
-- Spec criada ou atualizada em `docs/specs/`
+- Problem and desired outcome
+- Functional requirements
+- Non-functional requirements, when they matter
+- Constraints and assumptions
+- Acceptance criteria
+- Existing behavior affected
+- Spec created or updated in `docs/specs/`
 
-Use ADR em `docs/architecture/ADR/` quando a decisão de arquitetura for relevante. O ADR captura: contexto, problema, decisão, alternativas, racional, consequências, riscos.
+Use an ADR in `docs/architecture/ADR/` when the architecture decision is relevant. The ADR captures: context, problem, decision, alternatives, rationale, consequences, risks.
 
-Não tome decisão arquitetural significativa só dentro do código. ADR aceito é registro histórico. Se a decisão mudar, substitua com um ADR novo; não reescreva o anterior.
+Do not make a significant architectural decision only inside the code. An accepted ADR is a historical record. If the decision changes, supersede it with a new ADR; do not rewrite the previous one.
 
-Verifique o design contra requisitos e critérios de aceite antes de planejar a implementação. O plano vira tarefas em `docs/tasks/`, cada uma ligada a um requisito ou critério.
+Check the design against requirements and acceptance criteria before planning the implementation. The plan becomes tasks in `docs/tasks/`, each linked to a requirement or criterion.
 
-## Rastreabilidade (M ou maior)
+## Traceability (M or larger)
 
-IDs: `REQ-NNN` requisito, `AC-NNN` critério, `ADR-NNNN` decisão, `TASK-NNN` tarefa, `TEST-NNN` verificação, `PROOF-NNN` evidência gerada. Cada item é um título que começa com o ID; os vínculos são linhas `- Requirements:`, `- Acceptance:`, `- Verification:`. Formato completo: `agent-system/docs/artifacts.md`.
+IDs: `REQ-NNN` requirement, `AC-NNN` criterion, `ADR-NNNN` decision, `TASK-NNN` task, `TEST-NNN` verification, `PROOF-NNN` generated evidence. Each item is a heading that starts with the ID; links are `- Requirements:`, `- Acceptance:`, `- Verification:` lines. Full format: `agent-system/docs/artifacts.md`.
 
-- Requisito comportamental em EARS: `WHEN <gatilho> THE SYSTEM SHALL <resposta>` (também `WHILE`, `IF ... THEN`, `WHERE`). Requisito puramente técnico pode ser linguagem natural estruturada.
-- Requisito diz o quê; critério diz como observar (Given/When/Then); tarefa diz o que mudar.
-- Gramática EARS não torna um requisito correto. A qualidade semântica é do planner e da revisão.
-- `validate_spec.py --feature <slug> --require-approval` antes das tarefas; `validate_tasks.py` antes de implementar.
-- XS e S não usam esta estrutura. Spec antiga sem IDs não é migrada.
+- Behavioral requirement in EARS: `WHEN <trigger> THE SYSTEM SHALL <response>` (also `WHILE`, `IF ... THEN`, `WHERE`). A purely technical requirement can be structured natural language.
+- A requirement says what; a criterion says how to observe it (Given/When/Then); a task says what to change.
+- EARS grammar does not make a requirement correct. Semantic quality belongs to the planner and the review.
+- `validate_spec.py --feature <slug> --require-approval` before the tasks; `validate_tasks.py` before implementing.
+- XS and S do not use this structure. An old spec without IDs is not migrated.

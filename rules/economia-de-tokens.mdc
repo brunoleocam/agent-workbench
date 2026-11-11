@@ -1,17 +1,17 @@
 ---
-description: Economia de tokens. Busca antes de leitura, saída de terminal filtrada, respostas curtas, edições mínimas, etapas pequenas e resumo para chat novo.
+description: Token economy (Cursor only). Search before reading, filtered terminal output, short answers, minimal edits, small steps, and a summary for a new chat.
 alwaysApply: true
 ---
 
-# Economia de tokens
+# Token economy
 
-Tudo que entra no chat é reenviado a cada passo seguinte.
+Everything that enters the chat is resent on every following step.
 
-- Buscar antes de ler: Grep ou busca semântica primeiro; depois ler só o trecho necessário (offset/limit), não o arquivo inteiro.
-- Não varrer pastas inteiras nem listar árvores recursivas sem filtro. Não reler arquivo que não mudou desde a última leitura.
-- Limitar saída de terminal: filtrar e cortar (PowerShell: `Select-String`, `Select-Object -First/-Last`; bash: `grep`, `head`, `tail`) e usar modo silencioso ou reporter enxuto de testes e builds. Nunca despejar log inteiro.
-- Respostas curtas: não repetir código inalterado (mostrar só o trecho mudado), sem explicação não pedida, sem recapitular o que já foi dito.
-- Edições mínimas e focadas; a solução mais simples que resolve. Sem refatoração, arquivo ou abstração fora do pedido. Não pular teste ou verificação exigida por outra regra.
-- Tarefa grande: dividir em etapas pequenas e validar cada uma antes da próxima (skill `staged-task`).
-- Bug sem causa óbvia: achar a causa lendo o mínimo (skill `lean-investigation`).
-- Conversa longa (muitas trocas ou muitos arquivos lidos) ou mudança de assunto: avisar em uma linha e oferecer um resumo para chat novo (skill `context-summary`).
+- Search before reading: Grep or semantic search first; then read only the needed section (offset/limit), not the whole file.
+- Do not sweep whole folders or list recursive trees without a filter. Do not reread a file that has not changed since the last read.
+- Limit terminal output: filter and cut (PowerShell: `Select-String`, `Select-Object -First/-Last`; bash: `grep`, `head`, `tail`) and use quiet mode or a lean reporter for tests and builds. Never dump a whole log.
+- Short answers: do not repeat unchanged code (show only the changed part), no unrequested explanation, no recap of what was already said.
+- Minimal, focused edits; the simplest solution that works. No refactoring, file, or abstraction outside the request. Do not skip a test or verification required by another rule.
+- Large task: split into small steps and validate each before the next (`staged-task` skill).
+- Bug without an obvious cause: find the cause reading the minimum (`lean-investigation` skill).
+- Long conversation (many exchanges or many files read) or a change of subject: say so in one line and offer a summary for a new chat (`context-summary` skill).

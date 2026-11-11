@@ -1,34 +1,34 @@
-# Formato dos artefatos rastreáveis
+# Traceable artifact format
 
-Decisão: [ADR-0001](../../docs/architecture/ADR/0001-formato-dos-artefatos-rastreaveis.md). Vale para trabalho M ou maior. XS e S não usam. Spec antiga sem IDs continua valendo como texto e não é migrada.
+Decision: [ADR-0001](../../docs/architecture/ADR/0001-formato-dos-artefatos-rastreaveis.md). Applies to M or larger work. XS and S do not use it. An old spec without IDs remains valid as text and is not migrated.
 
-## Regras do parser
+## Parser rules
 
-- Um item é um título `##` a `######` que começa com o ID: `### REQ-001: Título`. Também aceita `### [x] TASK-001 — Título`.
-- O item vai até o próximo título de nível igual ou maior. Título mais profundo sem ID (`#### Evidence`) fica dentro do item.
-- Campo é uma linha de lista `- Chave: valor` (ou `- **Chave:** valor`) com chave conhecida. Prosa com dois-pontos não vira campo.
-- Valores `none`, `-`, `n/a`, `nenhum` contam como vazio. Listas de IDs separadas por vírgula.
-- Títulos dentro de bloco de código (```) são ignorados.
-- Front matter: bloco `---` no topo com linhas `chave: valor`. Não é YAML completo.
-- IDs têm três dígitos ou mais e são únicos no arquivo: REQ, AC, ADR, TASK, TEST, PROOF, FIND, SEC.
+- An item is a `##` to `######` heading that starts with the ID: `### REQ-001: Title`. It also accepts `### [x] TASK-001 — Title`.
+- The item runs to the next heading of equal or higher level. A deeper heading without an ID (`#### Evidence`) stays inside the item.
+- A field is a list line `- Key: value` (or `- **Key:** value`) with a known key. Prose with a colon does not become a field.
+- The values `none`, `-`, `n/a`, `nenhum` count as empty. ID lists are comma-separated.
+- Headings inside a code block (```) are ignored.
+- Front matter: a `---` block at the top with `key: value` lines. It is not full YAML.
+- IDs have three or more digits and are unique in the file: REQ, AC, ADR, TASK, TEST, PROOF, FIND, SEC.
 
-Chaves (aliases em pt-BR aceitos): `Requirements` (Requisitos), `Acceptance` (Critérios), `Task`, `Files`, `Depends on` (Dependências), `Blocked by`, `Verification`, `Done when` (Pronto quando), `Gate`, `Status`, `Command`, `Shell`, `Timeout`, `Required`, `Expected`, `Cwd`, `Evidence`, `Severity`, `Confidence`, `Classification`, `Location`, `Justification`.
+Keys (Portuguese aliases such as `Requisitos`, `Critérios`, `Dependências`, and `Pronto quando` are still accepted for existing projects): `Requirements`, `Acceptance`, `Task`, `Files`, `Depends on`, `Blocked by`, `Verification`, `Done when`, `Gate`, `Status`, `Command`, `Shell`, `Timeout`, `Required`, `Expected`, `Cwd`, `Evidence`, `Baseline`, `Out of scope`, `Stop if`, `Severity`, `Confidence`, `Classification`, `Location`, `Justification`.
 
-## Onde fica cada arquivo
+## Where each file lives
 
-Um slug por feature, o mesmo em todas as pastas. As pastas vêm de `.cursor/agent-system/layout.json`: primeiro `overrides`, depois o que o init descobriu, depois o padrão.
+One slug per feature, the same in every folder. The folders come from `.cursor/agent-system/layout.json`: first `overrides`, then what the init discovered, then the default.
 
-| Artefato | Chave do layout | Padrão |
+| Artifact | Layout key | Default |
 | --- | --- | --- |
 | Spec | `specs_dir` | `docs/specs/<slug>.md` |
-| Tarefas e TESTs | `tasks_dir` | `docs/tasks/<slug>.md` |
-| TESTs extras (opcional) | `tests_dir` | `docs/tests/<slug>.md` |
+| Tasks and TESTs | `tasks_dir` | `docs/tasks/<slug>.md` |
+| Extra TESTs (optional) | `tests_dir` | `docs/tests/<slug>.md` |
 | Review | `reviews_dir` | `docs/reviews/<slug>.md` |
-| Segurança | `security_dir` | `docs/security/<slug>.md` |
+| Security | `security_dir` | `docs/security/<slug>.md` |
 | ADR | `adr_dir` | `docs/architecture/ADR/` |
-| Provas | fixo | `.cursor/agent-system/proofs/<slug>.json` e `.md` |
+| Proofs | fixed | `.cursor/agent-system/proofs/<slug>.json` and `.md` |
 
-Exemplo de override, preservado quando o init roda de novo:
+Override example, preserved when the init runs again:
 
 ```json
 { "overrides": { "specs_dir": "product/specs", "reviews_dir": "qa/reviews" }, "proof_allow": ["bats"] }
@@ -43,18 +43,18 @@ complexity: M            # XS | S | M | L | XL
 security_risk: HIGH      # NONE | LOW | MEDIUM | HIGH | CRITICAL
 security_triggers: authentication, personal_data
 ---
-# Spec: reset de senha
+# Spec: password reset
 
 ## Requirements
 
-### REQ-001: Token de reset
+### REQ-001: Reset token
 WHEN the user requests a password reset
 THE SYSTEM SHALL generate a unique reset token
 WITH a maximum validity of 15 minutes.
 
 ## Acceptance Criteria
 
-### AC-001: Token expira
+### AC-001: Token expires
 - Requirements: REQ-001
 Given a user requests password recovery
 When the reset token is generated
@@ -63,38 +63,43 @@ Then the token must expire within 15 minutes.
 ## Assumptions
 ## Constraints
 ## Open Questions
-- [ ] Pergunta ainda aberta
+- [ ] A question still open
 ## Decisions
-- ADR-0004: armazenamento do token
+- ADR-0004: token storage
 ```
 
-EARS é recomendado para requisito comportamental (`WHEN`, `WHILE`, `IF ... THEN`, `WHERE` + `SHALL`). Requisito técnico pode ser linguagem natural estruturada. O validador só conta quantos usam EARS; não reprova quem não usa.
+EARS is recommended for behavioral requirements (`WHEN`, `WHILE`, `IF ... THEN`, `WHERE` + `SHALL`). A technical requirement can be structured natural language. The validator only counts how many use EARS; it does not fail those that do not.
 
-## Tarefas e TESTs
+## Tasks and TESTs
 
 ```markdown
-### TASK-001: Gerar token
+### TASK-001: Generate token
 - Requirements: REQ-001
 - Acceptance: AC-001
 - Files: src/reset.py, tests/test_reset.py
+- Baseline: src/reset.py=absent, tests/test_reset.py=absent   # written by check_drift.py --stamp
+- Out of scope: the mailer and the user model
+- Stop if: src/reset.py already exists or the user model has no email field
 - Depends on: none
 - Verification: TEST-001
-- Done when: TEST-001 passa e o token tem 32 bytes
+- Done when: TEST-001 passes and the token has 32 bytes
 - Gate: check_proofs TEST-001
 - Status: todo           # todo | in_progress | blocked | done | cancelled
 
-### TEST-001: token expira em 15 minutos
+### TEST-001: token expires in 15 minutes
 - Acceptance: AC-001
 - Task: TASK-001
 - Command: python -m pytest tests/test_reset.py -q
-- Timeout: 120           # segundos, opcional
-- Required: yes          # no = informativo, não bloqueia o gate
+- Timeout: 120           # seconds, optional
+- Required: yes          # no = informational, does not block the gate
 - Expected: 3 passed
 ```
 
-`Command` é dividido como argumentos, sem shell e sem escape por barra invertida (use `/` nos caminhos). Lista JSON também vale: `["python", "-m", "pytest"]`. `Shell: yes` só roda com `--allow-shell`. `Cwd` é relativo à raiz do projeto.
+`Baseline` holds `path=digest` pairs (`absent` for a file the task creates); it is stamped by `check_drift.py` and never written by hand. `Out of scope` and `Stop if` are free text for the executor and are not validated.
 
-Tarefa `blocked` precisa de `Depends on` ou `Blocked by`. Tarefa `done` precisa de prova PASS de cada TEST obrigatório, ou de `Evidence` quando não tem TEST.
+`Command` is split into arguments, without a shell and without backslash escaping (use `/` in paths). A JSON list also works: `["python", "-m", "pytest"]`. `Shell: yes` only runs with `--allow-shell`. `Cwd` is relative to the project root.
+
+A `blocked` task needs `Depends on` or `Blocked by`. A `done` task needs a PASS proof for each required TEST, or `Evidence` when it has no TEST.
 
 ## Review
 
@@ -102,22 +107,22 @@ Tarefa `blocked` precisa de `Depends on` ou `Blocked by`. Tarefa `done` precisa 
 ---
 status: PASS_WITH_WARNINGS   # PASS | PASS_WITH_WARNINGS | FAIL
 reviewer: reviewer
-fingerprint: <digest de check_proofs.py --fingerprint>
+fingerprint: <digest from check_proofs.py --fingerprint>
 ---
-# Review: reset de senha
+# Review: password reset
 ## Verification Audit
 ...
-### FIND-001: Expiração não testada no limite
+### FIND-001: Expiry not tested at the boundary
 - Severity: major            # blocker | major | minor
 - Status: open               # open | resolved | accepted
 - Location: tests/test_reset.py:40
-- Justification: obrigatória quando Status for accepted
+- Justification: required when Status is accepted
 ```
 
-## Relatório de segurança
+## Security report
 
-Mesmo front matter. Achados `### SEC-NNN` com `Severity` (CRITICAL, HIGH, MEDIUM, LOW, INFORMATIONAL), `Confidence`, `Classification` (confirmed, likely, suspected, hardening, accepted-risk), `Status`, `Location`, `Verification` e `Justification`. Estrutura completa na skill `security-review`.
+Same front matter. `### SEC-NNN` findings with `Severity` (CRITICAL, HIGH, MEDIUM, LOW, INFORMATIONAL), `Confidence`, `Classification` (confirmed, likely, suspected, hardening, accepted-risk), `Status`, `Location`, `Verification`, and `Justification`. Full structure in the `security-review` skill.
 
-## Política do gate
+## Gate policy
 
-Bloqueia: `blocker`, `CRITICAL` e `HIGH` abertos; qualquer `accepted` sem `Justification`; review ou segurança com status FAIL. `major` e `MEDIUM` abertos são aviso (bloqueiam com `--strict`). Review é exigida a partir de M; revisão de segurança, com `security_risk` HIGH ou CRITICAL.
+Blocks: open `blocker`, `CRITICAL`, and `HIGH`; any `accepted` without `Justification`; a review or security report with status FAIL. Open `major` and `MEDIUM` are a warning (they block with `--strict`). A review is required from M; a security review, with `security_risk` HIGH or CRITICAL.

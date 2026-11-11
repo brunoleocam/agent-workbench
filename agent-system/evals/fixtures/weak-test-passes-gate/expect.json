@@ -1,6 +1,6 @@
 {
   "base": "complete-feature",
-  "description": "Limite conhecido: um TEST que não verifica nada passa no gate estrutural. Só a Verification Audit do reviewer (manual) pega.",
+  "description": "Known limit: a TEST that verifies nothing passes the structural gate. Only the reviewer's (manual) Verification Audit catches it.",
   "steps": [
     {
       "script": "check_proofs.py",

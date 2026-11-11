@@ -1,25 +1,25 @@
 ---
 name: context-summary
-description: Gera um resumo de até 10 linhas com objetivo, decisões, arquivos e próximos passos, pronto para colar num chat novo. Use quando a conversa ficou longa, o assunto mudou ou o usuário quer continuar em outro chat (resumo, resumir contexto, chat novo, continuar em outro chat).
+description: Produces a summary of up to 10 lines with goal, decisions, files, and next steps, ready to paste into a new chat. Use when the conversation got long, the subject changed, or the user wants to continue in another chat (resumo, resumir contexto, chat novo, continuar em outro chat).
 ---
 
-# Resumo de contexto
+# Context summary
 
-Responda só com o bloco abaixo, no máximo 10 linhas, e uma linha dizendo para colá-lo no chat novo.
+Reply only with the block below, at most 10 lines, and one line telling the user to paste it into the new chat. Write the block in the language the user is using.
 
 ```
-Objetivo: <o que se quer alcançar, em uma frase>
-Decisões: <decisão>; <decisão>
-Arquivos: <caminho> (<o que mudou ou por que importa>); <caminho> (...)
-Estado: <pronto e verificado>; <o que ainda falha>
-Evitar: <tentativa descartada e por quê> (só se evitar repetir erro)
-Próximos passos: 1) <...> 2) <...>
+Goal: <what is to be achieved, in one sentence>
+Decisions: <decision>; <decision>
+Files: <path> (<what changed or why it matters>); <path> (...)
+State: <done and verified>; <what still fails>
+Avoid: <discarded attempt and why> (only if it prevents repeating a mistake)
+Next steps: 1) <...> 2) <...>
 ```
 
-## Regras
+## Rules
 
-- Fonte é o que já está no chat. Não releia arquivos nem rode comandos para montar o resumo.
-- Caminhos relativos à raiz do repositório. Sem código e sem log. Comando de verificação só se for essencial para o próximo passo.
-- Só decisões que mudam o próximo passo. Dúvida em aberto vai para Próximos passos.
-- Se o projeto tem `docs/progress/CURRENT.md`, cite-o numa linha em vez de repetir o conteúdo.
-- Não grave arquivo. O resumo fica só no chat.
+- The source is what is already in the chat. Do not reread files or run commands to build the summary.
+- Paths relative to the repository root. No code and no logs. A verification command only if essential for the next step.
+- Only decisions that change the next step. An open question goes under Next steps.
+- If the project has `docs/progress/CURRENT.md`, cite it in one line instead of repeating its content.
+- Do not write a file. The summary stays only in the chat.

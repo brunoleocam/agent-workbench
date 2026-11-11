@@ -6,61 +6,77 @@ disable-model-invocation: true
 
 # /security-review
 
-Auditoria de segurança do plugin. Gera relatório; não corrige. Correção depende de autorização do usuário e segue o fluxo normal (`/change-request` ou `/bug-fix`).
+The plugin's security audit. It produces a report; it does not fix. A fix depends on the user's authorization and follows the normal flow (`/change-request` or `/bug-fix`).
 
-Delegue ao subagent `security-reviewer` quando disponível. Sem ele, siga este procedimento na conversa atual.
+Delegate to the `security-reviewer` subagent when available. Without it, follow this procedure in the current conversation.
 
-Não confundir com o subagent built-in do Cursor chamado `security-review`: aquele revisa o diff local. Esta skill audita uma feature ou o repositório e grava um relatório no formato abaixo. Também não substitui `/code-review`; as duas se complementam.
+Not to be confused with Cursor's built-in subagent called `security-review`: that one reviews the local diff. This skill audits a feature or the repository and writes a report in the format below. It also does not replace `/code-review`; the two complement each other.
 
-## Procedimento
+## Procedure
 
-1. Escopo. Feature: use o slug da spec (`docs/specs/<slug>.md`). Sem feature indicada: repositório inteiro.
-2. Evento de início, só se existir `.cursor/agent-system/state.json`:
+1. Scope. Feature: use the spec slug (`docs/specs/<slug>.md`). No feature given: the whole repository.
+2. Start event, only if `.cursor/agent-system/state.json` exists:
 
    ```bash
-   python .cursor/agent-system/scripts/record_event.py --event SECURITY_REVIEW_STARTED --summary "<escopo>" --agent security-reviewer
+   python .cursor/agent-system/scripts/record_event.py --event SECURITY_REVIEW_STARTED --summary "<scope>" --agent security-reviewer
    ```
 
-3. Stack e arquitetura. Leia `.cursor/agent-system/layout.json` (`frameworks`, `security_references`) quando existir; senão os manifests. Mapeie entradas, camadas, armazenamento e integrações.
-4. Superfícies de ataque: autenticação, autorização, sessão, upload, pagamento, webhooks, admin, APIs públicas, chamadas a URLs externas, desserialização, execução de comando, segredos e configuração de produção.
-5. Carregue só as referências da stack em `../security-best-practices/references/`. Nunca todas.
-6. Analise o código das superfícies. Siga o dado da entrada até o ponto sensível. Registre também os controles que já existem.
-7. Classifique cada achado (campos abaixo). Não invente caminho, linha nem cenário de exploração. Falta de uma recomendação sem caminho de exploração é `hardening`, não vulnerabilidade.
-8. Fingerprint do estado revisado:
+3. Stack and architecture. Read `.cursor/agent-system/layout.json` (`frameworks`, `security_references`) when it exists; otherwise the manifests. Map inputs, layers, storage, and integrations.
+4. Attack surfaces: authentication, authorization, session, upload, payment, webhooks, admin, public APIs, calls to external URLs, deserialization, command execution, secrets, and production configuration.
+5. Load only the stack's references from `../security-best-practices/references/`. Never all of them.
+6. Analyze the surfaces' code. Follow the data from the input to the sensitive point. Also record the controls that already exist.
+7. Classify each finding (fields below). Do not invent a path, line, or exploit scenario. A missing recommendation with no exploitation path is `hardening`, not a vulnerability.
+8. Refutation pass (see below). Mandatory for every candidate you would rate CRITICAL or HIGH; with `--deep`, for every candidate.
+9. Fingerprint of the reviewed state:
 
    ```bash
    python .cursor/agent-system/scripts/check_proofs.py --root . --fingerprint
    ```
 
-   Sem o script (projeto não inicializado), deixe o fingerprint em branco e diga no Executive Summary que o relatório não está ligado a um estado do código. O HEAD sozinho não serve: ignora arquivos modificados.
-9. Grave o relatório (ver Saída) e recomende os próximos passos.
-10. Evento de fim, só se existir `.cursor/agent-system/state.json`:
+   Without the script (project not initialized), leave the fingerprint blank and say in the Executive Summary that the report is not tied to a code state. HEAD alone does not work: it ignores modified files.
+10. Write the report (see Output) and recommend next steps.
+11. End event, only if `.cursor/agent-system/state.json` exists:
 
     ```bash
     python .cursor/agent-system/scripts/record_event.py --event SECURITY_REVIEW_COMPLETED --result "<STATUS> findings=<N>" --agent security-reviewer
     ```
 
-## Saída
+## Refutation pass
 
-Diretório: `overrides.security_dir` ou `security_dir` de `.cursor/agent-system/layout.json`; padrão `docs/security`.
+The agent that found a candidate must not be the one that confirms it. Methodology adapted from Cloudflare's [security-audit-skill](https://github.com/cloudflare/security-audit-skill) (MIT), reduced to the part that fits this harness.
+
+1. Write each CRITICAL/HIGH candidate as a short claim: `Location`, the input an attacker controls, the sensitive point it reaches, and the impact. Leave out your reasoning.
+2. Hand the claim to a fresh `security-reviewer` run in `mode: refute` (see `agent-system/docs/contracts.md`). Without subagents, restart the analysis from the claim alone and try to disprove it before reading your earlier notes.
+3. The refuter looks for the control that stops the attack: validation, authorization, a framework default, an unreachable path, a precondition that cannot hold. It returns one verdict:
+   - `confirmed`: a complete trace from input to impact that it could not break. Keep the finding.
+   - `refuted`: a concrete control or unreachable path, cited as `path:line`. Drop the finding and list it under Rejected Candidates.
+   - `unresolved`: it cannot decide without running code or a fact outside the repository. Keep the finding as `Classification: suspected`, write the exact missing fact in the description, and do not rate it above MEDIUM.
+4. Severity is likelihood times impact, not distance from a checklist. If another layer already prevents the attack, the missing second layer is `hardening`.
+5. Do not run target code unless the user confirms an OS-level sandbox. Without one, a lead that needs execution stays `suspected`.
+
+A refuter that disagrees with the original rating changes the finding; it does not leave both opinions in the report.
+
+## Output
+
+Directory: `overrides.security_dir` or `security_dir` from `.cursor/agent-system/layout.json`; default `docs/security`.
 
 - Feature: `<security_dir>/<slug>.md`
-- Repositório: `<security_dir>/security_assessment.md`
+- Repository: `<security_dir>/security_assessment.md`
 
 Status:
 
-- `FAIL`: algum achado CRITICAL ou HIGH com `Status: open`.
-- `PASS_WITH_WARNINGS`: nenhum CRITICAL/HIGH aberto e algum MEDIUM ou LOW aberto.
-- `PASS`: caso contrário.
+- `FAIL`: any CRITICAL or HIGH finding with `Status: open`.
+- `PASS_WITH_WARNINGS`: no open CRITICAL/HIGH and some MEDIUM or LOW open.
+- `PASS`: otherwise.
 
-## Formato do relatório
+## Report format
 
-Lido por parser determinístico. Mantenha frontmatter, títulos e chaves exatamente assim, todas as seções presentes mesmo vazias (escreva `Nenhum.`).
+Read by a deterministic parser. Keep the front matter, headings, and keys exactly as shown, with every section present even if empty (write `None.`).
 
 ```markdown
 ---
 status: PASS | PASS_WITH_WARNINGS | FAIL
-scope: <slug ou repository>
+scope: <slug or repository>
 reviewer: security-reviewer
 fingerprint: <digest>
 ---
@@ -75,49 +91,50 @@ fingerprint: <digest>
 ## Informational Findings
 ## Existing Security Controls
 ## Residual Risks
+## Rejected Candidates
 ## Recommendations
 ```
 
-`status` leva um único valor. Cada achado é um `### SEC-NNN: <título>` dentro da seção da sua severidade, numerado em sequência no relatório. Logo abaixo do título, as linhas de campo:
+`status` takes a single value. Each finding is a `### SEC-NNN: <title>` inside the section of its severity, numbered in sequence across the report. Right below the title, the field lines:
 
-- `Severity`: CRITICAL, HIGH, MEDIUM, LOW ou INFORMATIONAL (igual à seção)
-- `Confidence`: high, medium ou low
-- `Classification`: confirmed, likely, suspected, hardening ou accepted-risk
-- `Status`: open, resolved ou accepted
-- `Location`: `caminho:linha` real
-- `Verification`: como verificar que a correção funciona
-- `Justification`: obrigatória quando `Status: accepted`
+- `Severity`: CRITICAL, HIGH, MEDIUM, LOW, or INFORMATIONAL (same as the section)
+- `Confidence`: high, medium, or low
+- `Classification`: confirmed, likely, suspected, hardening, or accepted-risk
+- `Status`: open, resolved, or accepted
+- `Location`: real `path:line`
+- `Verification`: how to verify that the fix works
+- `Justification`: required when `Status: accepted`
 
-Depois das linhas de campo, texto livre: Evidence, Description, Impact, Exploit scenario (só se demonstrável), Recommendation.
+After the field lines, free text: Evidence, Description, Impact, Exploit scenario (only if demonstrable), Recommendation.
 
-Em Findings Summary, conte achados por severidade e por status.
+In Findings Summary, count findings by severity and by status. In Rejected Candidates, one line per refuted candidate: the claim, the control that stops it (`path:line`), and who refuted it. Write `None.` if the pass refuted nothing.
 
-## Exemplo de achado
+## Example finding
 
-Ilustrativo; caminho, linha e trecho num relatório real vêm do código lido.
+Illustrative; the path, line, and snippet in a real report come from the code read.
 
 ```markdown
 ## High Findings
 
-### SEC-001: Pedido de outro usuário acessível por ID
+### SEC-001: Another user's order reachable by ID
 - Severity: HIGH
 - Confidence: high
 - Classification: confirmed
 - Status: open
 - Location: app/Http/Controllers/OrderController.php:42
-- Verification: teste de feature em que o usuário B pede GET /orders/{id} de um pedido do usuário A e recebe 403 ou 404
+- Verification: a feature test where user B requests GET /orders/{id} for user A's order and gets 403 or 404
 
-Evidence: `Order::findOrFail($id)` sem filtro por dono e sem policy; a rota está só sob o middleware `auth`.
+Evidence: `Order::findOrFail($id)` with no owner filter and no policy; the route is only under the `auth` middleware.
 
-Description: qualquer usuário autenticado lê pedidos de terceiros trocando o ID (IDOR).
+Description: any authenticated user reads other people's orders by changing the ID (IDOR).
 
-Impact: exposição de endereço, itens e valores de todos os clientes.
+Impact: exposure of the address, items, and amounts of every customer.
 
-Exploit scenario: autenticado como B, iterar `GET /orders/1..N` e receber 200 com dados de A.
+Exploit scenario: authenticated as B, iterate `GET /orders/1..N` and receive 200 with A's data.
 
-Recommendation: buscar via relação do usuário (`$request->user()->orders()->findOrFail($id)`) ou aplicar a policy `OrderPolicy@view` com `Gate::authorize('view', $order)`.
+Recommendation: fetch through the user's relation (`$request->user()->orders()->findOrFail($id)`) or apply the `OrderPolicy@view` policy with `Gate::authorize('view', $order)`.
 ```
 
-## Ao terminar
+## When done
 
-Responda com: caminho do relatório, status, contagem por severidade e os achados CRITICAL/HIGH em uma linha cada. Pergunte se o usuário autoriza abrir a correção. Não edite código.
+Reply with: the report path, status, count by severity, and the CRITICAL/HIGH findings in one line each. Ask whether the user authorizes opening the fix. Do not edit code.

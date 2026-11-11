@@ -6,8 +6,8 @@ reviewer: reviewer
 
 ## Verification Audit
 
-TEST-001 falha se o desconto não for aplicado. TEST-002 falha se o total mudar com cupom expirado.
+TEST-001 fails if the discount is not applied. TEST-002 fails if the total changes with an expired coupon.
 
-### FIND-001: nome de variável
+### FIND-001: variable name
 - Severity: minor
 - Status: resolved

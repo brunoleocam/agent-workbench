@@ -1,26 +1,26 @@
-# ADR-0001: Formato dos artefatos rastreáveis
+# ADR-0001: Traceable artifact format
 
-Status: aceito
-Data: 2026-11-03
+Status: accepted
+Date: 2026-11-03
 
-## Contexto
+## Context
 
-Os validadores precisam ler spec, tarefas, testes e reviews sem dependência externa. O projeto já guarda documentos em Markdown nos caminhos de `layout.json`, e o TLC usa `.specs/`.
+The validators need to read specs, tasks, tests, and reviews with no external dependency. The project already keeps documents in Markdown at the paths in `layout.json`, and TLC uses `.specs/`.
 
-## Decisão
+## Decision
 
-- Markdown continua sendo o formato. Um item rastreável é um título `##`–`######` que começa com o ID (`### REQ-001: título`). O bloco vai até o próximo título de nível igual ou maior.
-- Os campos do bloco são linhas `- Chave: valor` com chaves conhecidas (lista em `agent-system/docs/artifacts.md`). O resto do bloco é texto livre (EARS, Given/When/Then).
-- Front matter simples `chave: valor` no topo da spec e da review (`status`, `complexity`, `security_risk`). Sem YAML completo.
-- Um arquivo por feature, com o mesmo slug em cada pasta: `<specs>/<slug>.md`, `<tasks>/<slug>.md`, `<tests>/<slug>.md` (opcional), `<reviews>/<slug>.md`, `<security>/<slug>.md`.
-- Caminhos vêm de `layout.json` (`overrides` primeiro), com `docs/...` como padrão. `.specs/` não é imposto.
+- Markdown remains the format. A traceable item is a `##`–`######` heading that starts with the ID (`### REQ-001: title`). The block runs to the next heading of equal or higher level.
+- The block's fields are `- Key: value` lines with known keys (list in `agent-system/docs/artifacts.md`). The rest of the block is free text (EARS, Given/When/Then).
+- Simple `key: value` front matter at the top of the spec and the review (`status`, `complexity`, `security_risk`). No full YAML.
+- One file per feature, with the same slug in each folder: `<specs>/<slug>.md`, `<tasks>/<slug>.md`, `<tests>/<slug>.md` (optional), `<reviews>/<slug>.md`, `<security>/<slug>.md`.
+- Paths come from `layout.json` (`overrides` first), with `docs/...` as the default. `.specs/` is not imposed.
 
-## Alternativas
+## Alternatives
 
-- Bloco YAML ou JSON dentro do Markdown: parser mais fácil, leitura pior para pessoas e agentes, e YAML exigiria dependência.
-- `.specs/` do TLC: quebraria o layout dos projetos existentes.
+- A YAML or JSON block inside the Markdown: an easier parser, but worse reading for people and agents, and YAML would require a dependency.
+- TLC's `.specs/`: would break the layout of existing projects.
 
-## Consequências
+## Consequences
 
-- Specs antigas sem IDs continuam válidas como texto e não passam pelos validadores.
-- O parser reconhece só chaves conhecidas, então prosa com dois-pontos não vira campo por engano.
+- Old specs without IDs remain valid as text and do not go through the validators.
+- The parser recognizes only known keys, so prose with a colon does not become a field by mistake.
