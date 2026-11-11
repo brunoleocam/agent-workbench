@@ -61,6 +61,18 @@ Output: `.cursor/agent-system/proofs/<slug>.json` (source of truth) and `<slug>.
 
 Fingerprint: the git blob id of each project file (the index for an unchanged file, `git hash-object` for a modified or untracked one), excluding `.cursor/`, caches, and the Markdown of the harness's doc folders. It does not use HEAD: committing the same content keeps the fingerprint, and a review recorded before the commit stays valid. Without git, a hash of the project's files (up to 5,000 files). It does not require a commit.
 
+## check_drift.py
+
+```powershell
+python .cursor/agent-system/scripts/check_drift.py --feature reset-password --stamp
+python .cursor/agent-system/scripts/check_drift.py --feature reset-password --task TASK-002 --strict
+python .cursor/agent-system/scripts/check_drift.py --feature reset-password --stamp --refresh --task TASK-002
+```
+
+Detects plan drift: files that a pending task will touch and that changed after the plan was written. `--stamp` writes a `- Baseline:` line (`path=digest`, 10 hex characters of a SHA-256 of the content; line-ending differences are ignored; `absent` for a file the task will create) after the `- Files:` line of each todo or blocked task that has none; `--refresh` rewrites existing ones after an intentional re-plan. The default run compares the digests with the working tree for todo and blocked tasks and takes the common validator options (`--task` is repeatable, `--json`, `--strict`).
+
+A changed file is *expected* (INFO) when another task of the same plan that is done or in progress lists it in `Files:`; otherwise it is drift (WARN, FAIL with `--strict`, exit 1). A file added to `Files:` after the stamp is also a WARN. A task without a Baseline is INFO. The check reads files only and never writes a timeline event. Idea adapted from [shadcn/improve](https://github.com/shadcn/improve) (MIT).
+
 ## validate_verification.py
 
 ```powershell

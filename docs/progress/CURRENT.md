@@ -20,6 +20,7 @@ State of the repository after versions 0.1 to 0.4.0 and the audit-improvements f
 - Agents: `reviewer` and `security-reviewer` declare `tools: Read, Grep, Glob, Bash, Write` (no `Edit`).
 - CI: `.github/workflows/ci.yml` runs the test suite and the evals on Ubuntu and Windows, Python 3.10 and 3.13.
 - Adapted from outside projects (all MIT or the open specification): a refutation pass and a `mode: refute` for the `security-reviewer`, plus a Rejected Candidates section in the report (from Cloudflare's security-audit-skill); the "smallest sufficient change" ladder in rule `00`, the `CLAUDE.md` template, and the `implementer` (from ponytail); and a test that checks every skill against the Agent Skills specification (agentskills.io, as published in anthropics/skills).
+- Plan drift check (branch `feat/plan-drift-check`): `check_drift.py` stamps and checks a per-file `Baseline` on pending tasks; `/implementation-plan` gains `Out of scope`, `Stop if`, and the stamp step; the `implementer` stops on unaccounted drift. Adapted from shadcn/improve (MIT).
 - Language: rules, skills, agents' docs, templates, ADRs, references, and user-facing script messages are in English. The roadmap marker "You are here:" replaces "Você está aqui:" (the Portuguese form is still read). `README.pt-BR.md` stays as the Portuguese README. The Cursor-only rule files keep their Portuguese file names.
 
 ## Verification

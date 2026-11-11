@@ -9,6 +9,7 @@ One step. Do not implement large slices or parts unrelated to this step's requir
 
 ## Per step
 
+0. If the plan stamped a `Baseline` for the task, run `check_drift.py --feature <slug> --task <TASK-ID> --strict` first; on exit 1, stop and report instead of editing.
 1. Point to the exact requirement or acceptance criterion. If none exists for non-trivial behavior, go back to `feature` or `new-project` and write the spec first.
 2. Point to the tests or evals that prove that requirement.
 3. Follow `tdd`: the smallest useful test fails for the right reason before production code.

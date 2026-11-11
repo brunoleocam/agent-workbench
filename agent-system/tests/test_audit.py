@@ -209,3 +209,85 @@ fingerprint:
     assert [block.id for block in blocks] == ["SEC-001"]
     assert blocks[0].get("classification") == "suspected" and blocks[0].get("severity") == "MEDIUM"
     assert "Rejected Candidates" not in blocks[0].text
+
+
+def _drift_project(root: Path) -> Path:
+    (root / "src").mkdir()
+    (root / "src/a.py").write_text("print('a')\n", encoding="utf-8")
+    (root / "src/b.py").write_text("print('b')\n", encoding="utf-8")
+    (root / "docs/tasks").mkdir(parents=True)
+    tasks = root / "docs/tasks/feat.md"
+    tasks.write_text(
+        "# Tasks\n\n"
+        "### TASK-001: Change a\n- Files: src/a.py, src/new.py\n- Status: todo\n- Done when: it works\n\n"
+        "### TASK-002: Change a again\n- Files: src/a.py\n- Status: todo\n- Done when: it works\n\n"
+        "### TASK-003: Change b\n- Files: src/b.py\n- Status: todo\n- Done when: it works\n",
+        encoding="utf-8",
+    )
+    return tasks
+
+
+def _drift(root: Path, *args: str) -> "subprocess.CompletedProcess[str]":
+    import subprocess
+
+    return subprocess.run([sys.executable, str(SYSTEM / "scripts/check_drift.py"), "--root", str(root), "--feature", "feat", "--no-record", *args], capture_output=True, text=True)
+
+
+def test_drift_stamp_writes_baselines_and_is_idempotent() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        tasks = _drift_project(root)
+        first = _drift(root, "--stamp")
+        assert first.returncode == 0 and "TASK-001, TASK-002, TASK-003" in first.stdout, first.stdout + first.stderr
+        text = tasks.read_text(encoding="utf-8")
+        assert text.count("- Baseline:") == 3
+        assert "src/new.py=absent" in text
+        assert "TASK-001, " not in _drift(root, "--stamp").stdout  # nothing left to stamp
+        assert tasks.read_text(encoding="utf-8") == text
+        assert _drift(root, "--strict").returncode == 0
+
+
+def test_drift_flags_unaccounted_changes_and_tells_expected_ones_apart() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        tasks = _drift_project(root)
+        _drift(root, "--stamp")
+        (root / "src/b.py").write_text("print('changed by someone else')\n", encoding="utf-8")
+        drifted = _drift(root, "--strict")
+        assert drifted.returncode == 1 and "TASK-003: src/b.py changed" in drifted.stdout, drifted.stdout
+        assert _drift(root).returncode == 0  # a warning without --strict
+        assert _drift(root, "--strict", "--task", "TASK-001").returncode == 0  # other tasks are not checked
+
+        # TASK-001 is done and edits src/a.py: that is expected drift for TASK-002, not a stop.
+        tasks.write_text(tasks.read_text(encoding="utf-8").replace("- Status: todo", "- Status: done", 1), encoding="utf-8")  # TASK-001 comes first
+        (root / "src/a.py").write_text("print('a, edited by TASK-001')\n", encoding="utf-8")
+        result = _drift(root, "--strict", "--task", "TASK-002")
+        assert result.returncode == 0 and "expected: TASK-001" in result.stdout, result.stdout
+
+        # A new file listed after stamping is reported; --refresh accepts the new state.
+        tasks.write_text(tasks.read_text(encoding="utf-8").replace("- Files: src/b.py\n", "- Files: src/b.py, src/c.py\n"), encoding="utf-8")
+        assert "added to Files after the Baseline" in _drift(root, "--task", "TASK-003").stdout
+        _drift(root, "--stamp", "--refresh", "--task", "TASK-003")
+        assert _drift(root, "--strict", "--task", "TASK-003").returncode == 0
+
+
+def test_drift_digest_ignores_line_endings_and_keeps_the_file_eol() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        tasks = _drift_project(root)
+        crlf = tasks.read_bytes().replace(b"\n", b"\r\n")
+        tasks.write_bytes(crlf)
+        _drift(root, "--stamp")
+        stamped = tasks.read_bytes()
+        assert stamped.count(b"\r\n") == stamped.count(b"\n")  # no bare LF introduced
+        (root / "src/a.py").write_bytes(b"print('a')\r\n")  # same text, different line ending
+        assert _drift(root, "--strict").returncode == 0
+
+
+def test_drift_fields_are_documented_and_planned() -> None:
+    plan = (PLUGIN / "skills/implementation-plan/SKILL.md").read_text(encoding="utf-8")
+    for needle in ("Baseline", "Out of scope", "Stop if", "check_drift.py"):
+        assert needle in plan, needle
+    assert "check_drift.py" in (PLUGIN / "agents/implementer.md").read_text(encoding="utf-8")
+    assert "check_drift.py" in (SYSTEM / "docs/cli.md").read_text(encoding="utf-8")
+    assert "check_drift.py" in (SYSTEM / "scripts/init_project.py").read_text(encoding="utf-8")

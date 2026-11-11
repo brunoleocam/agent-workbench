@@ -12,7 +12,7 @@ Decision: [ADR-0001](../../docs/architecture/ADR/0001-formato-dos-artefatos-rast
 - Front matter: a `---` block at the top with `key: value` lines. It is not full YAML.
 - IDs have three or more digits and are unique in the file: REQ, AC, ADR, TASK, TEST, PROOF, FIND, SEC.
 
-Keys (Portuguese aliases such as `Requisitos`, `Critérios`, `Dependências`, and `Pronto quando` are still accepted for existing projects): `Requirements`, `Acceptance`, `Task`, `Files`, `Depends on`, `Blocked by`, `Verification`, `Done when`, `Gate`, `Status`, `Command`, `Shell`, `Timeout`, `Required`, `Expected`, `Cwd`, `Evidence`, `Severity`, `Confidence`, `Classification`, `Location`, `Justification`.
+Keys (Portuguese aliases such as `Requisitos`, `Critérios`, `Dependências`, and `Pronto quando` are still accepted for existing projects): `Requirements`, `Acceptance`, `Task`, `Files`, `Depends on`, `Blocked by`, `Verification`, `Done when`, `Gate`, `Status`, `Command`, `Shell`, `Timeout`, `Required`, `Expected`, `Cwd`, `Evidence`, `Baseline`, `Out of scope`, `Stop if`, `Severity`, `Confidence`, `Classification`, `Location`, `Justification`.
 
 ## Where each file lives
 
@@ -77,6 +77,9 @@ EARS is recommended for behavioral requirements (`WHEN`, `WHILE`, `IF ... THEN`,
 - Requirements: REQ-001
 - Acceptance: AC-001
 - Files: src/reset.py, tests/test_reset.py
+- Baseline: src/reset.py=absent, tests/test_reset.py=absent   # written by check_drift.py --stamp
+- Out of scope: the mailer and the user model
+- Stop if: src/reset.py already exists or the user model has no email field
 - Depends on: none
 - Verification: TEST-001
 - Done when: TEST-001 passes and the token has 32 bytes
@@ -91,6 +94,8 @@ EARS is recommended for behavioral requirements (`WHEN`, `WHILE`, `IF ... THEN`,
 - Required: yes          # no = informational, does not block the gate
 - Expected: 3 passed
 ```
+
+`Baseline` holds `path=digest` pairs (`absent` for a file the task creates); it is stamped by `check_drift.py` and never written by hand. `Out of scope` and `Stop if` are free text for the executor and are not validated.
 
 `Command` is split into arguments, without a shell and without backslash escaping (use `/` in paths). A JSON list also works: `["python", "-m", "pytest"]`. `Shell: yes` only runs with `--allow-shell`. `Cwd` is relative to the project root.
 

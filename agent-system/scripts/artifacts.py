@@ -47,6 +47,9 @@ FIELD_ALIASES = {
     "location": ("location", "local"),
     "justification": ("justification", "justificativa"),
     "verification_criterion": ("fix verification",),
+    "baseline": ("baseline",),
+    "out_of_scope": ("out of scope", "fora de escopo"),
+    "stop_if": ("stop if", "pare se"),
     "priority": ("priority", "prioridade"),
     "type": ("type", "tipo"),
 }

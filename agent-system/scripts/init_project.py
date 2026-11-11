@@ -37,6 +37,7 @@ COPY_SCRIPTS = [
     "validate_spec.py",
     "validate_tasks.py",
     "check_proofs.py",
+    "check_drift.py",
     "validate_verification.py",
     "lessons.py",
 ]
