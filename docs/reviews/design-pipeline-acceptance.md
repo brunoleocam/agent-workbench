@@ -50,9 +50,11 @@ Data: 2026-11-12. Projeto de exemplo: "Agenda Vet", app de agendamento para clí
 - Evidence: (1) "Esperando resposta" usava a mesma etiqueta verde de "Confirmado"; (2) em 320px a etiqueta passava da borda do card; (3) os rótulos das vagas quebravam em duas linhas em 320px (checklist, pergunta 12); (4) o título dizia "8 consultas", e eram 6. Os quatro foram pegos pela checagem no navegador e pela checklist da `design-review`, e corrigidos.
 - Recommendation: nenhuma. Ficam como evidência de que a etapa de verificação no navegador e a checklist encontram defeito real.
 
-## Ensaio 2 (pendente): com o plugin desta branch carregado
+## Ensaio 2 (não realizado): com o plugin desta branch carregado
 
-Pedido pelo usuário para fechar o FIND-008 da revisão independente. Rode numa sessão nova do Claude Code aberta com o plugin da branch, a partir de uma cópia de `agent-system/tests/samples/design-sample/` fora do repositório:
+Decisão do usuário em 2026-11-12: o Ensaio 2 não será feito antes do PR. Os casos abaixo (AC-012, AC-015, AC-017, AC-019, AC-022 e o hook do AC-028 em uso real) ficam **sem evidência de comportamento**: só os testes de contrato das skills e dos agentes os cobrem. O FIND-008 da revisão independente continua aberto, e a revisão segue com status FAIL até uma nova revisão. O roteiro fica aqui para quando o ensaio for feito.
+
+Pedido originalmente pelo usuário para fechar o FIND-008 da revisão independente. Rode numa sessão nova do Claude Code aberta com o plugin da branch, a partir de uma cópia de `agent-system/tests/samples/design-sample/` fora do repositório:
 
 ```bash
 claude --plugin-dir "C:/Dev/Agent Workbench"
