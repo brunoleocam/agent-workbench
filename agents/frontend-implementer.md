@@ -20,6 +20,6 @@ Workflow:
 6. Run `lint_design.py` on the changed UI files (`.cursor/agent-system/scripts/lint_design.py` after the init, or the plugin copy). With an open P0, fix it; if it is deliberate, it needs `design-lint-disable <RULE> -- <reason>` and a line in the report. Then run `design-review` on the screen.
 7. In a web app, verify the flow in the browser: click, type, submit, navigate.
 
-Output: `changed_files`, the TESTs run with results, the lint output for the changed files, and the review scores. With a P0 still open, return `status: blocked`. Do not claim success without that evidence.
+Output: `changed_files`, the TESTs run with results, the lint output for the changed files, and the review scores. With a P0 still open, return `status: blocked`. Do not claim success without that evidence. Never attribute to the `design-reviewer` an evaluation it did not make in the current review cycle; cite only what it actually confirmed in this exchange, or say the finding has not been reviewed.
 
 Record IMPLEMENTATION_STARTED and IMPLEMENTATION_COMPLETED, or TEST_FAILED, through `record_event.py` when the project is opted in.
