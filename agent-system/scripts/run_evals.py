@@ -16,7 +16,7 @@ from pathlib import Path
 SCRIPTS = Path(__file__).resolve().parent
 FIXTURES = SCRIPTS.parent / "evals" / "fixtures"
 PYTHON_TOKEN = "__PYTHON__"
-SCRIPTS_ALLOWED = {"validate_spec.py", "validate_tasks.py", "check_proofs.py", "validate_verification.py", "lessons.py", "init_project.py"}
+SCRIPTS_ALLOWED = {"validate_spec.py", "validate_tasks.py", "check_proofs.py", "validate_verification.py", "lessons.py", "init_project.py", "next_step.py", "validate_workflow.py"}
 
 
 class FixtureError(Exception):

@@ -99,6 +99,16 @@ O harness tem quatro ferramentas principais de validação:
 
 As provas ficam presas ao estado do workspace, o que ajuda a detectar quando o código muda depois que os testes rodaram.
 
+### Grafo do workflow
+
+O workflow também está declarado como dado, em `agent-system/workflow.json`: nós de agente, de script e de decisão humana, arestas condicionais por classe, complexidade, risco e interface, um grupo de revisão em paralelo que se junta no gate e um limite de revisões. Três scripts trabalham com ele:
+
+- `validate_workflow.py` — valida a estrutura do grafo e o imprime como diagrama Mermaid.
+- `next_step.py` — roteador determinístico: dado o nó atual e o resultado, diz qual nó vem depois. Num nó humano, para com a pergunta a fazer a você, e depois de `max_revisions` gates reprovados (3 por padrão) escala para você em vez de repetir o ciclo.
+- `metrics.py` — execuções, tempo, tamanho das respostas e tokens por agente, além de gates e revisões por feature, lidos da timeline. Os tokens vêm dos transcripts de subagente do Claude Code (só os números); o Cursor não envia.
+
+Cada veredito dos validadores também deixa um rastro de decisão (nó do grafo, caminhos dos artefatos lidos e fingerprint do workspace), mostrado por `timeline_view.py --feature <slug>`.
+
 ### Segurança
 
 Segurança é tratada como uma dimensão independente do risco de engenharia.
@@ -351,7 +361,7 @@ Instalação e estado do projeto:
 - `/agent-status` — mostra agentes, skills, rules, hooks e o estado atual do workflow.
 - `/roadmap` — mostra a fase e a tarefa atuais, o que falta e o que está bloqueado. Também cria ou atualiza o roadmap, e `/roadmap visual` gera a visão em Canvas. Exige `/init-agent-system`.
 - `/timeline` — mostra o histórico append-only de eventos de um projeto inicializado.
-- `/lessons` — propõe, lista, confirma ou rejeita lições do projeto. Só você confirma uma lição, e só as confirmadas entram no contexto do agente.
+- `/lessons` — propõe, lista, confirma ou rejeita lições do projeto. Só você confirma uma lição, e só as confirmadas entram no contexto do agente. Você também pode promover uma lição confirmada para um repositório global, compartilhado por todos os seus projetos (`~/.agent-workbench/`); ela é recusada se citar caminho, URL, segredo ou o nome do projeto, e um projeto pode desligar as lições globais com `"global_lessons": false` no `layout.json`.
 - `/help` — mostra o guia de comandos dentro do Cursor.
 
 Planejamento:

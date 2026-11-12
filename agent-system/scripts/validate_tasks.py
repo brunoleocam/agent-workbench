@@ -185,7 +185,8 @@ def main() -> int:
         return config_error(str(exc), args.json)
     code = report.emit(args.json)
     result = "passed" if code == 0 else f"failed fail={report.count('FAIL')} warn={report.count('WARN')}"
-    record(bundle.root, "TASK_VALIDATION_COMPLETED", f"validate_tasks {bundle.slug}", result, bundle.slug, "orchestrator", not args.no_record)
+    record(bundle.root, "TASK_VALIDATION_COMPLETED", f"validate_tasks {bundle.slug}", result, bundle.slug, "orchestrator", not args.no_record,
+           node="tasks_check", inputs=[bundle.rel(bundle.tasks), bundle.rel(bundle.spec), *(bundle.rel(doc) for doc in bundle.tests)])
     return code
 
 

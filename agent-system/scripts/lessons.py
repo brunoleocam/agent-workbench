@@ -1,6 +1,8 @@
-"""Lessons learned per project. lessons.json is the source of truth; LESSONS.md is generated.
+"""Lessons learned per project, plus an optional user-level (global) store. lessons.json is the source of truth.
 
-Agents propose (status candidate). Only the user confirms or rejects. Only confirmed lessons are loaded at session start.
+Agents propose (status candidate). Only the user confirms, rejects, or promotes. Only confirmed lessons are loaded
+at session start. Global lessons live in $AGENT_WORKBENCH_HOME/lessons.json (default ~/.agent-workbench/), hold no
+project path or name, and are off for a project whose layout.json says "global_lessons": false.
 """
 
 from __future__ import annotations
@@ -13,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from lib import SECRET_PATH, append_event, apply_semantic_state, load_state, local_stamp, opted_in, redact, redact_secrets, save_state, utc_now, write_json  # noqa: E402
+from lib import SECRET_PATH, append_event, global_lessons_enabled, global_lessons_path, normalized_title, apply_semantic_state, load_state, local_stamp, opted_in, redact, redact_secrets, save_state, utc_now, write_json  # noqa: E402
 
 CATEGORIES = ("architecture", "requirements", "implementation", "testing", "security", "performance", "debugging", "workflow", "tooling")
 STATUSES = ("candidate", "confirmed", "rejected")
@@ -27,25 +29,69 @@ class LessonError(Exception):
         self.code = code
 
 
+SCOPES = ("project", "global")
+ABSOLUTE_PATH = re.compile(r"(?:\b[A-Za-z]:[\\/])|(?:(?:^|[\s(\"'`=])(?:/[\w.-]+/|~[\w.-]*[\\/]))|(?:\\\\[^\\\s]+\\)")
+URL = re.compile(r"\b[a-z][a-z0-9+.-]*://|\bwww\.|\b(?:[a-z0-9-]+\.)+[a-z]{2,}/", re.IGNORECASE)
+
+
 def lessons_path(root: Path) -> Path:
     return root / ".cursor" / "agent-system" / "lessons.json"
 
 
-def load(root: Path) -> dict:
-    path = lessons_path(root)
+def store_path(root: Path, scope: str) -> Path:
+    if scope == "global":
+        if not global_lessons_enabled(root):
+            raise LessonError('Global lessons are off for this project (layout.json "global_lessons": false).', 2)
+        return global_lessons_path()
+    return lessons_path(root)
+
+
+def leak(text: str, root: Path) -> str | None:
+    """Why a text cannot become a global lesson, or None. Stricter than the project check: no paths, URLs, or project names."""
+    if sensitive(text):
+        return "something that looks like a secret or a sensitive path"
+    lowered = text.lower().replace("\\", "/")
+    if str(root).lower().replace("\\", "/") in lowered:
+        return "this project's path"
+    name = root.name.strip()
+    words, squashed = normalized_title(name), re.sub(r"[^a-z0-9]", "", name.lower())
+    if len(words) >= 3 and f" {words} " in f" {normalized_title(text)} ":
+        return f"this project's name ({name})"
+    if len(squashed) >= 6 and squashed in re.sub(r"[^a-z0-9]", "", text.lower()):
+        return f"this project's name ({name})"
+    if ABSOLUTE_PATH.search(text):
+        return "an absolute path"
+    if URL.search(text):
+        return "a URL"
+    return None
+
+
+def check_global(lesson: dict, root: Path) -> None:
+    for key in ("title", "description", "context"):
+        reason = leak(str(lesson.get(key) or ""), root)
+        if reason:
+            raise LessonError(f"{lesson.get('id')} {key} contains {reason}; a global lesson must not carry project details. Rewrite it in general terms.", 1)
+    for item in lesson.get("evidence") or []:
+        reason = leak(str(item), root)
+        if reason:
+            raise LessonError(f"{lesson.get('id')} evidence contains {reason}; a global lesson must not carry project details.", 1)
+
+
+def load(root: Path, scope: str = "project") -> dict:
+    path = store_path(root, scope)
     if not path.exists():
         return {"version": 1, "lessons": []}
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
-        raise LessonError(f"Invalid JSON in lessons.json (line {exc.lineno})", 2) from exc
+        raise LessonError(f"Invalid JSON in {scope} lessons.json (line {exc.lineno})", 2) from exc
     if not isinstance(data, dict) or not isinstance(data.get("lessons"), list):
         raise LessonError("lessons.json must be an object with a 'lessons' list", 2)
     return data
 
 
 def normalized(title: str) -> str:
-    return re.sub(r"[^a-z0-9]+", " ", title.lower()).strip()
+    return normalized_title(title)
 
 
 def sensitive(text: str) -> bool:
@@ -97,9 +143,10 @@ def event(root: Path, kind: str, lesson: dict, agent: str) -> None:
         print("[WARN] timeline not updated", file=sys.stderr)
 
 
-def save(root: Path, data: dict) -> None:
-    write_json(lessons_path(root), data)
-    render(root, data)
+def save(root: Path, data: dict, scope: str = "project") -> None:
+    write_json(store_path(root, scope), data)
+    if scope == "project":
+        render(root, data)
 
 
 def cmd_add(root: Path, args) -> int:
@@ -118,7 +165,7 @@ def cmd_add(root: Path, args) -> int:
             raise LessonError(f"{name} is longer than {LIMITS[name]} characters.", 2)
         if sensitive(value):
             raise LessonError(f"{name} looks like it contains a secret or a sensitive path. Rewrite it without the value.", 1)
-    data = load(root)
+    data = load(root, args.scope)
     key = normalized(fields["title"])
     for item in data["lessons"]:
         if normalized(str(item.get("title", ""))) == key:
@@ -135,10 +182,14 @@ def cmd_add(root: Path, args) -> int:
         "rejected_at": None,
         "reason": None,
     }
+    if args.scope == "global":
+        lesson["scope"] = "global"
+        check_global(lesson, root)
     data["lessons"].append(lesson)
-    save(root, data)
+    save(root, data, args.scope)
     event(root, "LESSON_PROPOSED", lesson, args.agent)
-    print(f"{lesson['id']} proposed (candidate). Ask the user to confirm or reject it.")
+    where = " in the global store" if args.scope == "global" else ""
+    print(f"{lesson['id']} proposed (candidate){where}. Ask the user to confirm or reject it.")
     return 0
 
 
@@ -150,7 +201,7 @@ def find(data: dict, lesson_id: str) -> dict:
 
 
 def cmd_status(root: Path, args, status: str) -> int:
-    data = load(root)
+    data = load(root, args.scope)
     lesson = find(data, args.id)
     if lesson.get("status") == status:
         print(f"{lesson['id']} is already {status}.")
@@ -158,20 +209,56 @@ def cmd_status(root: Path, args, status: str) -> int:
     texts = [str(lesson.get(key) or "") for key in ("title", "description", "context", "proposed_by")] + [str(item) for item in lesson.get("evidence") or []]
     if status == "confirmed" and any(sensitive(text) for text in texts):
         raise LessonError(f"{lesson['id']} looks like it contains a secret or a sensitive path; edit lessons.json before confirming.", 1)
+    if status == "confirmed" and args.scope == "global":
+        check_global(lesson, root)
     lesson["status"] = status
     if status == "confirmed":
         lesson["confirmed_at"] = utc_now()
     else:
         lesson["rejected_at"] = utc_now()
         lesson["reason"] = redact(args.reason or "", 300) or None
-    save(root, data)
+    save(root, data, args.scope)
     event(root, "LESSON_CONFIRMED" if status == "confirmed" else "LESSON_REJECTED", lesson, "user")
     print(f"{lesson['id']} {status}.")
     return 0
 
 
+def cmd_promote(root: Path, args) -> int:
+    """Copy a confirmed project lesson to the global store (a user decision). The copy keeps no trace of the project."""
+    source = find(load(root, "project"), args.id)
+    if source.get("status") != "confirmed":
+        raise LessonError(f"{source['id']} is {source.get('status')}; only a confirmed lesson can be promoted.", 1)
+    check_global(source, root)
+    data = load(root, "global")
+    key = normalized(str(source.get("title") or ""))
+    for item in data["lessons"]:
+        if normalized(str(item.get("title", ""))) == key:
+            raise LessonError(f"The global store already has {item.get('id')} with this title ({item.get('status')}).", 1)
+    now = utc_now()
+    lesson = {
+        "id": next_id(data["lessons"]),
+        "category": source.get("category"),
+        "status": "confirmed",
+        "scope": "global",
+        "title": source.get("title"),
+        "description": source.get("description"),
+        "context": source.get("context") or "",
+        "evidence": [],  # project evidence (TEST/FIND ids, commits) means nothing elsewhere
+        "proposed_by": "user",
+        "created_at": now,
+        "confirmed_at": now,
+        "rejected_at": None,
+        "reason": None,
+    }
+    data["lessons"].append(lesson)
+    save(root, data, "global")
+    event(root, "LESSON_CONFIRMED", {**lesson, "id": f"{source['id']} promoted as global {lesson['id']}"}, "user")
+    print(f"{source['id']} promoted to the global store as {lesson['id']}.")
+    return 0
+
+
 def cmd_list(root: Path, args) -> int:
-    data = load(root)
+    data = load(root, args.scope)
     items = [
         item for item in data["lessons"]
         if (not args.status or item.get("status") == args.status) and (not args.category or item.get("category") == args.category)
@@ -199,15 +286,20 @@ def main() -> int:
     add.add_argument("--context", default="")
     add.add_argument("--evidence", action="append", default=[], help="path, command, or ID (repeatable)")
     add.add_argument("--agent", default="orchestrator")
+    add.add_argument("--scope", choices=SCOPES, default="project")
     listing = sub.add_parser("list", help="list lessons")
     listing.add_argument("--status", choices=STATUSES)
     listing.add_argument("--category", choices=CATEGORIES)
     listing.add_argument("--json", action="store_true")
     listing.add_argument("--verbose", action="store_true")
+    listing.add_argument("--scope", choices=SCOPES, default="project")
     for name in ("confirm", "reject"):
         item = sub.add_parser(name, help=f"{name} a lesson (user decision)")
         item.add_argument("--id", required=True)
         item.add_argument("--reason", default="")
+        item.add_argument("--scope", choices=SCOPES, default="project")
+    promote = sub.add_parser("promote", help="copy a confirmed project lesson to the global store (user decision)")
+    promote.add_argument("--id", required=True)
     sub.add_parser("render", help="regenerate LESSONS.md")
     args = parser.parse_args()
     root = Path(args.root).resolve()
@@ -223,6 +315,8 @@ def main() -> int:
             return cmd_status(root, args, "confirmed")
         if args.command == "reject":
             return cmd_status(root, args, "rejected")
+        if args.command == "promote":
+            return cmd_promote(root, args)
         path = render(root, load(root))
         print(f"Rendered {path.relative_to(root).as_posix()}")
         return 0

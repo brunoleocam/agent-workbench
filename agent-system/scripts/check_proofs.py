@@ -636,7 +636,9 @@ def main() -> int:
             print(f"[{label}] Workspace changed while the checks ran; proofs keep the fingerprint from before the run, so the gate will treat them as stale. Rerun with the workspace still, or ignore generated files in git.")
         if not args.dry_run:
             print(f"Proofs written to {proofs_file(bundle.root, bundle.slug).relative_to(bundle.root).as_posix()} ({summary}).")
-    record(bundle.root, "PROOF_EXECUTION_COMPLETED", f"check_proofs {bundle.slug}", ("passed " if code == 0 else "failed ") + summary, bundle.slug, "tester", record_on)
+    record(bundle.root, "PROOF_EXECUTION_COMPLETED", f"check_proofs {bundle.slug}", ("passed " if code == 0 else "failed ") + summary, bundle.slug, "tester", record_on,
+           node="proofs", fingerprint=before["digest"],
+           inputs=[bundle.rel(bundle.tasks), *(bundle.rel(doc) for doc in bundle.tests), proofs_file(bundle.root, bundle.slug).relative_to(bundle.root).as_posix()])
     return code
 
 

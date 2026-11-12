@@ -161,7 +161,8 @@ def main() -> int:
     validate(doc, root, layout, report, args.require_approval)
     code = report.emit(args.json)
     result = "passed" if code == 0 else f"failed fail={report.count('FAIL')} warn={report.count('WARN')}"
-    record(root, "SPEC_VALIDATION_COMPLETED", f"validate_spec {report.data['spec']}", result, args.feature or path.stem, "orchestrator", not args.no_record)
+    record(root, "SPEC_VALIDATION_COMPLETED", f"validate_spec {report.data['spec']}", result, args.feature or path.stem, "orchestrator", not args.no_record,
+           node="spec_check", inputs=[report.data["spec"]])
     return code
 
 

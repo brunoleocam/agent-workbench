@@ -99,6 +99,16 @@ The harness includes four main validation tools:
 
 Proofs are tied to the workspace state, helping detect when code changes after tests have been executed.
 
+### Workflow graph
+
+The workflow is also declared as data, in `agent-system/workflow.json`: agent, script, and human-decision nodes, conditional edges by class, complexity, risk, and interface, a parallel review group that joins at the gate, and a revision limit. Three scripts work on it:
+
+- `validate_workflow.py` — validates the graph's structure and prints it as a Mermaid diagram.
+- `next_step.py` — a deterministic router: given the current node and result, it says which node comes next. On a human node it stops with the question to ask you, and after `max_revisions` failed gates (3 by default) it escalates to you instead of looping.
+- `metrics.py` — runs, time, response size, and tokens per agent, plus gates and revisions per feature, read from the timeline. Tokens come from Claude Code subagent transcripts (numbers only); Cursor sends none.
+
+Each validator verdict also leaves a decision trace (graph node, artifact paths read, workspace fingerprint), shown by `timeline_view.py --feature <slug>`.
+
 ### Security
 
 Security is treated as an independent dimension of engineering risk.
@@ -328,7 +338,7 @@ Setup and project state:
 - `/agent-status` — shows agents, skills, rules, hooks, and the current workflow state.
 - `/roadmap` — shows the current phase and task, what is left, and what is blocked. It also creates or updates the roadmap, and `/roadmap visual` renders it as a Canvas. Requires `/init-agent-system`.
 - `/timeline` — shows the append-only event history of an initialized project.
-- `/lessons` — proposes, lists, confirms, or rejects project lessons. Only you confirm a lesson, and only confirmed lessons enter the agent context.
+- `/lessons` — proposes, lists, confirms, or rejects project lessons. Only you confirm a lesson, and only confirmed lessons enter the agent context. You can also promote a confirmed lesson to a global store shared by all your projects (`~/.agent-workbench/`); it is refused if it mentions a path, URL, secret, or the project's name, and a project can turn global lessons off with `"global_lessons": false` in `layout.json`.
 - `/help` — shows the command guide inside Cursor.
 
 Planning:

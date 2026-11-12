@@ -1,0 +1,129 @@
+{
+  "base": "complete-feature",
+  "description": "The gate fails three times: the router sends the work back to the implementer twice, then escalates to the user; a passing gate resets the count.",
+  "steps": [
+    {
+      "write": ".cursor/agent-system/state.json",
+      "content": "{\"version\": 1, \"active_agent\": \"orchestrator\", \"phase\": \"idle\"}\n"
+    },
+    {
+      "script": "validate_verification.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 1
+    },
+    {
+      "script": "validate_verification.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 1
+    },
+    {
+      "script": "next_step.py",
+      "args": [
+        "--from",
+        "gate",
+        "--result",
+        "fail",
+        "--feature",
+        "feat",
+        "--interface",
+        "none"
+      ],
+      "exit_code": 0,
+      "contains": [
+        "\"implement\"",
+        "revisions 2 < max_revisions 3"
+      ],
+      "not_contains": [
+        "\"escalate\""
+      ]
+    },
+    {
+      "script": "validate_verification.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 1
+    },
+    {
+      "script": "next_step.py",
+      "args": [
+        "--from",
+        "gate",
+        "--result",
+        "fail",
+        "--feature",
+        "feat",
+        "--interface",
+        "none"
+      ],
+      "exit_code": 0,
+      "contains": [
+        "\"escalate\"",
+        "\"needs_decision\"",
+        "revisions 3 >= max_revisions 3"
+      ]
+    },
+    {
+      "script": "check_proofs.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 0
+    },
+    {
+      "stamp": "docs/reviews/feat.md"
+    },
+    {
+      "script": "validate_verification.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 0
+    },
+    {
+      "script": "next_step.py",
+      "args": [
+        "--from",
+        "gate",
+        "--result",
+        "pass",
+        "--feature",
+        "feat",
+        "--interface",
+        "none"
+      ],
+      "exit_code": 0,
+      "contains": [
+        "\"approve_commit\"",
+        "\"needs_decision\""
+      ]
+    },
+    {
+      "script": "next_step.py",
+      "args": [
+        "--from",
+        "gate",
+        "--result",
+        "fail",
+        "--feature",
+        "feat",
+        "--interface",
+        "none"
+      ],
+      "exit_code": 0,
+      "contains": [
+        "\"implement\"",
+        "revisions 0 < max_revisions 3"
+      ]
+    }
+  ]
+}
