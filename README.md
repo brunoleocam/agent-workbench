@@ -1,5 +1,5 @@
 <div align="right">
-  <img src="https://img.shields.io/badge/version-0.4.0-green?style=flat-square" alt="Version 0.4.0" />
+  <img src="https://img.shields.io/badge/version-0.5.0-green?style=flat-square" alt="Version 0.5.0" />
   <a href="README.pt-BR.md">
     <img src="https://img.shields.io/badge/README-PT--BR-blue?style=flat-square" alt="Português 🇧🇷" />
   </a>
@@ -244,6 +244,8 @@ For projects prepared with `--for-cloud`, existing rule and subagent copies are 
 - State: projects keep their state in `.cursor/agent-system/` and `.cursor/timeline/` in both editors, so a project initialized in one editor continues in the other.
 - `--for-cloud` and `/roadmap visual` (Canvas) are Cursor-only.
 
+New in 0.5.0: the workflow is a declared graph (`workflow.json`) with a router (`next_step.py`) that stops on your decisions and escalates after 3 failed gates; validator verdicts leave a decision trace (`timeline_view.py --feature`); `metrics.py` reports time, tokens, and revisions per agent and feature; lessons can be promoted to a global store shared by your projects; and the UI/UX design pipeline (`/design`, three design agents, and the anti-slop lint) and the plan drift check (`check_drift.py`) arrived. Run `/init-agent-system` again in each project to get the new scripts, `workflow.json`, and the `revisions` state key.
+
 Since 0.4.0, the `implementer`, `tester`, and `debugger` subagents use `model: inherit` in both editors (before, they used a Cursor-only model). To pin a model in Cursor, change `model:` in the agent file.
 
 Commands renamed in 0.3.0: `investigacao-enxuta` is now `/lean-investigation`, `resumo-de-contexto` is now `/context-summary`, and `tarefa-em-etapas` is now `/staged-task`.
@@ -439,7 +441,7 @@ python agent-system/scripts/run_evals.py
 
 The evaluations verify harness behavior using controlled project fixtures. They do not automatically evaluate the quality of the underlying AI model's decisions or generated code.
 
-The current implementation has been tested on Windows and Linux (WSL2). macOS has not yet been tested. CI is not currently configured.
+The current implementation has been tested on Windows and Linux (WSL2). macOS has not yet been tested. CI (`.github/workflows/ci.yml`) runs the test suite and the evals on Ubuntu and Windows, with Python 3.10 and 3.13.
 
 ## License
 

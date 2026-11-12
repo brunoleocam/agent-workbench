@@ -1,7 +1,7 @@
 ---
 status: PASS
 reviewer: reviewer
-fingerprint: 1bc706c5d7fbff158dc9930b7707576626f4b385420cf21f91c7148a71c30645
+fingerprint: 0f431cc60b3448bbee39ee8f40e5d0318f5a76279cdcea0a68c8fa8fba5582ab
 ---
 # Review: workflow graph (execution graph, decision trace, metrics, global lessons)
 
@@ -28,6 +28,24 @@ Commands run in round 2:
 - `lessons.leak()` on the 17 round-1 probes plus UNC and project-name probes (results under FIND-003).
 
 This repository is not opted in, so no REVIEW_* events were recorded.
+
+Re-stamp (round 3, version bump on top of commit aa59e21): the fingerprint moved from `1bc706c5…0645` to `0f431cc6…82ab` because of the version bump on top of commit aa59e21. I read the whole `git diff` (excluding `docs/reviews/design-pipeline-acceptance.md`, another session's work and outside the fingerprint) and it changes no behavior:
+- `"version"` goes from 0.4.0 to 0.5.0 in `.claude-plugin/plugin.json` and `.cursor-plugin/plugin.json`.
+- The version assertion in `test_improvement.py` follows, and `test_improvement` passes 9/9.
+- Both README badges change.
+- A "New in 0.5.0" paragraph is added to each README.
+- The CI line is replaced in each README.
+- The `CURRENT.md` header changes.
+
+I checked the README claims against the tree:
+- `.github/workflows/ci.yml` exists and runs the suite and the evals on `ubuntu-latest` and `windows-latest` with Python 3.10 and 3.13.
+- `/design` (`skills/design/SKILL.md`), the three design agents (`designer`, `frontend-implementer`, `design-reviewer`) and `check_drift.py` exist.
+- They landed after the 0.4.0 commit 59a8d33, in #8 and #9.
+- "Escalates after 3 failed gates" matches the default `max_revisions`.
+- Re-running the init adds `revisions` through `migrate_state`.
+- The 0.4.0 mentions that remain are historical.
+
+The proofs were re-recorded on `0f431cc6…82ab` (the digest matches), and the verdict is unchanged.
 
 Verdict: PASS. Every round-1 finding is resolved, verified by running it, and covered by a test that would fail if the fix were reverted. No new blocker or major turned up.
 

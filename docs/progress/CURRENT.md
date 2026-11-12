@@ -1,6 +1,6 @@
 # Current progress
 
-State of the repository after versions 0.1 to 0.4.0 and the audit-improvements front. Everything before the audit front is merged into `main` (PRs #1 to #7).
+State of the repository at version 0.5.0. The audit-improvements front (PR #8) and the design pipeline (PR #9) are merged into `main`; the workflow graph front is PR #10.
 
 ## Delivered (merged)
 
