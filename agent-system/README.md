@@ -108,6 +108,9 @@ The main chat is the orchestrator, because of rule `00`. Cursor does not replace
 - `reviewer` — independent review with a Verification Audit. Does not fix on its own. Absorbs the verifier role (ADR-0003). Declares `tools` without `Edit`.
 - `security-reviewer` — security findings with stack references. Does not fix. Declares `tools` without `Edit`.
 - `debugger` — reproduces and finds the cause before the patch.
+- `designer` — visual identity of a new interface with the user: brief, three rendered directions, `DESIGN.md` and tokens. No production code.
+- `frontend-implementer` — one screen bound to `DESIGN.md` and the tokens, with every state and `lint_design.py` clean.
+- `design-reviewer` — independent design review against `DESIGN.md`, the brief, and the lint. Does not fix. Declares `tools` without `Edit`.
 
 The `agent-system/agents.json` registry lists only this system's agents and is checked against `agents/*.md` by the tests. Cursor's built-in agents are not in it (the built-in `security-review` is a different agent).
 

@@ -16,7 +16,9 @@ Typical order for something new: `/brainstorm` → approved spec → `/implement
 
 Defect: `/debug` → `/root-cause` → `/tdd` or `/bug-fix`.
 
-Interface: `/brainstorm` or `/ui-ux-experiment` → you choose → `/ui-ux`.
+New visual interface: `/design` (interview → three directions → you choose → `DESIGN.md`) → `/ui-ux` one screen at a time. A variant of one screen inside an existing design: `/ui-ux-experiment` → you choose → `/ui-ux`.
+
+Every UI file goes through `lint_design.py`, an anti-slop lint that blocks the classic generic-AI tells (default indigo, purple gradients, emoji icons, filler text, invented metrics). In Claude Code it runs on each edit and reports to the agent without blocking.
 
 A trivial change needs no command. An old repository is not migrated wholesale.
 
@@ -38,8 +40,13 @@ For M or larger with `/init-agent-system`, the gates are scripts in `.cursor/age
 - `/implementation` — one step of the plan, tied to a requirement.
 - `/tdd` — the test fails for the right reason, minimum code, refactor. No production code before the red.
 - `/test-hygiene` — the test proves behavior, is deterministic, and fails for the right reason.
+- `/design` — the full design pipeline for a new interface: interview, three directions, `DESIGN.md`, review. Skips what is approved and stops wherever you must answer or choose.
+- `/design-discovery` — a short interview (at most 5 questions, each with a recommended answer) that produces `design/brief.md`. No design jargon.
+- `/design-directions` — three structurally different directions as HTML previews in `design/directions/`; you choose one and tune it with dials. Writes no `DESIGN.md`.
+- `/design-system` — turns the chosen direction into `DESIGN.md` and `design/tokens.css`, with contrast checked. Overwrites an existing `DESIGN.md` only with your confirmation.
+- `/design-review` — six-axis self-critique, a 28-question checklist, and the lint, reported in plain prose. Fixes before delivering.
 - `/ui-ux-experiment` — 2 or 3 interfaces to compare. Does not implement all of them.
-- `/ui-ux` — builds the chosen interface with empty, error, loading, and success states, and verifies the flow.
+- `/ui-ux` — builds the chosen interface with empty, error, loading, and success states, and verifies the flow. Follows `DESIGN.md` when it exists and runs the lint before delivering.
 - `/apple-design` — Apple-style interactive motion on the web: drag, swipe, sheets, springs, momentum, interruption, and reduced motion; also reviews interactions. Does not handle layout or screen states.
 - `/bug-fix` — minimal fix after the cause is confirmed, with a regression test.
 - `/debug` — reproduces and finds the cause with evidence. Does not guess patches.

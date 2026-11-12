@@ -1,0 +1,112 @@
+<!-- direction: Balcão | stance: a agenda de hoje como uma linha do tempo calorosa, com o encaixe sempre à mão do lado | distinctive: horários livres desenhados como "vagas" pontilhadas que a recepcionista clica para encaixar, e o nome de cada animal em itálico serifado ao lado do retrato redondo | variety: 5 | motion: 3 | density: 8 | axes: layout=timeline+side panel, display=rounded heavy (Baloo 2), palette=warm cream + orange + navy, density=8 -->
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agenda Vet — Balcão</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito+Sans:wght@400;600;700&family=Fraunces:ital,wght@1,500&display=swap">
+<style>
+  :root {
+    --color-surface: #fbf4ea;
+    --color-raised: #ffffff;
+    --color-ink: #1f2a44;
+    --color-muted: #5e6475;
+    --color-rule: #ecdcc6;
+    --color-accent: #c2410c;
+    --color-accent-ink: #ffffff;
+    --color-soft: #fde4cc;
+    --color-soft-ink: #7a2d07;
+    --color-support: #0f766e;
+    --color-support-ink: #ffffff;
+    --color-danger: #b42318;
+    --color-danger-ink: #ffffff;
+    --color-focus: #1d4ed8;
+    --font-display: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+    --font-body: "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-pet: "Fraunces", Georgia, serif;
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px;
+    --radius-2: 12px; --radius-pill: 999px;
+    --control-height: 44px;
+    --duration-feedback: 120ms;
+    --shadow-1: 0 1px 2px rgb(31 42 68 / 0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { overflow-x: clip; }
+  body { margin: 0; background: var(--color-surface); color: var(--color-ink); font-family: var(--font-body); font-size: 16px; line-height: 1.5; }
+  header { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-4); }
+  .brand { font-family: var(--font-display); font-weight: 800; font-size: 24px; }
+  .date { color: var(--color-muted); }
+  main { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); padding: 0 var(--space-4) var(--space-8); }
+  @media (min-width: 960px) { main { grid-template-columns: minmax(0, 1fr) 360px; } }
+  h1 { font-family: var(--font-display); font-weight: 800; font-size: 32px; line-height: 1.05; margin: 0 0 var(--space-1); overflow-wrap: anywhere; }
+  .lede { margin: 0 0 var(--space-3); color: var(--color-muted); }
+  .timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); }
+  .slot { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: var(--space-3); align-items: center; }
+  .time { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .visit { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; background: var(--color-raised); border-radius: var(--radius-2); padding: var(--space-2) var(--space-3); box-shadow: var(--shadow-1); min-width: 0; }
+  .pet { flex: none; width: 32px; height: 32px; border-radius: var(--radius-pill); background: var(--color-soft); color: var(--color-soft-ink); display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; }
+  .who { min-width: 0; }
+  .who strong { display: block; }
+  .who em { font-family: var(--font-pet); font-style: italic; font-weight: 500; font-size: 18px; }
+  .who span { color: var(--color-muted); font-size: 14px; }
+  .tag { margin-left: auto; flex: none; font-size: 13px; font-weight: 700; padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); background: var(--color-support); color: var(--color-support-ink); }
+  .tag.wait { background: var(--color-soft); color: var(--color-soft-ink); }
+  .free { width: 100%; min-height: var(--control-height); border: 2px dashed var(--color-rule); border-radius: var(--radius-2); background: transparent; color: var(--color-ink); font: inherit; font-weight: 600; text-align: left; padding: var(--space-2) var(--space-3); cursor: pointer; transition: border-color var(--duration-feedback) ease-out, background-color var(--duration-feedback) ease-out; }
+  .free:hover { border-color: var(--color-accent); background: var(--color-raised); }
+  .free:focus-visible, .btn:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+  aside { background: var(--color-raised); border-radius: var(--radius-2); padding: var(--space-4); align-self: start; box-shadow: var(--shadow-1); }
+  aside h2 { font-family: var(--font-display); font-weight: 800; font-size: 24px; line-height: 1.1; margin: 0 0 var(--space-4); }
+  label { display: block; font-weight: 600; margin-top: var(--space-4); }
+  input, select { width: 100%; height: var(--control-height); margin-top: var(--space-1); border: 1px solid var(--color-muted); border-radius: var(--space-2); padding: 0 var(--space-3); font: inherit; color: var(--color-ink); background: var(--color-raised); }
+  .btn { margin-top: var(--space-6); width: 100%; height: var(--control-height); border: 0; border-radius: var(--radius-pill); background: var(--color-accent); color: var(--color-accent-ink); font: inherit; font-weight: 700; cursor: pointer; }
+  .note { margin-top: var(--space-6); padding: var(--space-4); border-radius: var(--radius-2); background: var(--color-surface); }
+  .note strong { display: block; }
+  .error { margin-top: var(--space-4); padding: var(--space-3) var(--space-4); border-radius: var(--radius-2); background: var(--color-danger); color: var(--color-danger-ink); }
+  .sample { font-size: 13px; color: var(--color-muted); }
+  @media (prefers-reduced-motion: reduce) { .free { transition: none; } }
+</style>
+</head>
+<body>
+<header>
+  <span class="brand">Agenda Vet</span>
+  <span class="date">Quinta, 12 de novembro · Clínica Bom Pelo <span class="sample">(dados de exemplo)</span></span>
+</header>
+<main>
+  <section aria-labelledby="hoje">
+    <h1 id="hoje">Hoje tem 6 consultas e 4 vagas</h1>
+    <p class="lede">Clique numa vaga para encaixar quem está no telefone.</p>
+    <ol class="timeline">
+      <li class="slot"><span class="time">08:30</span><div class="visit"><span class="pet" aria-hidden="true">R</span><div class="who"><strong><em>Rex</em> · vacina V10</strong><span>Tutora Marina Alves · Dra. Paula</span></div><span class="tag">Confirmado</span></div></li>
+      <li class="slot"><span class="time">09:00</span><div class="visit"><span class="pet" aria-hidden="true">M</span><div class="who"><strong><em>Mel</em> · retorno de castração</strong><span>Tutor Caio Ramos · Dr. Ivo</span></div><span class="tag">Confirmado</span></div></li>
+      <li class="slot"><span class="time">09:30</span><button class="free" type="button" aria-label="Encaixar às 09:30 com Dra. Paula">Vaga livre · Dra. Paula</button></li>
+      <li class="slot"><span class="time">10:00</span><div class="visit"><span class="pet" aria-hidden="true">B</span><div class="who"><strong><em>Bento</em> · consulta, coceira</strong><span>Tutora Lia Souza · Dra. Paula</span></div><span class="tag wait">Esperando resposta</span></div></li>
+      <li class="slot"><span class="time">10:30</span><button class="free" type="button" aria-label="Encaixar às 10:30 com Dr. Ivo">Vaga livre · Dr. Ivo</button></li>
+      <li class="slot"><span class="time">11:00</span><div class="visit"><span class="pet" aria-hidden="true">N</span><div class="who"><strong><em>Nina</em> · banho e tosa</strong><span>Tutor Pedro Lima · Estética</span></div><span class="tag">Confirmado</span></div></li>
+      <li class="slot"><span class="time">11:30</span><button class="free" type="button" aria-label="Encaixar às 11:30 com Dra. Paula">Vaga livre · Dra. Paula</button></li>
+      <li class="slot"><span class="time">14:00</span><div class="visit"><span class="pet" aria-hidden="true">T</span><div class="who"><strong><em>Toby</em> · exame de sangue</strong><span>Tutora Rita Nunes · Dr. Ivo</span></div><span class="tag">Confirmado</span></div></li>
+      <li class="slot"><span class="time">14:30</span><div class="visit"><span class="pet" aria-hidden="true">L</span><div class="who"><strong><em>Luna</em> · retorno, otite</strong><span>Tutor Davi Melo · Dra. Paula</span></div><span class="tag wait">Esperando resposta</span></div></li>
+      <li class="slot"><span class="time">15:00</span><button class="free" type="button" aria-label="Encaixar às 15:00 com Dr. Ivo">Vaga livre · Dr. Ivo</button></li>
+    </ol>
+  </section>
+  <aside aria-labelledby="encaixe">
+    <h2 id="encaixe">Encaixar às 09:30</h2>
+    <form>
+      <label for="animal">Nome do animal</label>
+      <input id="animal" name="animal" autocomplete="off" value="Thor">
+      <label for="tutor">Tutor e WhatsApp</label>
+      <input id="tutor" name="tutor" value="Ana Prado · (11) 9 8765-4321">
+      <label for="motivo">Motivo</label>
+      <select id="motivo" name="motivo"><option>Consulta</option><option>Vacina</option><option>Retorno</option></select>
+      <button class="btn" type="submit">Encaixar Thor às 09:30</button>
+    </form>
+    <p class="error" role="alert">O WhatsApp da clínica desconectou. A consulta fica marcada; reconecte para enviar a confirmação.</p>
+    <div class="note">
+      <strong>Amanhã ainda está vazio depois das 15h.</strong>
+      Quando um tutor pedir horário à tarde, ofereça a partir das 15h.
+    </div>
+  </aside>
+</main>
+</body>
+</html>

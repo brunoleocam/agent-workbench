@@ -57,7 +57,10 @@ def test_static() -> None:
         assert name in hooks["hooks"]
     registry = json.loads((ROOT / "agents.json").read_text(encoding="utf-8"))
     names = [item["name"] for item in registry["agents"]]
-    assert names == ["orchestrator", "planner", "implementer", "tester", "reviewer", "debugger", "security-reviewer"]
+    assert names == [
+        "orchestrator", "planner", "implementer", "tester", "reviewer", "debugger", "security-reviewer",
+        "designer", "frontend-implementer", "design-reviewer",
+    ]
     for name in names:
         text = (BASE_DIR / "agents" / f"{name}.md").read_text(encoding="utf-8")
         assert text.startswith("---")

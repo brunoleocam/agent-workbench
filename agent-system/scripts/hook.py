@@ -119,12 +119,44 @@ def to_claude(event: str, reply: dict) -> dict:
     context = reply.get("additional_context")
     if event == "SessionStart" and context:
         return {"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": context}}
+    lint = reply.get("design_lint")
+    if event == "PostToolUse" and lint:
+        return {"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": redact(lint, 1500)}}
     return {}
 
 
 def is_claude(payload: dict) -> bool:
     name = str(payload.get("hook_event_name") or "")
     return bool(name) and name[0].isupper()
+
+
+LINT_SHOWN = 8  # findings passed to the agent; the rest is a count
+
+
+def design_lint(path: str, roots: list[Path]) -> str:
+    """Informational lint summary for one edited UI file. Empty when clean, not a UI file, or on any error."""
+    try:
+        import lint_design
+
+        file = Path(path)
+        if file.suffix.lower() not in lint_design.EXTENSIONS or not file.is_file():
+            return ""
+        resolved = file.resolve()
+        root = next((item for item in roots if item.resolve() in resolved.parents), None)
+        if root is None:  # outside every workspace root: not this project's UI
+            return ""
+        design, tokens = root / "DESIGN.md", root / "design" / "tokens.css"
+        findings = lint_design.lint_paths([file], design if design.is_file() else None, tokens if tokens.is_file() else None)
+    except Exception:
+        return ""
+    if not findings:
+        return ""
+    counts = lint_design.summary(findings)
+    lines = [f"Design lint (informational) for {file.name}: {counts['P0']} P0, {counts['P1']} P1, {counts['P2']} P2. P0 blocks review."]
+    lines += [f"line {item.line}: {item.rule} {item.message} Fix: {item.suggestion}" for item in findings[:LINT_SHOWN]]
+    if len(findings) > LINT_SHOWN:
+        lines.append(f"{len(findings) - LINT_SHOWN} more; run lint_design.py {file.name} for the full list.")
+    return "\n".join(lines)
 
 
 def targets(payload: dict) -> list[Path]:
@@ -245,6 +277,11 @@ def handle(payload: dict) -> dict:
             if path and should_skip_duplicate_edit(root, path):
                 continue
             log(root, payload, "FILE_EDIT", f"Edited {Path(path).name}" if path else "Edited a file", files=[path])
+        report = design_lint(path, workspace_roots(payload)) if path else ""
+        if report:
+            for root in roots:
+                log(root, payload, "DESIGN_LINT", report.splitlines()[0], result="warning", files=[path])
+            return {"design_lint": report}
         return {}
 
     if name == "postToolUseFailure":
@@ -287,7 +324,9 @@ def main() -> int:
         if is_claude(payload):
             emit(to_claude(name, handle(from_claude(payload))))
         else:
-            emit(handle(payload))
+            reply = handle(payload)
+            reply.pop("design_lint", None)  # Cursor's afterFileEdit has no channel back to the agent
+            emit(reply)
     except Exception:
         if name == "subagentStart":
             emit({"permission": "allow"})
