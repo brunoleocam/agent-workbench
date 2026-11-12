@@ -1,0 +1,68 @@
+/*
+ * design/tokens.css: the only place for raw values. Components use var(--...).
+ * The values below are neutral placeholders; replace every one with the chosen direction's value.
+ * Every value here must match DESIGN.md.
+ */
+:root {
+  /* Color: one token per semantic role; every text background has an -ink pair (>= 4.5:1). */
+  --color-surface: #f5f4f1;
+  --color-raised: #ffffff;
+  --color-ink: #1c1b19;
+  --color-muted: #625f58;
+  --color-rule: #dcd9d2;
+  --color-accent: #1f5f4a;
+  --color-accent-ink: #ffffff;
+  --color-danger: #a8261b;
+  --color-danger-ink: #ffffff;
+  --color-success: #2d6a3e;
+  --color-success-ink: #ffffff;
+  --color-focus: #1d4f91;
+
+  /* Font families: at most three, each with a local fallback. */
+  --font-display: Georgia, "Times New Roman", serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Menlo, monospace;
+
+  /* Type scale: size / line height pairs. */
+  --text-display: 48px;
+  --leading-display: 1.05;
+  --text-h2: 28px;
+  --leading-h2: 1.2;
+  --text-body: 17px;
+  --leading-body: 1.55;
+  --text-small: 14px;
+  --leading-small: 1.4;
+
+  /* Spacing: multiples of 4px. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+
+  /* Layout. */
+  --measure: 66ch;
+  --content-max: 1120px;
+  --control-height: 44px;
+
+  /* Radius and elevation. */
+  --radius-1: 2px;
+  --radius-2: 6px;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.08);
+
+  /* Motion: by purpose, with a reduced-motion override below. */
+  --duration-feedback: 100ms;
+  --duration-transition: 180ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-feedback: 0ms;
+    --duration-transition: 0ms;
+  }
+}

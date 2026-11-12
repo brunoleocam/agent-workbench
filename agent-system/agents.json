@@ -70,6 +70,36 @@
       "scope": "user",
       "recommended_for": "Security risk HIGH or CRITICAL, sensitive surfaces, or /security-review.",
       "dependencies": ["orchestrator"]
+    },
+    {
+      "name": "designer",
+      "type": "custom",
+      "purpose": "Decides the visual identity with the user: design brief, three rendered directions, DESIGN.md and tokens. Writes no production code.",
+      "status": "active",
+      "created_at": "2026-11-11T12:00:00+00:00",
+      "scope": "user",
+      "recommended_for": "A new visual interface without an approved DESIGN.md.",
+      "dependencies": ["orchestrator"]
+    },
+    {
+      "name": "frontend-implementer",
+      "type": "custom",
+      "purpose": "Implements one screen bound to DESIGN.md and the tokens, with every state and the anti-slop lint clean.",
+      "status": "active",
+      "created_at": "2026-11-11T12:00:00+00:00",
+      "scope": "user",
+      "recommended_for": "A UI task once DESIGN.md is approved.",
+      "dependencies": ["designer"]
+    },
+    {
+      "name": "design-reviewer",
+      "type": "custom",
+      "purpose": "Independent design review against DESIGN.md, the brief, and the lint. Reports FIND findings; does not fix.",
+      "status": "active",
+      "created_at": "2026-11-11T12:00:00+00:00",
+      "scope": "user",
+      "recommended_for": "After a screen is built, before delivery.",
+      "dependencies": ["frontend-implementer"]
     }
   ]
 }

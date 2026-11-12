@@ -1,0 +1,102 @@
+<!-- direction: Ficha | stance: a agenda como a ficha de papel da recepção, uma tabela calma onde cada linha diz tudo de relance | distinctive: títulos em serifa com o nome do animal sempre em itálico, como escrito à mão na ficha, e as vagas como linhas em branco para preencher | variety: 3 | motion: 2 | density: 7 | axes: layout=table/index, display=humanist serif (Fraunces), palette=neutral paper + teal accent, density=7 -->
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agenda Vet — Ficha</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;1,500&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+  :root {
+    --color-surface: #f6f5f1;
+    --color-raised: #ffffff;
+    --color-ink: #1d2326;
+    --color-muted: #5b6366;
+    --color-rule: #d9dcd7;
+    --color-accent: #0f6b63;
+    --color-accent-ink: #ffffff;
+    --color-warn: #b45309;
+    --color-warn-ink: #ffffff;
+    --color-danger: #a8261b;
+    --color-danger-ink: #ffffff;
+    --color-focus: #1d4ed8;
+    --font-display: "Fraunces", Georgia, serif;
+    --font-body: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px;
+    --radius-1: 4px;
+    --control-height: 44px;
+    --duration-feedback: 100ms;
+  }
+  * { box-sizing: border-box; }
+  html, body { overflow-x: clip; }
+  body { margin: 0; background: var(--color-surface); color: var(--color-ink); font-family: var(--font-body); font-size: 16px; line-height: 1.45; }
+  .page { max-width: 1120px; margin: 0 auto; padding: var(--space-6) var(--space-4); }
+  .top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-3); border-bottom: 2px solid var(--color-ink); padding-bottom: var(--space-3); }
+  h1 { font-family: var(--font-display); font-weight: 600; font-size: 32px; line-height: 1.1; margin: 0; overflow-wrap: anywhere; }
+  .meta { color: var(--color-muted); }
+  .toolbar { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: end; margin: var(--space-4) 0; }
+  .toolbar label { font-weight: 600; font-size: 14px; }
+  .toolbar input { display: block; height: var(--control-height); min-width: 0; width: 260px; max-width: 100%; margin-top: var(--space-1); border: 1px solid var(--color-muted); border-radius: var(--radius-1); padding: 0 var(--space-3); font: inherit; }
+  .btn { height: var(--control-height); padding: 0 var(--space-4); border: 0; border-radius: var(--radius-1); background: var(--color-accent); color: var(--color-accent-ink); font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .btn:focus-visible, input:focus-visible, .fill:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+  .wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; background: var(--color-raised); font-variant-numeric: tabular-nums; }
+  caption { text-align: left; padding: var(--space-2) 0; color: var(--color-muted); font-size: 14px; }
+  th { text-align: left; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-muted); padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-rule); }
+  td { padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-rule); vertical-align: top; }
+  td.pet { font-family: var(--font-display); font-style: italic; font-weight: 500; font-size: 18px; }
+  .status { font-weight: 600; }
+  .status.wait { color: var(--color-warn); }
+  .fill { width: 100%; min-height: var(--control-height); border: 0; border-bottom: 1px dashed var(--color-muted); background: transparent; color: var(--color-muted); font: inherit; text-align: left; cursor: pointer; transition: color var(--duration-feedback) ease-out; }
+  .fill:hover { color: var(--color-accent); }
+  .side { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: var(--space-4); margin-top: var(--space-6); }
+  .box { border-top: 2px solid var(--color-ink); padding-top: var(--space-3); }
+  .box h2 { font-family: var(--font-display); font-weight: 600; font-size: 20px; margin: 0 0 var(--space-2); }
+  .alert { background: var(--color-danger); color: var(--color-danger-ink); padding: var(--space-3) var(--space-4); border-radius: var(--radius-1); }
+  .sample { font-size: 13px; color: var(--color-muted); }
+  @media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="top">
+    <h1>Quinta, 12 de novembro</h1>
+    <span class="meta">Clínica Bom Pelo · 6 consultas, 3 vagas <span class="sample">(dados de exemplo)</span></span>
+  </div>
+  <form class="toolbar" role="search">
+    <label for="busca">Animal ou tutor<input id="busca" name="busca" placeholder="Ex.: Rex ou Marina"></label>
+    <button class="btn" type="button">Encaixar no próximo horário livre</button>
+  </form>
+  <div class="wrap">
+    <table>
+      <caption>Agenda do dia, por horário</caption>
+      <thead><tr><th scope="col">Hora</th><th scope="col">Animal</th><th scope="col">Tutor</th><th scope="col">Motivo</th><th scope="col">Veterinário</th><th scope="col">Confirmação</th></tr></thead>
+      <tbody>
+        <tr><td>08:30</td><td class="pet">Rex</td><td>Marina Alves</td><td>Vacina V10</td><td>Dra. Paula</td><td class="status">Confirmado</td></tr>
+        <tr><td>09:00</td><td class="pet">Mel</td><td>Caio Ramos</td><td>Retorno de castração</td><td>Dr. Ivo</td><td class="status">Confirmado</td></tr>
+        <tr><td>09:30</td><td colspan="5"><button class="fill" type="button">Linha em branco · Dra. Paula — preencher</button></td></tr>
+        <tr><td>10:00</td><td class="pet">Bento</td><td>Lia Souza</td><td>Consulta, coceira</td><td>Dra. Paula</td><td class="status wait">Sem resposta</td></tr>
+        <tr><td>10:30</td><td colspan="5"><button class="fill" type="button">Linha em branco · Dr. Ivo — preencher</button></td></tr>
+        <tr><td>11:00</td><td class="pet">Nina</td><td>Pedro Lima</td><td>Banho e tosa</td><td>Estética</td><td class="status">Confirmado</td></tr>
+        <tr><td>11:30</td><td colspan="5"><button class="fill" type="button">Linha em branco · Dra. Paula — preencher</button></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="side">
+    <section class="box" aria-labelledby="pend">
+      <h2 id="pend">Para confirmar hoje</h2>
+      <p>Bento, 10:00, ainda não respondeu. Ligue para Lia Souza antes das 09:30.</p>
+    </section>
+    <section class="box" aria-labelledby="tarde">
+      <h2 id="tarde">Tarde de amanhã</h2>
+      <p>Nenhuma consulta depois das 15h. As linhas aparecem aqui assim que alguém marcar.</p>
+    </section>
+    <section class="box" aria-labelledby="zap">
+      <h2 id="zap">WhatsApp</h2>
+      <p class="alert" role="alert">Desconectado desde 08:12. As consultas continuam marcadas; reconecte para enviar as confirmações.</p>
+    </section>
+  </div>
+</div>
+</body>
+</html>

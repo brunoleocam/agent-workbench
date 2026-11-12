@@ -245,7 +245,7 @@ Commands renamed in 0.3.0: `investigacao-enxuta` is now `/lean-investigation`, `
 - Type `/` in the chat and pick a command (in Claude Code, commands start with `/agent-workbench:`). You can add context after it, for example `/feature add CSV export to the sales report`.
 - Each command handles one phase. The next phase does not start on its own unless the command says which one comes next.
 - You do not need a command for trivial changes. Just ask; the agent classifies the request (class, complexity from XS to XL, and security risk) and scales the process to it.
-- Rules and subagents apply automatically. You do not call subagents directly: on medium and larger tasks, the main agent delegates to `planner`, `implementer`, `tester`, `reviewer`, `security-reviewer`, and `debugger`.
+- Rules and subagents apply automatically. You do not call subagents directly: on medium and larger tasks, the main agent delegates to `planner`, `implementer`, `tester`, `reviewer`, `security-reviewer`, and `debugger`, and for new interfaces to `designer`, `frontend-implementer`, and `design-reviewer`.
 - For larger work, start a new chat for each phase. In initialized projects, the current state lives in `docs/progress/CURRENT.md` and `docs/progress/ROADMAP.md`, so a new chat picks up where the previous one stopped.
 
 ### Recommended workflows
@@ -291,12 +291,21 @@ Hard or intermittent bug:
 /tdd
 ```
 
-User interface:
+New user interface (no `DESIGN.md` yet):
+
+```text
+/design
+/ui-ux
+/apple-design
+```
+
+`/design` runs `/design-discovery`, `/design-directions`, `/design-system`, and `/design-review` in order and stops wherever you must answer or choose. Each can also run on its own.
+
+Variant of one screen inside an existing design:
 
 ```text
 /ui-ux-experiment
 /ui-ux
-/apple-design
 ```
 
 Large request without a formal spec:
@@ -349,8 +358,13 @@ Bugs:
 
 User interface:
 
+- `/design` — full design pipeline for a new interface: interview, three rendered directions, `DESIGN.md` with tokens, and review. Skips approved stages and stops wherever you must answer or choose.
+- `/design-discovery` — short interview, at most 5 questions with recommended answers, producing `design/brief.md`.
+- `/design-directions` — three structurally different directions as HTML previews in `design/directions/`; you choose one and tune it with variety, motion, and density dials.
+- `/design-system` — turns the chosen direction into `DESIGN.md` and `design/tokens.css`, with contrast pairs checked.
+- `/design-review` — six-axis self-critique, P0/P1/P2 checklist, microcopy rules, and the anti-slop lint, reported in prose.
 - `/ui-ux-experiment` — builds 2 or 3 interface options to compare. Does not implement all of them.
-- `/ui-ux` — builds the chosen interface with empty, error, loading, and success states, and verifies the flow.
+- `/ui-ux` — builds the chosen interface with empty, error, loading, and success states, and verifies the flow. Follows `DESIGN.md` when it exists and runs the lint before delivering.
 - `/apple-design` — Apple-style interactive motion on the web: drag, swipe, sheets, springs, momentum, interruption, and reduced motion. Also reviews existing interactions. Does not handle layout or screen states.
 
 Quality and security:
@@ -370,6 +384,8 @@ Extending the harness:
 
 - `/create-skill` — creates a new skill in your profile and adds it to `/help`. Does not create the skill inside the open repository unless you ask.
 - `/create-agent` — creates a specialized subagent and registers when the orchestrator should delegate to it.
+
+The anti-slop lint, `agent-system/scripts/lint_design.py`, blocks (P0) default indigo, purple-blue gradients, emoji icons, rounded cards with a side stripe, filler text, invented metrics, and placeholder image services, and warns (P1/P2) on raw colors and fonts outside the tokens, `transition: all`, removed focus outlines, and motion without reduced-motion. A color declared in the tokens or in the color section of `DESIGN.md` is the brand and passes; colors listed as forbidden in section 9 are not. In Claude Code, the hook runs it on every edited UI file and reports to the agent without blocking.
 
 ## Human approval and automation
 

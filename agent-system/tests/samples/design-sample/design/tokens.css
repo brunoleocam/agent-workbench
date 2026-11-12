@@ -1,0 +1,67 @@
+/*
+ * design/tokens.css: Agenda Vet, direção A (Balcão), densidade 8.
+ * The only place for raw values. Components use var(--...). Every value here matches DESIGN.md.
+ */
+:root {
+  /* Color */
+  --color-surface: #fbf4ea;
+  --color-raised: #ffffff;
+  --color-ink: #1f2a44;
+  --color-muted: #5e6475;
+  --color-rule: #ecdcc6;
+  --color-accent: #c2410c;
+  --color-accent-ink: #ffffff;
+  --color-soft: #fde4cc;
+  --color-soft-ink: #7a2d07;
+  --color-support: #0f766e;
+  --color-support-ink: #ffffff;
+  --color-danger: #b42318;
+  --color-danger-ink: #ffffff;
+  --color-focus: #1d4ed8;
+
+  /* Font families: display, body, and one outlier for pet names */
+  --font-display: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-pet: "Fraunces", Georgia, serif;
+
+  /* Type scale */
+  --text-h1: 32px;
+  --leading-h1: 1.05;
+  --text-h2: 24px;
+  --leading-h2: 1.1;
+  --text-pet: 18px;
+  --text-body: 16px;
+  --leading-body: 1.5;
+  --text-small: 14px;
+  --text-tag: 13px;
+
+  /* Spacing: multiples of 4px; density 8 uses 4 to 32 on screens */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* Layout */
+  --side-panel: 360px;
+  --time-column: 56px;
+  --control-height: 44px;
+  --pet-avatar: 32px;
+
+  /* Radius and elevation */
+  --radius-2: 12px;
+  --radius-pill: 999px;
+  --shadow-1: 0 1px 2px rgb(31 42 68 / 0.08);
+
+  /* Motion */
+  --duration-feedback: 120ms;
+  --ease-standard: ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-feedback: 0ms;
+  }
+}

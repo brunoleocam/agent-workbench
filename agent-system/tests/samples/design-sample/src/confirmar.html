@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Confirmar amanhã — Agenda Vet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Nunito+Sans:wght@400;600;700&family=Fraunces:ital,wght@1,500&display=swap">
+<link rel="stylesheet" href="../design/tokens.css">
+<style>
+  /* Page exception: design/pages/confirmar.md (compact rows, no avatar). */
+  * { box-sizing: border-box; }
+  html, body { overflow-x: clip; }
+  body { margin: 0; background: var(--color-surface); color: var(--color-ink); font-family: var(--font-body); font-size: var(--text-body); line-height: var(--leading-body); }
+  .page { max-width: 960px; margin: 0 auto; padding: var(--space-4); }
+  .head { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: end; justify-content: space-between; margin-bottom: var(--space-4); }
+  h1 { font-family: var(--font-display); font-weight: 800; font-size: var(--text-h1); line-height: var(--leading-h1); margin: 0; overflow-wrap: anywhere; }
+  .progress { margin: var(--space-1) 0 0; color: var(--color-muted); font-size: var(--text-small); }
+  .btn { min-height: var(--control-height); padding: 0 var(--space-4); border: 0; border-radius: var(--radius-pill); background: var(--color-accent); color: var(--color-accent-ink); font: inherit; font-weight: 700; cursor: pointer; white-space: nowrap; transition: background-color var(--duration-feedback) var(--ease-standard); }
+  .btn.quiet { background: transparent; color: var(--color-ink); border: 1px solid var(--color-muted); }
+  .btn[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+  .btn:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+  h2 { font-family: var(--font-display); font-weight: 800; font-size: var(--text-h2); line-height: var(--leading-h2); margin: var(--space-6) 0 var(--space-2); }
+  .rows { list-style: none; margin: 0; padding: 0; background: var(--color-raised); border-radius: var(--radius-2); }
+  .row { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-rule); }
+  .row:last-child { border-bottom: 0; }
+  .time { width: var(--time-column); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .who { flex: 1 1 220px; min-width: 0; }
+  .who em { font-family: var(--font-pet); font-style: italic; font-weight: 500; font-size: var(--text-pet); }
+  .who span { display: block; color: var(--color-muted); font-size: var(--text-small); }
+  .tag { font-size: var(--text-tag); font-weight: 700; padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); background: var(--color-support); color: var(--color-support-ink); }
+  .tag.wait { background: var(--color-soft); color: var(--color-soft-ink); }
+  .error { flex-basis: 100%; margin: 0; padding: var(--space-2) var(--space-3); border-radius: var(--radius-2); background: var(--color-danger); color: var(--color-danger-ink); font-size: var(--text-small); }
+  .empty { padding: var(--space-4); border-radius: var(--radius-2); background: var(--color-raised); }
+  .empty strong { display: block; }
+  .sample { color: var(--color-muted); font-size: var(--text-tag); }
+  @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="head">
+    <div>
+      <h1>Confirmar amanhã, sexta 13</h1>
+      <p class="progress">3 de 6 tutores já confirmaram · faltam 3 <span class="sample">(dados de exemplo)</span></p>
+    </div>
+    <button class="btn" type="button">Enviar para os 3 que faltam</button>
+  </div>
+
+  <h2 id="manha">Manhã</h2>
+  <ol class="rows" aria-labelledby="manha">
+    <li class="row">
+      <span class="time">08:30</span>
+      <div class="who"><em>Pipoca</em> · vacina antirrábica<span>Tutora Joana Reis · Dra. Paula</span></div>
+      <span class="tag">Confirmado</span>
+    </li>
+    <li class="row">
+      <span class="time">09:00</span>
+      <div class="who"><em>Fred</em> · retorno, pata traseira<span>Tutor Lucas Melo · Dr. Ivo</span></div>
+      <button class="btn quiet" type="button">Confirmar pelo WhatsApp</button>
+    </li>
+    <li class="row">
+      <span class="time">09:30</span>
+      <div class="who"><em>Amora</em> · consulta, vômito<span>Tutora Bia Costa · Dra. Paula</span></div>
+      <button class="btn quiet" type="button" aria-disabled="true">Enviando…</button>
+    </li>
+    <li class="row">
+      <span class="time">10:30</span>
+      <div class="who"><em>Zeca</em> · banho e tosa<span>Tutor Rui Alves · Estética</span></div>
+      <span class="tag wait">Esperando resposta</span>
+    </li>
+    <li class="row">
+      <span class="time">11:00</span>
+      <div class="who"><em>Kiara</em> · castração<span>Tutora Sônia Lima · Dr. Ivo</span></div>
+      <button class="btn quiet" type="button">Tentar de novo</button>
+      <p class="error" role="alert">A mensagem para Sônia não saiu: o número cadastrado tem 10 dígitos. Corrija o WhatsApp na ficha e tente de novo.</p>
+    </li>
+    <li class="row">
+      <span class="time">11:30</span>
+      <div class="who"><em>Thor</em> · vacina V10<span>Tutora Ana Prado · Dra. Paula</span></div>
+      <span class="tag">Confirmado</span>
+    </li>
+  </ol>
+
+  <h2 id="tarde">Tarde</h2>
+  <div class="empty" aria-labelledby="tarde">
+    <strong>Nenhuma consulta marcada à tarde.</strong>
+    Quando alguém marcar para amanhã depois das 14h, a linha aparece aqui para confirmar.
+  </div>
+</main>
+</body>
+</html>

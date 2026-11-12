@@ -20,7 +20,7 @@ Before modifying code, classify the request as one of these:
 
 A request to create a skill: use `create-skill`. Do not treat it as a feature of the open repository.
 
-Mid-cycle, also use: `brainstorm` before code or a plan when the idea has no approved design yet; `implementation-plan` once the design is ready; `ui-ux` or `ui-ux-experiment` for interfaces; `git-worktree` to isolate work; `tdd` and `test-hygiene` while implementing; `debug` and `root-cause` when investigating a failure; `update-docs` when updating a spec or ADR.
+Mid-cycle, also use: `brainstorm` before code or a plan when the idea has no approved design yet; `implementation-plan` once the design is ready; `design` before `ui-ux` for a new visual interface without an approved `DESIGN.md`; `ui-ux` or `ui-ux-experiment` for interfaces; `git-worktree` to isolate work; `tdd` and `test-hygiene` while implementing; `debug` and `root-cause` when investigating a failure; `update-docs` when updating a spec or ADR.
 
 Feature or bug-fix in a git repository: follow `commit-push`. The branch is created before editing code. With green tests, show the summary and ask for a single approval for commit, push, PR, and merge. Without approval, nothing is committed.
 

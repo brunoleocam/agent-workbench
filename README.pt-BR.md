@@ -245,7 +245,7 @@ Comandos renomeados na 0.3.0: `investigacao-enxuta` agora é `/lean-investigatio
 - Digite `/` no chat e escolha o comando (no Claude Code, os comandos começam com `/agent-workbench:`). Você pode escrever o contexto depois dele, por exemplo `/feature adicionar exportação CSV no relatório de vendas`.
 - Cada comando cuida de uma fase. A próxima fase não começa sozinha, a menos que o próprio comando diga qual vem depois.
 - Mudança trivial não precisa de comando. Basta pedir; o agente classifica o pedido (classe, complexidade de XS a XL e risco de segurança) e ajusta o processo a ele.
-- Rules e subagents são aplicados automaticamente. Você não chama subagent direto: em tarefas médias ou maiores, o agente principal delega a `planner`, `implementer`, `tester`, `reviewer`, `security-reviewer` e `debugger`.
+- Rules e subagents são aplicados automaticamente. Você não chama subagent direto: em tarefas médias ou maiores, o agente principal delega a `planner`, `implementer`, `tester`, `reviewer`, `security-reviewer` e `debugger`, e, em interfaces novas, a `designer`, `frontend-implementer` e `design-reviewer`.
 - Em trabalhos maiores, abra um chat novo para cada fase. Em projetos inicializados, o estado atual fica em `docs/progress/CURRENT.md` e `docs/progress/ROADMAP.md`, então o chat novo continua de onde o anterior parou.
 
 ### Fluxos recomendados
@@ -307,15 +307,26 @@ Bug difícil ou intermitente:
 /tdd
 ```
 
-Interface:
+Interface nova (sem `DESIGN.md` ainda):
+
+```text
+# Entrevista curta, 3 direções visuais em HTML, você escolhe, DESIGN.md e revisão
+/design
+# Constrói cada tela seguindo o DESIGN.md, com estados de vazio, erro, loading e sucesso
+/ui-ux
+# (Opcional) Adiciona motion interativo estilo Apple: drag, swipe, sheets e springs
+/apple-design
+```
+
+`/design` roda `/design-discovery`, `/design-directions`, `/design-system` e `/design-review` nessa ordem e para sempre que você precisa responder ou escolher. Cada uma também roda sozinha.
+
+Variante de uma tela dentro de um design que já existe:
 
 ```text
 # Gera 2 ou 3 opções de interface para você comparar e escolher
 /ui-ux-experiment
-# Constrói a opção escolhida com estados de vazio, erro, loading e sucesso
+# Constrói a opção escolhida
 /ui-ux
-# (Opcional) Adiciona motion interativo estilo Apple: drag, swipe, sheets e springs
-/apple-design
 ```
 
 Pedido grande sem spec formal:
@@ -370,8 +381,13 @@ Bugs:
 
 Interface:
 
+- `/design` — pipeline completo de design para uma interface nova: entrevista, 3 direções renderizadas, `DESIGN.md` com tokens e revisão. Pula o que já foi aprovado e para onde você precisa responder ou escolher.
+- `/design-discovery` — entrevista curta, no máximo 5 perguntas com resposta recomendada, que gera `design/brief.md`.
+- `/design-directions` — 3 direções estruturalmente diferentes como prévias HTML em `design/directions/`; você escolhe uma e ajusta pelos dials de variedade, movimento e densidade.
+- `/design-system` — transforma a direção escolhida em `DESIGN.md` e `design/tokens.css`, com os pares de contraste conferidos.
+- `/design-review` — autocrítica em seis eixos, checklist P0/P1/P2, regras de microcopy e o lint anti-slop, relatados em prosa.
 - `/ui-ux-experiment` — constrói 2 ou 3 opções de interface para comparar. Não implementa todas.
-- `/ui-ux` — constrói a interface escolhida com os estados de vazio, erro, loading e sucesso, e verifica o fluxo.
+- `/ui-ux` — constrói a interface escolhida com os estados de vazio, erro, loading e sucesso, e verifica o fluxo. Segue o `DESIGN.md` quando ele existe e roda o lint antes de entregar.
 - `/apple-design` — motion interativo estilo Apple na web: drag, swipe, sheets, springs, momentum, interrupção e reduced motion. Também revisa interações existentes. Não cuida de layout nem dos estados da tela.
 
 Qualidade e segurança:
@@ -391,6 +407,8 @@ Extensão do harness:
 
 - `/create-skill` — cria uma skill nova no seu perfil e a inclui no `/help`. Não cria a skill dentro do repositório aberto, a menos que você peça.
 - `/create-agent` — cria um subagent especializado e registra quando o orchestrator deve delegar a ele.
+
+O lint anti-slop, `agent-system/scripts/lint_design.py`, reprova (P0) índigo padrão, gradiente roxo/azul, emoji como ícone, card arredondado com faixa lateral, texto de preenchimento, métrica inventada e serviço de imagem placeholder, e avisa (P1/P2) sobre cor e fonte fora dos tokens, `transition: all`, foco removido e movimento sem reduced-motion. Cor declarada nos tokens ou na seção de cor do `DESIGN.md` é a marca e passa; cores listadas como proibidas na seção 9, não. No Claude Code, o hook roda o lint em cada arquivo de UI editado e mostra o resultado ao agente sem bloquear.
 
 ## Aprovação humana e automação
 

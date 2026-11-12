@@ -59,3 +59,12 @@ Input: symptom, command or steps, log. Output: reproduction, cause with evidence
 Input: scope (feature or repository), `changed_files`, `risk`, triggers. Output: the report path, `status`, `findings` with SEC-NNN and a count by severity. It does not fix.
 
 Refutation mode: input adds `mode: refute` and one `claim` (location, attacker-controlled input, sensitive point, impact), without the finder's reasoning. Output: `verdict` (`confirmed`, `refuted`, or `unresolved`) with `path:line` evidence, or the exact missing fact for `unresolved`. No report is written. Run it in a fresh context so the finder never confirms its own finding.
+
+### designer
+Input: the product or screen, `design/brief.md` if any, and the paths of existing design artifacts. Output: `changed_files` limited to `design/` and `DESIGN.md`; `status: needs_decision` with the question in `blockers` while waiting for the user's answers, choice of direction, or approval; `status: completed` once `design/brief.md` and `DESIGN.md` are approved.
+
+### frontend-implementer
+Input: one `task` with `requirements`, `acceptance`, `verification`, `files_allowed`, and the page name. Output: `changed_files`, `tests` run with results, the `lint_design.py` output for the changed UI files, and the `design-review` scores; `status: blocked` with an open lint P0; a needed change to the design contract goes in `blockers` with `status: needs_decision`.
+
+### design-reviewer
+Input: `feature`, `task`, `changed_files`, and the page name. Output: `status` PASS, PASS_WITH_WARNINGS, or FAIL (FAIL with any open lint P0); the path of `<reviews_dir>/<slug>-design.md` (with `fingerprint`); `findings` with FIND-NNN. It does not fix. The design report is a separate artifact that `validate_verification.py` does not read; the orchestrator blocks the screen while it is FAIL, and the `reviewer`'s `<slug>.md` stays the gate.

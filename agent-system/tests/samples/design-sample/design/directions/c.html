@@ -1,0 +1,101 @@
+<!-- direction: Quadro | stance: o dia como o quadro da parede da clínica, uma coluna por veterinário, para ver de longe quem está livre | distinctive: nome de cada veterinário em caixa alta condensada enorme no topo da coluna e a hora atual como uma faixa laranja que atravessa o quadro | variety: 7 | motion: 4 | density: 6 | axes: layout=board with one column per vet, display=condensed grotesque (Barlow Condensed), palette=dark navy surface + orange, density=6 -->
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agenda Vet — Quadro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;600&display=swap">
+<style>
+  :root {
+    --color-surface: #141c2e;
+    --color-raised: #1f2a42;
+    --color-ink: #f3efe7;
+    --color-muted: #a9b1c2;
+    --color-rule: #2e3a55;
+    --color-accent: #f28c38;
+    --color-accent-ink: #1a1208;
+    --color-free: #26344f;
+    --color-ok: #5cc8a8;
+    --color-danger: #f0705f;
+    --color-danger-ink: #1a0806;
+    --color-focus: #8ab4ff;
+    --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+    --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px;
+    --radius-1: 6px;
+    --control-height: 44px;
+    --duration-feedback: 120ms;
+    --duration-enter: 200ms;
+  }
+  * { box-sizing: border-box; }
+  html, body { overflow-x: clip; }
+  body { margin: 0; background: var(--color-surface); color: var(--color-ink); font-family: var(--font-body); font-size: 16px; line-height: 1.45; }
+  header { display: flex; flex-wrap: wrap; gap: var(--space-4); justify-content: space-between; align-items: end; padding: var(--space-6); }
+  h1 { font-family: var(--font-display); font-weight: 700; font-size: 56px; line-height: 0.95; text-transform: uppercase; margin: 0; overflow-wrap: anywhere; }
+  .sub { color: var(--color-muted); }
+  .btn { height: var(--control-height); padding: 0 var(--space-6); border: 0; border-radius: var(--radius-1); background: var(--color-accent); color: var(--color-accent-ink); font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .btn:focus-visible, .free:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+  .board { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: var(--space-4); padding: 0 var(--space-6) var(--space-8); }
+  .col h2 { font-family: var(--font-display); font-weight: 700; font-size: 40px; line-height: 1; text-transform: uppercase; margin: 0 0 var(--space-1); }
+  .col p.load { margin: 0 0 var(--space-3); color: var(--color-muted); }
+  .cards { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+  .card { background: var(--color-raised); border-radius: var(--radius-1); padding: var(--space-3); animation: enter var(--duration-enter) ease-out; }
+  .card time { font-family: var(--font-display); font-weight: 600; font-size: 20px; }
+  .card strong { display: block; }
+  .card span { color: var(--color-muted); font-size: 14px; }
+  .ok { color: var(--color-ok); font-weight: 600; font-size: 14px; }
+  .now { border-top: 3px solid var(--color-accent); padding-top: var(--space-1); color: var(--color-accent); font-weight: 600; font-size: 14px; }
+  .free { width: 100%; min-height: var(--control-height); border: 1px dashed var(--color-muted); border-radius: var(--radius-1); background: var(--color-free); color: var(--color-ink); font: inherit; text-align: left; padding: var(--space-3); cursor: pointer; }
+  .empty { border: 1px solid var(--color-rule); border-radius: var(--radius-1); padding: var(--space-4); color: var(--color-muted); }
+  .alert { margin: 0 var(--space-6) var(--space-6); padding: var(--space-3) var(--space-4); border-radius: var(--radius-1); background: var(--color-danger); color: var(--color-danger-ink); }
+  .sample { font-size: 13px; color: var(--color-muted); }
+  @keyframes enter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .card { animation: none; } }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Quinta · 12 nov</h1>
+    <span class="sub">Clínica Bom Pelo · agora 09:12 <span class="sample">(dados de exemplo)</span></span>
+  </div>
+  <button class="btn" type="button">Encaixar no primeiro livre</button>
+</header>
+<p class="alert" role="alert">WhatsApp desconectado. As consultas ficam marcadas; reconecte para mandar as confirmações.</p>
+<div class="board">
+  <section class="col" aria-labelledby="paula">
+    <h2 id="paula">Dra. Paula</h2>
+    <p class="load">3 consultas · 2 livres</p>
+    <ol class="cards">
+      <li class="card"><time>08:30</time><strong>Rex · vacina V10</strong><span>Marina Alves</span> <span class="ok">Confirmado</span></li>
+      <li class="now">Agora</li>
+      <li><button class="free" type="button">09:30 livre — encaixar</button></li>
+      <li class="card"><time>10:00</time><strong>Bento · coceira</strong><span>Lia Souza · sem resposta</span></li>
+      <li><button class="free" type="button">11:30 livre — encaixar</button></li>
+    </ol>
+  </section>
+  <section class="col" aria-labelledby="ivo">
+    <h2 id="ivo">Dr. Ivo</h2>
+    <p class="load">1 consulta · 1 livre</p>
+    <ol class="cards">
+      <li class="card"><time>09:00</time><strong>Mel · retorno de castração</strong><span>Caio Ramos</span> <span class="ok">Confirmado</span></li>
+      <li><button class="free" type="button">10:30 livre — encaixar</button></li>
+    </ol>
+  </section>
+  <section class="col" aria-labelledby="estetica">
+    <h2 id="estetica">Estética</h2>
+    <p class="load">1 atendimento</p>
+    <ol class="cards">
+      <li class="card"><time>11:00</time><strong>Nina · banho e tosa</strong><span>Pedro Lima</span> <span class="ok">Confirmado</span></li>
+    </ol>
+  </section>
+  <section class="col" aria-labelledby="tarde">
+    <h2 id="tarde">Tarde</h2>
+    <p class="load">Sem consultas depois das 15h</p>
+    <div class="empty">Ninguém marcado à tarde ainda. Ofereça este horário a quem ligar pedindo depois do almoço.</div>
+  </section>
+</div>
+</body>
+</html>

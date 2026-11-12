@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Direções — Agenda Vet</title>
+<style>
+  :root { --gap: 16px; --ink: #1f1d1a; --surface: #f4f2ee; --paper: #ffffff; --muted: #6a655d; --font-ui: system-ui, sans-serif; }
+  body { margin: 0; padding: var(--gap); background: var(--surface); color: var(--ink); font-family: var(--font-ui); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: var(--gap); }
+  figure { margin: 0; }
+  iframe { width: 100%; height: 720px; border: 1px solid var(--muted); background: var(--paper); }
+  figcaption { padding-top: 8px; }
+</style>
+</head>
+<body>
+  <h1>Três direções para o Agenda Vet</h1>
+  <div class="grid">
+    <figure><iframe src="a.html" title="Direção A"></iframe><figcaption><strong>A — Balcão</strong>: a agenda de hoje como uma linha do tempo calorosa, com o encaixe sempre à mão do lado.</figcaption></figure>
+    <figure><iframe src="b.html" title="Direção B"></iframe><figcaption><strong>B — Ficha</strong>: a agenda como a ficha de papel da recepção, uma tabela calma onde cada linha diz tudo de relance.</figcaption></figure>
+    <figure><iframe src="c.html" title="Direção C"></iframe><figcaption><strong>C — Quadro</strong>: o dia como o quadro da parede, uma coluna por veterinário, para ver de longe quem está livre.</figcaption></figure>
+  </div>
+</body>
+</html>
