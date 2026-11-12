@@ -214,7 +214,7 @@ def test_registry_and_new_layers_are_wired() -> None:
         assert f"### {name}" in contracts, name
         assert "contracts.md" in (PLUGIN / "agents" / f"{name}.md").read_text(encoding="utf-8"), name
     manifest = json.loads((PLUGIN / ".cursor-plugin/plugin.json").read_text(encoding="utf-8"))
-    assert manifest["version"] == "0.4.0"
+    assert manifest["version"] == "0.5.0"
     for readme in ("README.md", "README.pt-BR.md"):
         assert f"version-{manifest['version']}-" in (PLUGIN / readme).read_text(encoding="utf-8"), readme
 

@@ -1,7 +1,7 @@
 {
   "name": "agent-workbench",
   "displayName": "Agent Workbench",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Spec-driven development harness: rules, skills, subagents, hooks, deterministic traceability and verification gates, security review, lessons, and deterministic evals, tuned for low token usage.",
   "author": {
     "name": "brunoleocam"

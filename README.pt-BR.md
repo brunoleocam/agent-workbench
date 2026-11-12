@@ -1,5 +1,5 @@
 <div align="right">
-  <img src="https://img.shields.io/badge/version-0.4.0-green?style=flat-square" alt="Versão 0.4.0" />
+  <img src="https://img.shields.io/badge/version-0.5.0-green?style=flat-square" alt="Versão 0.5.0" />
   <a href="README.md">
     <img src="https://img.shields.io/badge/README-EN-blue?style=flat-square" alt="English 🇺🇸" />
   </a>
@@ -244,6 +244,8 @@ Em projetos preparados com `--for-cloud`, as cópias de rules e subagents nunca 
 - Estado: o projeto guarda o estado em `.cursor/agent-system/` e `.cursor/timeline/` nos dois editores, então um projeto inicializado num editor continua no outro.
 - `--for-cloud` e `/roadmap visual` (Canvas) são exclusivos do Cursor.
 
+Novo na 0.5.0: o workflow virou um grafo declarado (`workflow.json`) com um roteador (`next_step.py`) que para nas suas decisões e escala para você depois de 3 gates reprovados; os vereditos dos validadores deixam um rastro de decisão (`timeline_view.py --feature`); o `metrics.py` mostra tempo, tokens e revisões por agente e por feature; lições podem ser promovidas para um repositório global compartilhado pelos seus projetos; e chegaram o pipeline de design de UI/UX (`/design`, três agentes de design e o lint anti-slop) e a checagem de deriva do plano (`check_drift.py`). Rode `/init-agent-system` de novo em cada projeto para receber os scripts novos, o `workflow.json` e a chave `revisions` no estado.
+
 Desde a 0.4.0, os subagents `implementer`, `tester` e `debugger` usam `model: inherit` nos dois editores (antes usavam um modelo exclusivo do Cursor). Para fixar um modelo no Cursor, altere o `model:` no arquivo do agente.
 
 Comandos renomeados na 0.3.0: `investigacao-enxuta` agora é `/lean-investigation`, `resumo-de-contexto` agora é `/context-summary` e `tarefa-em-etapas` agora é `/staged-task`.
@@ -462,7 +464,7 @@ python agent-system/scripts/run_evals.py
 
 As avaliações verificam o comportamento do harness com fixtures de projeto controladas. Elas não avaliam automaticamente a qualidade das decisões do modelo de IA nem do código gerado.
 
-A implementação atual foi testada no Windows e no Linux (WSL2). O macOS ainda não foi testado. Não há CI configurado no momento.
+A implementação atual foi testada no Windows e no Linux (WSL2). O macOS ainda não foi testado. O CI (`.github/workflows/ci.yml`) roda a suíte de testes e as evals no Ubuntu e no Windows, com Python 3.10 e 3.13.
 
 ## Licença
 
