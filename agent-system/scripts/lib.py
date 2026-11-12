@@ -224,20 +224,53 @@ def roadmap_summary(root: Path) -> str:
     return redact(f"{position or 'position not set'} | {', '.join(parts)}", 200)
 
 
-def confirmed_lessons(root: Path, limit: int = 5) -> str:
-    """Titles of the newest confirmed lessons for session context. Candidates never load."""
-    path = root / ".cursor" / "agent-system" / "lessons.json"
+def normalized_title(title: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", str(title).lower()).strip()
+
+
+def global_lessons_path() -> Path:
+    """User-level lessons shared by every project: $AGENT_WORKBENCH_HOME/lessons.json, default ~/.agent-workbench/."""
+    home = os.environ.get("AGENT_WORKBENCH_HOME") or str(Path.home() / ".agent-workbench")
+    return Path(home) / "lessons.json"
+
+
+def global_lessons_enabled(root: Path) -> bool:
+    """False when the project's layout.json says "global_lessons": false."""
+    try:
+        layout = read_json(root / ".cursor" / "agent-system" / "layout.json", {})
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return True
+    return not (isinstance(layout, dict) and layout.get("global_lessons") is False)
+
+
+def _confirmed(path: Path) -> list[dict]:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-        return ""
+        return []
     items = [item for item in (data.get("lessons") or []) if isinstance(item, dict) and item.get("status") == "confirmed"] if isinstance(data, dict) else []
-    if not items:
-        return ""
     items.sort(key=lambda item: str(item.get("confirmed_at") or ""), reverse=True)
-    shown = "; ".join(f"[{item.get('category')}] {redact(str(item.get('title') or ''), 90)}" for item in items[:limit])
-    more = f" (+{len(items) - limit} more: lessons.py list --status confirmed)" if len(items) > limit else ""
-    return f"Confirmed lessons: {shown}{more}"
+    return items
+
+
+def confirmed_lessons(root: Path, limit: int = 5, global_limit: int = 3) -> str:
+    """Titles of the newest confirmed lessons for session context: the project's first, then global ones.
+
+    Candidates never load. A global lesson with the same normalized title as a project lesson is left out.
+    """
+    project = _confirmed(root / ".cursor" / "agent-system" / "lessons.json")
+    parts = []
+    if project:
+        shown = "; ".join(f"[{item.get('category')}] {redact(str(item.get('title') or ''), 90)}" for item in project[:limit])
+        more = f" (+{len(project) - limit} more: lessons.py list --status confirmed)" if len(project) > limit else ""
+        parts.append(f"Confirmed lessons: {shown}{more}")
+    if global_limit > 0 and global_lessons_enabled(root):
+        taken = {normalized_title(item.get("title") or "") for item in project}
+        others = [item for item in _confirmed(global_lessons_path()) if normalized_title(item.get("title") or "") not in taken]
+        if others:
+            shown = "; ".join(f"[{item.get('category')}] {redact(str(item.get('title') or ''), 90)}" for item in others[:global_limit])
+            parts.append(f"Global lessons: {shown}")
+    return ". ".join(parts)
 
 
 LOCK_STALE_S = 10.0
@@ -404,5 +437,26 @@ def apply_semantic_state(state: dict, event: dict) -> dict:
             verification = dict(ordered[-50:])
         state["verification"] = verification
         if kind == "VERIFICATION_COMPLETED":
-            state["phase"] = "verified" if str(event.get("result")).startswith("passed") else "verification"
+            passed = str(event.get("result")).startswith("passed")
+            state["phase"] = "verified" if passed else "verification"
+            # Failed gates per feature, counted only from validate_verification.py (node "gate"); next_step.py
+            # escalates to the user at workflow.json limits.max_revisions.
+            if event.get("node") == "gate":
+                set_revisions(state, str(feature), None if passed else 1)
+    if feature and event.get("node") == "escalate":
+        # The user answered the escalation (continue fixing or replan): the next cycle starts from zero.
+        set_revisions(state, str(feature), None)
     return state
+
+
+def set_revisions(state: dict, feature: str, increment: int | None) -> None:
+    """Reset (increment None) or increase one feature's failed-gate count; the most recently touched 50 are kept."""
+    revisions = state.get("revisions")
+    if not isinstance(revisions, dict):
+        revisions = {}
+    previous = revisions.pop(feature, 0)
+    count = previous if isinstance(previous, int) and not isinstance(previous, bool) else 0
+    revisions[feature] = 0 if increment is None else count + increment
+    if len(revisions) > 50:
+        revisions = dict(list(revisions.items())[-50:])
+    state["revisions"] = revisions

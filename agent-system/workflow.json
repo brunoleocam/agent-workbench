@@ -1,0 +1,538 @@
+{
+  "version": 1,
+  "description": "Agent Workbench execution graph. Validate with validate_workflow.py; route with next_step.py. Edges are tried in file order and the first match wins, except edges of one group, which fan out together.",
+  "start": "classify",
+  "limits": {
+    "max_revisions": 3
+  },
+  "nodes": [
+    {
+      "id": "classify",
+      "kind": "agent",
+      "agent": "orchestrator",
+      "description": "Classify class, complexity, and security risk (rule 01)."
+    },
+    {
+      "id": "debug",
+      "kind": "agent",
+      "agent": "debugger",
+      "description": "Reproduce a reported bug and find the root cause before any fix."
+    },
+    {
+      "id": "implement_direct",
+      "kind": "agent",
+      "agent": "implementer",
+      "description": "XS or S: implement directly, S with the test that proves it."
+    },
+    {
+      "id": "plan",
+      "kind": "agent",
+      "agent": "planner",
+      "description": "Requirements and spec with REQ/AC and the risk front matter."
+    },
+    {
+      "id": "approve_architecture",
+      "kind": "human",
+      "question": "The planner proposes an architecture decision (ADR). Approve it?",
+      "description": "Architecture decisions are the user's."
+    },
+    {
+      "id": "spec_check",
+      "kind": "script",
+      "script": "validate_spec.py",
+      "description": "Spec structure and traceability."
+    },
+    {
+      "id": "approve_spec",
+      "kind": "human",
+      "question": "Approve the specification so tasks can be planned?",
+      "description": "Spec approval before tasks."
+    },
+    {
+      "id": "plan_tasks",
+      "kind": "agent",
+      "agent": "planner",
+      "description": "Tasks with TASK/TEST, dependencies, and verification."
+    },
+    {
+      "id": "tasks_check",
+      "kind": "script",
+      "script": "validate_tasks.py",
+      "description": "Task structure, dependencies, and verification."
+    },
+    {
+      "id": "design",
+      "kind": "agent",
+      "agent": "designer",
+      "description": "Design brief and three rendered directions for a new interface."
+    },
+    {
+      "id": "choose_direction",
+      "kind": "human",
+      "question": "Which of the three design directions should become the contract?",
+      "description": "The user chooses the direction."
+    },
+    {
+      "id": "design_contract",
+      "kind": "agent",
+      "agent": "designer",
+      "description": "DESIGN.md and tokens from the chosen direction."
+    },
+    {
+      "id": "approve_design",
+      "kind": "human",
+      "question": "Approve DESIGN.md and the tokens as the design contract?",
+      "description": "The user approves the design contract."
+    },
+    {
+      "id": "implement",
+      "kind": "agent",
+      "agent": "implementer",
+      "description": "One specified task at a time."
+    },
+    {
+      "id": "frontend_implement",
+      "kind": "agent",
+      "agent": "frontend-implementer",
+      "description": "One screen bound to DESIGN.md and the tokens."
+    },
+    {
+      "id": "test",
+      "kind": "agent",
+      "agent": "tester",
+      "description": "Tests and evals for the task."
+    },
+    {
+      "id": "proofs",
+      "kind": "script",
+      "script": "check_proofs.py",
+      "description": "Run the TESTs and record exit codes and the workspace fingerprint."
+    },
+    {
+      "id": "fix_failure",
+      "kind": "agent",
+      "agent": "debugger",
+      "description": "Diagnose a failed proof before changing code."
+    },
+    {
+      "id": "review",
+      "kind": "agent",
+      "agent": "reviewer",
+      "description": "Independent review with the Verification Audit."
+    },
+    {
+      "id": "security_review",
+      "kind": "agent",
+      "agent": "security-reviewer",
+      "description": "Independent security review; reports SEC findings."
+    },
+    {
+      "id": "design_review",
+      "kind": "agent",
+      "agent": "design-reviewer",
+      "description": "Independent design review against DESIGN.md and the lint."
+    },
+    {
+      "id": "accept_risk",
+      "kind": "human",
+      "question": "A reviewer asks whether an open finding can be accepted as residual risk. Accept it, with a Justification?",
+      "description": "Residual risk is the user's decision."
+    },
+    {
+      "id": "gate",
+      "kind": "script",
+      "script": "validate_verification.py",
+      "description": "Closing gate: criteria, proofs on the current code, reviews, findings, and tasks."
+    },
+    {
+      "id": "escalate",
+      "kind": "human",
+      "question": "The gate failed max_revisions times for this feature. Continue fixing, or replan?",
+      "description": "Revision limit reached; the user decides."
+    },
+    {
+      "id": "approve_commit",
+      "kind": "human",
+      "question": "Tests and gate are green. Authorize commit, push, PR, and merge?",
+      "description": "Commit and push only with authorization."
+    },
+    {
+      "id": "checkpoint",
+      "kind": "script",
+      "script": "record_event.py",
+      "description": "Record the checkpoint and the next step in the project state."
+    }
+  ],
+  "edges": [
+    {
+      "from": "classify",
+      "to": "debug",
+      "when": {
+        "class": [
+          "BUG_FIX"
+        ]
+      }
+    },
+    {
+      "from": "classify",
+      "to": "checkpoint",
+      "when": {
+        "class": [
+          "INVESTIGATION"
+        ]
+      }
+    },
+    {
+      "from": "classify",
+      "to": "implement_direct",
+      "when": {
+        "complexity_max": "S"
+      }
+    },
+    {
+      "from": "classify",
+      "to": "plan",
+      "when": {
+        "complexity_min": "M"
+      }
+    },
+    {
+      "from": "debug",
+      "to": "implement_direct",
+      "when": {
+        "complexity_max": "S"
+      }
+    },
+    {
+      "from": "debug",
+      "to": "plan",
+      "when": {
+        "complexity_min": "M"
+      }
+    },
+    {
+      "from": "implement_direct",
+      "to": "security_review",
+      "when": {
+        "security_min": "HIGH"
+      }
+    },
+    {
+      "from": "implement_direct",
+      "to": "checkpoint"
+    },
+    {
+      "from": "plan",
+      "to": "approve_architecture",
+      "on": "escalate"
+    },
+    {
+      "from": "plan",
+      "to": "design",
+      "on": "pass",
+      "when": {
+        "interface": "new",
+        "design_approved": false
+      }
+    },
+    {
+      "from": "plan",
+      "to": "spec_check",
+      "on": "pass"
+    },
+    {
+      "from": "approve_architecture",
+      "to": "spec_check",
+      "on": "pass"
+    },
+    {
+      "from": "approve_architecture",
+      "to": "plan",
+      "on": "fail"
+    },
+    {
+      "from": "design",
+      "to": "choose_direction"
+    },
+    {
+      "from": "choose_direction",
+      "to": "design_contract",
+      "on": "pass"
+    },
+    {
+      "from": "choose_direction",
+      "to": "design",
+      "on": "fail"
+    },
+    {
+      "from": "design_contract",
+      "to": "approve_design"
+    },
+    {
+      "from": "approve_design",
+      "to": "spec_check",
+      "on": "pass"
+    },
+    {
+      "from": "approve_design",
+      "to": "design_contract",
+      "on": "fail"
+    },
+    {
+      "from": "spec_check",
+      "to": "approve_spec",
+      "on": "pass"
+    },
+    {
+      "from": "spec_check",
+      "to": "plan",
+      "on": "fail"
+    },
+    {
+      "from": "approve_spec",
+      "to": "plan_tasks",
+      "on": "pass"
+    },
+    {
+      "from": "approve_spec",
+      "to": "plan",
+      "on": "fail"
+    },
+    {
+      "from": "plan_tasks",
+      "to": "tasks_check"
+    },
+    {
+      "from": "tasks_check",
+      "to": "frontend_implement",
+      "on": "pass",
+      "when": {
+        "interface": "new"
+      }
+    },
+    {
+      "from": "tasks_check",
+      "to": "implement",
+      "on": "pass"
+    },
+    {
+      "from": "tasks_check",
+      "to": "plan_tasks",
+      "on": "fail"
+    },
+    {
+      "from": "implement",
+      "to": "test"
+    },
+    {
+      "from": "frontend_implement",
+      "to": "test"
+    },
+    {
+      "from": "test",
+      "to": "proofs"
+    },
+    {
+      "from": "proofs",
+      "to": "review",
+      "on": "pass",
+      "group": "verify",
+      "join": "gate"
+    },
+    {
+      "from": "proofs",
+      "to": "security_review",
+      "on": "pass",
+      "when": {
+        "security_min": "HIGH"
+      },
+      "group": "verify",
+      "join": "gate"
+    },
+    {
+      "from": "proofs",
+      "to": "design_review",
+      "on": "pass",
+      "when": {
+        "interface": "new"
+      },
+      "group": "verify",
+      "join": "gate"
+    },
+    {
+      "from": "proofs",
+      "to": "fix_failure",
+      "on": "fail"
+    },
+    {
+      "from": "fix_failure",
+      "to": "frontend_implement",
+      "when": {
+        "interface": "new"
+      }
+    },
+    {
+      "from": "fix_failure",
+      "to": "implement"
+    },
+    {
+      "from": "review",
+      "to": "accept_risk",
+      "on": "escalate"
+    },
+    {
+      "from": "review",
+      "to": "gate"
+    },
+    {
+      "from": "security_review",
+      "to": "accept_risk",
+      "on": "escalate"
+    },
+    {
+      "from": "security_review",
+      "to": "gate",
+      "when": {
+        "complexity_min": "M"
+      }
+    },
+    {
+      "from": "security_review",
+      "to": "checkpoint",
+      "when": {
+        "complexity_max": "S"
+      }
+    },
+    {
+      "from": "design_review",
+      "to": "accept_risk",
+      "on": "escalate"
+    },
+    {
+      "from": "design_review",
+      "to": "gate"
+    },
+    {
+      "from": "accept_risk",
+      "to": "gate",
+      "on": "pass"
+    },
+    {
+      "from": "accept_risk",
+      "to": "frontend_implement",
+      "on": "fail",
+      "when": {
+        "interface": "new"
+      }
+    },
+    {
+      "from": "accept_risk",
+      "to": "implement",
+      "on": "fail"
+    },
+    {
+      "from": "gate",
+      "to": "approve_commit",
+      "on": "pass"
+    },
+    {
+      "from": "gate",
+      "to": "frontend_implement",
+      "on": "fail",
+      "when": {
+        "interface": "new"
+      }
+    },
+    {
+      "from": "gate",
+      "to": "implement",
+      "on": "fail"
+    },
+    {
+      "from": "gate",
+      "to": "escalate",
+      "on": "escalate"
+    },
+    {
+      "from": "escalate",
+      "to": "frontend_implement",
+      "on": "pass",
+      "when": {
+        "interface": "new"
+      }
+    },
+    {
+      "from": "escalate",
+      "to": "implement",
+      "on": "pass"
+    },
+    {
+      "from": "escalate",
+      "to": "plan",
+      "on": "fail"
+    },
+    {
+      "from": "approve_commit",
+      "to": "checkpoint"
+    }
+  ],
+  "state_fields": {
+    "version": [
+      "init_project.py"
+    ],
+    "project": [
+      "init_project.py"
+    ],
+    "session_id": [
+      "hook",
+      "record_event.py"
+    ],
+    "active_task": [
+      "record_event.py",
+      "lessons.py",
+      "hook"
+    ],
+    "active_agent": [
+      "hook",
+      "record_event.py"
+    ],
+    "phase": [
+      "record_event.py",
+      "validate_verification.py"
+    ],
+    "completed_tasks": [
+      "record_event.py"
+    ],
+    "blocked_tasks": [
+      "record_event.py"
+    ],
+    "pending_tasks": [
+      "record_event.py"
+    ],
+    "open_change_requests": [
+      "record_event.py"
+    ],
+    "review_status": [
+      "record_event.py"
+    ],
+    "last_checkpoint": [
+      "record_event.py"
+    ],
+    "next_step": [
+      "record_event.py",
+      "init_project.py"
+    ],
+    "verification": [
+      "validate_spec.py",
+      "validate_tasks.py",
+      "check_proofs.py",
+      "validate_verification.py"
+    ],
+    "revisions": [
+      "validate_verification.py"
+    ],
+    "installed_at": [
+      "init_project.py"
+    ]
+  }
+}

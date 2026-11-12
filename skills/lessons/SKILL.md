@@ -36,4 +36,15 @@ Session start already brings up to five confirmed titles. Before work in an area
 python .cursor/agent-system/scripts/lessons.py list --status confirmed --category security --verbose
 ```
 
-Candidates and rejected lessons never enter the context automatically.
+Candidates and rejected lessons never enter the context automatically. Session start also brings up to three global lessons after the project's.
+
+## Global lessons
+
+A lesson that holds in every project (a preference of the user, a general practice) can live in the user's global store. Only the user promotes, and only a confirmed lesson:
+
+```powershell
+python .cursor/agent-system/scripts/lessons.py promote --id LESSON-003
+python .cursor/agent-system/scripts/lessons.py list --scope global --status confirmed
+```
+
+You may propose one with `add --scope global` and then ask the user to confirm it with `confirm --scope global`. Write it in general terms: the script refuses a text with this project's path or name, an absolute path, a URL, or a secret. A project whose `layout.json` has `"global_lessons": false` neither reads nor writes the global store.

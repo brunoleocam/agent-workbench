@@ -22,6 +22,7 @@ from artifacts import (  # noqa: E402
     load_bundle,
     load_document,
     load_proofs,
+    proofs_file,
     record,
     task_status,
     truthy,
@@ -180,7 +181,13 @@ def main() -> int:
         return config_error(str(exc), args.json)
     code = report.emit(args.json)
     result = "passed" if code == 0 else f"failed fail={report.count('FAIL')} warn={report.count('WARN')}"
-    record(bundle.root, "VERIFICATION_COMPLETED", f"validate_verification {bundle.slug}", result, bundle.slug, "orchestrator", not args.no_record)
+    proofs = proofs_file(bundle.root, bundle.slug)
+    inputs = [bundle.rel(bundle.spec), bundle.rel(bundle.tasks), *(bundle.rel(doc) for doc in bundle.tests), report.data.get("review"), report.data.get("security")]
+    if proofs.is_file():
+        inputs.append(proofs.relative_to(bundle.root).as_posix())
+    digest = (report.data.get("fingerprint") or {}).get("digest")
+    record(bundle.root, "VERIFICATION_COMPLETED", f"validate_verification {bundle.slug}", result, bundle.slug, "orchestrator", not args.no_record,
+           node="gate", inputs=inputs, fingerprint=digest)
     return code
 
 

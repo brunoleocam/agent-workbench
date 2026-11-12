@@ -24,6 +24,8 @@ A trivial change needs no command. An old repository is not migrated wholesale.
 
 For M or larger with `/init-agent-system`, the gates are scripts in `.cursor/agent-system/scripts/`: `validate_spec.py`, `validate_tasks.py`, `check_proofs.py` (runs the tests and records the real exit code), and `validate_verification.py` (exits 0 only with tested criteria, proofs of the current code, a review, and blocking findings resolved). Contracts in the plugin's `agent-system/docs/cli.md`.
 
+The flow itself is a graph in `.cursor/agent-system/workflow.json`. `validate_workflow.py` checks it (`--mermaid` draws it), `next_step.py` says which node comes next and stops on your decisions, escalating to you after 3 failed gates, `metrics.py` shows time, tokens, and revisions per agent and feature, and `timeline_view.py --feature <slug>` shows what each verdict was based on.
+
 ## Commands
 
 - `/brainstorm` — a raw idea. One question at a time, alternatives, a design approved by you. Writes no code and no plan.
@@ -56,7 +58,7 @@ For M or larger with `/init-agent-system`, the gates are scripts in `.cursor/age
 - `/code-review` — compares requirements, spec, criteria, tests, and code, with a Verification Audit (would the test fail if the requirement were wrong?). A finding has severity and evidence.
 - `/security-review` — security audit of the feature or the repository by the `security-reviewer`, with stack references. Produces a report with SEC findings; does not fix without your authorization. It is not Cursor's built-in `security-review` subagent.
 - `/security-best-practices` — secure coding in the detected stack, loading only its reference. Distinguishes vulnerability from hardening.
-- `/lessons` — proposes, lists, confirms, or rejects project lessons. Only you confirm; only confirmed lessons enter the context.
+- `/lessons` — proposes, lists, confirms, or rejects project lessons. Only you confirm; only confirmed lessons enter the context. A confirmed lesson can be promoted to your global store, shared by every project, if it has no path, URL, secret, or project name.
 - `/update-docs` — aligns the spec, a new ADR, or progress with what changed. Does not rewrite an accepted ADR.
 - `/commit-push` — branch before editing; with green tests, a single approval from you for commit, push, PR, and merge. Without approval, nothing leaves your machine.
 - `/roadmap` — shows which phase and task you are in, what is left, and what is blocked. Also creates, updates, or renders the Canvas view (`/roadmap visual`). Only in a project with `/init-agent-system`.

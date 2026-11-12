@@ -38,6 +38,10 @@ COPY_SCRIPTS = [
     "validate_tasks.py",
     "check_proofs.py",
     "check_drift.py",
+    "workflow.py",
+    "validate_workflow.py",
+    "next_step.py",
+    "metrics.py",
     "lint_design.py",
     "validate_verification.py",
     "lessons.py",
@@ -73,6 +77,7 @@ def default_state(root: Path) -> dict:
         "last_checkpoint": None,
         "next_step": "Classify the next request before editing code.",
         "verification": {},
+        "revisions": {},
         "installed_at": utc_now(),
     }
 
@@ -211,7 +216,7 @@ def copy_skills(root: Path) -> tuple[list[str], list[str], list[str]]:
 
 
 # Edited by the user in layout.json and kept across re-runs of the init.
-USER_LAYOUT_KEYS = ("overrides", "proof_allow")
+USER_LAYOUT_KEYS = ("overrides", "proof_allow", "global_lessons")
 SKIP_DIRS = {
     ".git",
     ".cursor",
@@ -566,6 +571,11 @@ def main() -> int:
 
     copy_scripts(root)
     report["created"].append("scripts")
+    # The execution graph is plugin data, like the scripts: refreshed on every init, never edited in the project.
+    workflow_src = BASE_DIR / "agent-system" / "workflow.json"
+    if workflow_src.exists():
+        shutil.copyfile(workflow_src, system / "workflow.json")
+        report["created"].append("workflow.json")
     created_rules, preserved_rules = copy_rules(root) if args.for_cloud else ([], [])
     created_skills, preserved_skills, global_skills = copy_skills(root)
     report["global_skills"] = global_skills

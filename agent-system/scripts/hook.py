@@ -95,6 +95,8 @@ def from_claude(payload: dict) -> dict:
         out["hook_event_name"] = "subagentStop"
         # The subagent's last message can hold anything; log only who stopped.
         out["summary"] = f"{payload.get('agent_type') or 'subagent'} stopped"
+        if payload.get("agent_transcript_path"):
+            out["agent_transcript_path"] = str(payload["agent_transcript_path"])
     elif name == "PostToolUse" and payload.get("tool_name") in CLAUDE_FILE_TOOLS:
         out["hook_event_name"] = "afterFileEdit"
         out["file_path"] = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
@@ -173,12 +175,54 @@ def targets(payload: dict) -> list[Path]:
     return found
 
 
-def log(root: Path, payload: dict, kind: str, summary: str, result: str = "completed", files=None, inferred: bool = False) -> None:
+TRANSCRIPT_MAX_BYTES = 50 * 1024 * 1024
+USAGE_FIELDS = {"input_tokens": "input", "output_tokens": "output", "cache_read_input_tokens": "cache_read", "cache_creation_input_tokens": "cache_creation"}
+
+
+def transcript_tokens(raw_path: str) -> dict | None:
+    """Token totals of one Claude Code subagent transcript, numbers only; None when unavailable.
+
+    Each assistant line carries message.usage, and one message spans several lines with the same id, so the last
+    usage per id counts. The transcript format is not a documented contract: any surprise means no tokens.
+    """
+    try:
+        path = Path(os.path.expanduser(raw_path))
+        if path.suffix != ".jsonl" or "subagents" not in path.parts or not path.is_file():
+            return None
+        if path.stat().st_size > TRANSCRIPT_MAX_BYTES:
+            return None
+        by_message: dict[str, dict] = {}
+        with path.open(encoding="utf-8", errors="replace") as handle:
+            for index, line in enumerate(handle):
+                try:
+                    entry = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                message = entry.get("message") if isinstance(entry, dict) else None
+                usage = message.get("usage") if isinstance(message, dict) else None
+                if not isinstance(usage, dict):
+                    continue
+                key = str(message.get("id") or f"line-{index}")
+                by_message[key] = {name: int(usage[field]) for field, name in USAGE_FIELDS.items() if isinstance(usage.get(field), int) and not isinstance(usage.get(field), bool)}
+        if not by_message:
+            return None
+        totals = dict.fromkeys(USAGE_FIELDS.values(), 0)
+        for usage in by_message.values():
+            for name, value in usage.items():
+                totals[name] += value
+        return totals
+    except (OSError, ValueError):
+        return None
+
+
+def log(root: Path, payload: dict, kind: str, summary: str, result: str = "completed", files=None, inferred: bool = False, tokens: dict | None = None) -> None:
     state = load_state(root)
     event = base_event(payload, state, kind, summary, result)
     event["files"] = safe_files(files or [])
     if inferred:
         event["inferred"] = True
+    if tokens:
+        event["tokens"] = tokens
     append_event(root, event)
     if kind == "SUBAGENT_STARTED":
         state["active_agent"] = event["agent"]
@@ -236,6 +280,7 @@ def handle(payload: dict) -> dict:
         return {"permission": "allow"}
 
     if name == "subagentStop":
+        tokens = transcript_tokens(payload["agent_transcript_path"]) if roots and payload.get("agent_transcript_path") else None
         for root in roots:
             files = payload.get("modified_files") or []
             log(
@@ -245,6 +290,7 @@ def handle(payload: dict) -> dict:
                 payload.get("summary") or payload.get("status") or "subagent stopped",
                 result=str(payload.get("status") or "completed"),
                 files=files,
+                tokens=tokens,
             )
         return {}
 

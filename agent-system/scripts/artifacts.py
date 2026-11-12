@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from lib import append_event, apply_semantic_state, load_state, local_stamp, opted_in, redact, save_state, utc_now  # noqa: E402
+from lib import append_event, apply_semantic_state, load_state, local_stamp, opted_in, redact, safe_files, save_state, utc_now  # noqa: E402
 
 ID_KINDS = ("REQ", "AC", "ADR", "TASK", "TEST", "PROOF", "FIND", "SEC")
 ID_RE = re.compile(r"\b(" + "|".join(ID_KINDS) + r")-(\d{3,})\b")
@@ -580,8 +580,24 @@ def config_error(message: str, as_json: bool) -> int:
     return 2
 
 
-def record(root: Path, kind: str, summary: str, result: str, feature: str | None, agent: str, enabled: bool = True) -> None:
-    """Append a timeline event for opted-in projects. Telemetry failure never changes the gate result."""
+def record(
+    root: Path,
+    kind: str,
+    summary: str,
+    result: str,
+    feature: str | None,
+    agent: str,
+    enabled: bool = True,
+    *,
+    node: str | None = None,
+    inputs: list[str | None] | None = None,
+    fingerprint: str | None = None,
+) -> None:
+    """Append a timeline event for opted-in projects. Telemetry failure never changes the gate result.
+
+    With `node`, the event is a decision trace: the graph node, the artifacts read (relative paths, never their
+    content), and the workspace fingerprint the decision was made on (computed here when not given).
+    """
     if not enabled or not opted_in(root):
         return
     try:
@@ -598,6 +614,10 @@ def record(root: Path, kind: str, summary: str, result: str, feature: str | None
             "summary": redact(summary, 240),
             "result": redact(result, 160),
         }
+        if node:
+            event["node"] = redact(node, 60)
+            event["inputs"] = safe_files(sorted({str(item) for item in inputs or [] if item}))
+            event["fingerprint"] = fingerprint or workspace_fingerprint(root)["digest"]
         append_event(root, event)
         save_state(root, apply_semantic_state(state, event))
     except (OSError, ValueError) as exc:
