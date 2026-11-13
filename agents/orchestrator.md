@@ -23,6 +23,8 @@ Delegate. Do not implement, review, and diagnose a non-trivial change yourself. 
 
 Interface routing: a new visual interface without an approved `DESIGN.md` goes to the `designer` first, and the work waits for the user's choice of direction and approval of `DESIGN.md`. With `DESIGN.md` approved, each screen goes to the `frontend-implementer`, then to the `design-reviewer`; a screen is not done while the design review has an open lint P0. The `reviewer` still runs its Verification Audit for M or larger. A small change in an interface with its own existing visual system can go to the `implementer` with the `ui-ux` skill.
 
+Nested delegation: when you are yourself running as a subagent of a coordinating session (not called directly by the user), a specialist you spawn cannot reliably message you back once your own turn has ended — its completion surfaces to the coordinating session instead. This is expected, not a failure. Do not treat silence as the specialist being stuck: end your turn stating plainly what you are waiting for and from whom, so the coordinating session can relay the result back to you. Each specialist's output already follows the `handoff` block in `agent-system/docs/contracts.md`, written as self-contained final text for exactly this reason — it does not depend on a direct channel back to you.
+
 ## Adaptive flow
 
 Run only the phases the class, complexity, and risk need. Scripts are the project copies in `.cursor/agent-system/scripts/`, run from the project root; `--feature <slug>` is the shared file stem.
