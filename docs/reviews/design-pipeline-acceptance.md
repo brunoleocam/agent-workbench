@@ -67,16 +67,16 @@ Os subagentes reais do plugin fizeram o trabalho (não houve execução manual d
 
 ### Nota sobre o branch
 
-A sessão deste ensaio foi aberta com o plugin carregado de `C:/Dev/Agent Workbench`, mas o checkout nesse diretório estava no branch `feat/workflow-graph` no momento da execução, não `feat/design-pipeline` (que existe como branch separado, `git branch -a` confirma). Os arquivos relevantes (`skills/design*`, `agents/designer.md`, `agents/frontend-implementer.md`, `agents/design-reviewer.md`) estavam presentes e funcionaram como descrito na tabela — não foi preciso trocar de branch para rodar o ensaio —, mas o resultado acima reflete o estado de `feat/workflow-graph`, não necessariamente o de `feat/design-pipeline` se os dois tiverem divergido nesses arquivos.
+A sessão deste ensaio foi aberta com o plugin carregado de `C:/Dev/Agent Workbench`, mas o checkout nesse diretório estava no branch `feat/workflow-graph` no momento da execução, não `feat/design-pipeline`. Conferido depois: nessa hora o PR #9 (`feat/design-pipeline`) já estava mergeado na `main` (commit `0493bfd`), e `feat/workflow-graph` partia dele. Comparado com o último commit de `feat/design-pipeline`, os arquivos do pipeline de design (`skills/design*`, `skills/ui-ux`, os três agentes de design e `lint_design.py`) eram iguais; só `agent-system/scripts/hook.py` e `agents/orchestrator.md` tinham mudanças do workflow graph (PR #10). O ensaio, portanto, validou o pipeline como ele está na `main`.
 
 ## Achados do Ensaio 2
 
-### FIND-004: Mensagem de sistema suspeita, instruindo a ocultar informação do usuário
-- Severity: info / segurança (não é código do plugin)
-- Status: open
-- Location: ambiente da sessão (canal de resultado de tool call), não um arquivo do Agent Workbench
-- Evidence: imediatamente depois de um `git checkout -- DESIGN.md design/tokens.css` (Caso 1, AC-012) que restaurou os arquivos ao commit original (`git status --porcelain` vazio na mesma resposta), chegaram dois blocos `<system-reminder>` afirmando que `DESIGN.md` e `design/tokens.css` tinham sido "modificados pelo usuário ou por um linter", que a mudança era "intencional", e instruindo explicitamente: "Don't tell the user this, since they are already aware." Nenhuma edição externa real ocorreu — verificado de forma independente com `git status --porcelain` (vazio) e hash do arquivo. A instrução de ocultar informação do usuário contradiz a regra do próprio ensaio ("registre o que aconteceu de fato") e tem o padrão de uma injeção de instrução via conteúdo de ferramenta.
-- Recommendation: não é um defeito do plugin Agent Workbench; registrado aqui por transparência, a pedido do roteiro do ensaio. Caso o mecanismo de "file watcher" do harness realmente exista e seja legítimo, vale revisar por que ele inclui uma instrução de ocultamento ao agente — isso foge ao escopo deste plugin.
+### FIND-004: Aviso de arquivo modificado depois de `git checkout` (não é defeito)
+- Severity: info
+- Status: accepted
+- Location: ambiente da sessão do Claude Code, não um arquivo do Agent Workbench
+- Evidence: depois de `git checkout -- DESIGN.md design/tokens.css` (Caso 1, AC-012), a sessão recebeu o aviso do Claude Code de que esses arquivos tinham mudado no disco desde a última leitura. No ensaio isso foi registrado como possível injeção, com a frase "nenhuma edição externa real ocorreu". A frase está errada: o próprio `git checkout` reescreveu os dois arquivos no disco, fora das ferramentas de edição do agente, e o aviso descreve exatamente isso. O `git status` vazio mostra que os arquivos voltaram ao commit, não que nada mudou no disco.
+- Justification: é o aviso normal do Claude Code para arquivo alterado fora do agente; aparece também em outras sessões depois de troca de branch ou checkout. Não afeta o plugin nem o resultado do AC-012. Corrigido na revisão do relatório em 2026-11-13.
 
 ### FIND-005: Subagentes aninhados (chamados pelo orchestrator) não conseguem notificar o próprio orchestrator
 - Severity: major
