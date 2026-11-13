@@ -125,6 +125,18 @@ THE SYSTEM SHALL ter testes em `agent-system/tests` com fixtures que reproduzem 
 ### REQ-034: Supressão pontual
 WHERE uma linha ou a linha anterior a ela contém o comentário `design-lint-disable <REGRA> -- <motivo>`, THE SYSTEM SHALL não reportar essa regra naquela linha. IF o comentário não tiver motivo, THEN THE SYSTEM SHALL ignorar a supressão e reportar um P1 `P1-SUPPRESSION-NO-REASON`.
 
+### REQ-035 (opcional): UI Kit de referência
+WHERE o usuário pede o UI Kit, THE SYSTEM SHALL gerar `design/kit.html` a partir de `design/tokens.css` na etapa `design-system`, como página HTML autocontida (CSS inline, sem JavaScript ou recurso externo), mostrando: cores com nome, valor e par `-ink` com contraste calculado; famílias e escala tipográfica com exemplo de cada nível; espaçamento, raios, sombras e durações; e os componentes descritos na seção 6 do `DESIGN.md` em cada estado (normal, hover, foco e desabilitado). THE SYSTEM SHALL não escrever valores de estilo à mão no kit: todo valor vem de `tokens.css`. A `design-review` SHALL usar o kit, quando existir, para conferir se as telas usam só os tokens listados.
+
+### REQ-036 (opcional): shadcn/ui como base de componentes em React
+WHERE o projeto usa React e o usuário opta por shadcn/ui, THE SYSTEM SHALL mapear os tokens de `design/tokens.css` para as variáveis de tema do shadcn (`--background`, `--foreground`, `--primary`, `--primary-foreground`, `--border`, `--radius` e equivalentes) sem definir valor novo: cada variável do shadcn aponta para um token (`var(--...)`). THE SYSTEM SHALL exigir que `ui-ux` e o `frontend-implementer` usem o componente do shadcn já instalado antes de criar um componente próprio equivalente, e que registrem no relato o componente próprio que criaram, quando criarem, com o motivo.
+
+### REQ-037 (opcional): transitions.dev como referência de transições
+WHERE o usuário opta por usar transitions.dev como referência, THE SYSTEM SHALL tratá-lo só como referência de padrões de transição, sem dependência de pacote. IF a tarefa pede copiar código do transitions.dev, THEN THE SYSTEM SHALL antes ler a licença customizada do site, registrar o que ela permite e a fonte em `skills/design/references/CREDITS.md`, e copiar o código só se a licença permitir o uso. Se a licença não permitir ou não puder ser lida, THE SYSTEM SHALL implementar a transição própria com os tokens de duração e easing. A transição resultante SHALL respeitar `prefers-reduced-motion` (REQ-029).
+
+### REQ-038 (opcional): React Bits para componentes animados
+WHERE o usuário opta por usar React Bits em um projeto React, THE SYSTEM SHALL ler o `LICENSE.md` do repositório do React Bits antes de copiar qualquer componente e registrar a licença, a versão ou commit e o componente em `skills/design/references/CREDITS.md`. THE SYSTEM SHALL rodar o lint anti-slop (`lint_design.py`) nos arquivos que receberam o componente e SHALL não entregar com P0 aberto; cores, fontes e durações do componente copiado SHALL ser trocados por tokens (REQ-019).
+
 ## Acceptance Criteria
 
 ### AC-001: Limite e recomendações da entrevista
@@ -307,6 +319,30 @@ Given uma linha com "99.9% uptime" precedida de `design-lint-disable P0-METRIC -
 When o lint roda
 Then a primeira linha não gera achado, a segunda gera `P0-METRIC` e `P1-SUPPRESSION-NO-REASON`, e o exit code é 1.
 
+### AC-031: UI Kit gerado dos tokens
+- Requirements: REQ-035
+Given um projeto com `design/tokens.css` que declara `--color-accent`, `--font-display` e um par `--color-accent-ink`
+When o gerador do kit roda sobre esse arquivo
+Then `design/kit.html` existe, não tem `<link>`, `<script src>` nem `<img src>` externos, mostra cada token com nome e valor, mostra o par `-ink` com o contraste calculado, mostra a escala tipográfica e os componentes em estados normal, hover, foco e desabilitado; e, ao trocar `--color-accent` em `tokens.css` e rodar de novo, a amostra de cor no kit muda sem edição manual do HTML.
+
+### AC-032: shadcn/ui mapeado para os tokens
+- Requirements: REQ-036
+Given um projeto React com `design/tokens.css` que declara `--color-accent`, `--color-accent-ink` e `--radius-md`, e o shadcn/ui escolhido
+When `ui-ux` configura o tema e cria uma tela com um botão e um campo de formulário
+Then o CSS do tema define cada variável do shadcn como `var(--...)` de um token existente, sem hex, `rgb`, `hsl` ou `oklch` literal; a tela importa o `Button` e o `Input` do shadcn em vez de criar equivalentes; e o lint não reporta `P1-RAW-COLOR` nos arquivos do tema nem da tela.
+
+### AC-033: transitions.dev condicionado à licença
+- Requirements: REQ-037
+Given o usuário pede uma transição baseada no transitions.dev e cola o código de um exemplo do site
+When o agente processa o pedido
+Then o agente cita a licença lida e registra a fonte em `CREDITS.md` antes de copiar; se a licença não puder ser lida ou não permitir a cópia, nenhum trecho do site entra no projeto e a transição é escrita com `--duration-*` e `--ease-*` dos tokens; em ambos os casos o lint não reporta `P1-NO-REDUCED-MOTION` nem `P1-TRANSITION-ALL` no arquivo.
+
+### AC-034: React Bits condicionado a LICENSE.md e ao lint
+- Requirements: REQ-038
+Given o usuário pede um componente animado do React Bits que usa cor e `font-family` literais
+When o agente adiciona o componente
+Then o agente leu o `LICENSE.md` antes de copiar e `CREDITS.md` ganha licença, versão ou commit e nome do componente; o componente entregue usa só tokens para cor, fonte e duração; o lint roda nos arquivos alterados e a entrega só ocorre sem P0.
+
 ## Assumptions
 
 - O usuário abre os HTML de `design/directions/` no navegador do Cursor, do Claude Code ou no navegador do sistema.
@@ -322,7 +358,7 @@ Then a primeira linha não gera achado, a segunda gera `P0-METRIC` e `P1-SUPPRES
 - O hook nunca bloqueia nem altera arquivo.
 - As skills existentes `ui-ux-experiment` e `apple-design` continuam válidas; `apple-design` passa a ser citada pela seção 7 do DESIGN.md quando o projeto tiver gesto ou mola.
 
-Fora de escopo: geração de imagem, integração com Figma, biblioteca de componentes, migração automática de projeto existente para DESIGN.md, publicação como Artifact, teste de regressão visual por screenshot.
+Fora de escopo: geração de imagem, integração com Figma, biblioteca de componentes própria (REQ-036 só adota o shadcn/ui, por opção), migração automática de projeto existente para DESIGN.md, publicação como Artifact, teste de regressão visual por screenshot.
 
 ## Open Questions
 
@@ -339,4 +375,7 @@ Fora de escopo: geração de imagem, integração com Figma, biblioteca de compo
 - Lint bloqueia P0 e só avisa P1/P2; o hook apenas informa.
 - Skills separadas (`design-discovery`, `design-directions`, `design-system`, `design-review`) mais a skill `design` que encadeia as quatro.
 - O usuário escolhe a direção inteira e ajusta por dials; o agente não monta direção a partir de peças de direções diferentes.
+- REQ-035 é opcional e entra no spec como pedido do usuário (2026-11-13): o kit é uma página para o desenvolvedor conferir tipografia, cores e componentes antes de refinar o front-end, gerada dos tokens para não divergir do contrato. Não cria skill nova.
 - Change request (2026-11-12, aprovado pelo usuário, a partir do FIND-003 da revisão independente): REQ-032 e AC-028 passam a dizer o que cada host faz. O `afterFileEdit` do Cursor não devolve contexto ao agente, então no Cursor o achado vai para a timeline e as skills e o `frontend-implementer` rodam o lint; antes, o spec prometia o mesmo comportamento nos dois hosts.
+- REQ-036, REQ-037 e REQ-038 entram como opcionais, a pedido do usuário (2026-11-13). Nenhuma biblioteca vira dependência obrigatória: o pipeline funciona sem elas, e o contrato continua sendo `DESIGN.md` e `tokens.css`.
+- Licenças: transitions.dev tem licença customizada e React Bits tem `LICENSE.md` próprio; nenhuma foi lida neste spec. Por isso REQ-037 e REQ-038 só permitem copiar código depois da leitura registrada em `CREDITS.md`.
