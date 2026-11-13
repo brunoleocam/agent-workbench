@@ -1,6 +1,6 @@
 # Current progress
 
-State of the repository at version 0.5.0. The audit-improvements front (PR #8) and the design pipeline (PR #9) are merged into `main`; the workflow graph front is PR #10.
+State of the repository at version 0.5.0. The audit-improvements front (PR #8), the design pipeline (PR #9), the workflow graph (PR #10), the 0.5.0 bump (PR #11), and the second design acceptance run (PR #12) are merged into `main`. The architecture front is in progress on `feat/architecture-pipeline`.
 
 ## Delivered (merged)
 
@@ -35,6 +35,16 @@ Spec: `docs/specs/workflow-graph.md` (approved, XL, four phases). Tasks: `docs/t
 - Review 1 (reviewer agent): PASS_WITH_WARNINGS, FIND-001 (major) to FIND-006 (minor), all fixed with tests; suite 106 passed.
 - Review 2: PASS, all six findings resolved. `validate_verification.py --feature workflow-graph` exits 0 (11 proofs on the current workspace, review fingerprint matches).
 - Next: commit, push, and PR of `feat/workflow-graph`.
+
+## Architecture front (branch `feat/architecture-pipeline`, phase 1 of 3)
+
+Spec: `docs/specs/architecture-pipeline.md` (approved, XL, 38 REQs, three phases). Tasks: `docs/tasks/architecture-pipeline.md`.
+
+- Phase 1, contract and skills: done. `/architecture` chains `architecture-discovery` (at most 6 questions, infrastructure target always asked, capacity estimate), `architecture-options` (2-3 structurally different options, simplest that meets the brief, user chooses), `architecture-system` (`ARCHITECTURE.md` with ten fixed sections, scaling stages with measurable triggers, ADRs in `adr_dir`), and `architecture-review` (22-item checklist). Nine shared references and four fictional case studies in `skills/architecture/references/`.
+- Tests: `agent-system/tests/test_architecture_skills.py`, structural; `stage_errors()` checks section 9 per stage. TEST-001 to TEST-006 proven. AC-001 to AC-015 close only after the rehearsal at the end of phase 3; AC-010 to AC-012 move to the `validate_architecture.py` tests of phase 2.
+- Review: `docs/reviews/architecture-pipeline.md`, PASS after three passes (FIND-001 to FIND-015 resolved).
+- Next: phase 2 (`lint_infra.py`, `validate_architecture.py`, hook, eval; REQ-021 to REQ-030), then phase 3 (agents `architect`, `architecture-reviewer`, `platform-implementer`, routing, docs).
+- Not merged: the optional design REQ-035 to REQ-038 (UI Kit, shadcn/ui, transitions.dev, React Bits) are specified in commit `fafceec` on `docs/design-ensaio-2`, which needs its own PR.
 
 ## Verification
 

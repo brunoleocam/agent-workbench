@@ -47,6 +47,11 @@ The flow itself is a graph in `.cursor/agent-system/workflow.json`. `validate_wo
 - `/design-directions` — three structurally different directions as HTML previews in `design/directions/`; you choose one and tune it with dials. Writes no `DESIGN.md`.
 - `/design-system` — turns the chosen direction into `DESIGN.md` and `design/tokens.css`, with contrast checked. Overwrites an existing `DESIGN.md` only with your confirmation.
 - `/design-review` — six-axis self-critique, a 28-question checklist, and the lint, reported in plain prose. Fixes before delivering.
+- `/architecture` — the full architecture pipeline for a new system or a structural change: interview, options, `ARCHITECTURE.md` with scaling stages and ADRs, review. Skips what is approved and stops wherever you must answer or choose.
+- `/architecture-discovery` — a short interview (at most 6 questions, each with a recommended answer; the infrastructure target is always asked) and a capacity estimate with the arithmetic shown, in `architecture/brief.md`.
+- `/architecture-options` — 2 or 3 structurally different architectures with diagram and trade-offs, recommending the simplest that meets the brief; you choose. Writes no `ARCHITECTURE.md`.
+- `/architecture-system` — `ARCHITECTURE.md` with ten sections, scaling stages with measurable triggers, and an ADR per real choice. Also moves to the next stage when a trigger is reached.
+- `/architecture-review` — compares code and infrastructure with `ARCHITECTURE.md` and the ADRs, with a checklist and the infrastructure lint. Reports findings with evidence; does not fix.
 - `/ui-ux-experiment` — 2 or 3 interfaces to compare. Does not implement all of them.
 - `/ui-ux` — builds the chosen interface with empty, error, loading, and success states, and verifies the flow. Follows `DESIGN.md` when it exists and runs the lint before delivering.
 - `/apple-design` — Apple-style interactive motion on the web: drag, swipe, sheets, springs, momentum, interruption, and reduced motion; also reviews interactions. Does not handle layout or screen states.
