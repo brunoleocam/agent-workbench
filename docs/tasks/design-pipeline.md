@@ -1321,6 +1321,61 @@ def test_design_acceptance_report_records_each_ac() -> None:
     assert not missing, missing
 ```
 
+### TASK-012: UI Kit gerado dos tokens (opcional, REQ-035)
+- Requirements: REQ-035
+- Acceptance: AC-031
+- Files: agent-system/scripts/build_kit.py, agent-system/tests/test_design_kit.py, skills/design-system/SKILL.md, skills/design-review/SKILL.md
+- Baseline: agent-system/scripts/build_kit.py=absent, agent-system/tests/test_design_kit.py=absent, skills/design-system/SKILL.md=present (TASK-007), skills/design-review/SKILL.md=present (TASK-008)
+- Out of scope: gerar kit a partir de Figma, Artifact ou imagem; regressão visual por screenshot; gerar componentes a partir do texto da seção 6 do DESIGN.md (a primeira versão usa um conjunto fixo de componentes que consome só variáveis de `tokens.css`).
+- Stop if: TASK-007 ou TASK-008 não estiverem `done`
+- Depends on: TASK-007, TASK-008
+- Verification: TEST-017
+- Done when: TEST-017 passa e a skill `design-review` cita o kit como fonte opcional de conferência
+- Gate: check_proofs TEST-017
+- Status: pending
+
+#### Passos
+
+1. Escrever `agent-system/tests/test_design_kit.py` com um teste que cria `design/tokens.css` de fixture, roda `build_kit.py` e confere AC-031. Ver que falha.
+2. Implementar `build_kit.py` em stdlib: lê `:root` de `tokens.css`, copia o bloco para um `<style>` inline, e gera `design/kit.html` com amostras que usam só `var(--...)`. Calcula contraste WCAG para cada par `-ink`. Ver o teste passar.
+3. Acrescentar ao `skills/design-system/SKILL.md` a etapa de rodar o gerador após gravar os tokens, e ao `skills/design-review/SKILL.md` a conferência contra o kit quando ele existir.
+4. Rodar `python -I agent-system/scripts/test_system.py test_design_kit_contract test_skills_follow_the_agent_skills_specification`.
+
+### TEST-017: UI Kit contrato
+- Acceptance: AC-031
+- Task: TASK-012
+- Command: ["python", "agent-system/scripts/test_system.py", "test_design_kit_contract", "test_skills_follow_the_agent_skills_specification"]
+- Expected: exit 0
+
+### TASK-013: Integrações de front-end opcionais (shadcn/ui, transitions.dev, React Bits; REQ-036 a REQ-038)
+- Requirements: REQ-036, REQ-037, REQ-038
+- Acceptance: AC-032, AC-033, AC-034
+- Files: skills/design/references/frontend-integrations.md, skills/design/references/CREDITS.md, skills/ui-ux/SKILL.md, skills/design-review/SKILL.md, agents/frontend-implementer.md, agent-system/tests/test_design_skills.py
+- Baseline: skills/design/references/frontend-integrations.md=absent, skills/design/references/CREDITS.md=present (TASK-006), skills/ui-ux/SKILL.md=present (TASK-009), skills/design-review/SKILL.md=present (TASK-008), agents/frontend-implementer.md=present (TASK-010), agent-system/tests/test_design_skills.py=present (TASK-010)
+- Out of scope: instalar shadcn/ui, transitions.dev ou React Bits como dependência do plugin; copiar código dos três para o repo; alterar o lint; frameworks que não sejam React (REQ-036 e REQ-038).
+- Stop if: TASK-010 não estiver `done`. Se a licença do transitions.dev ou do React Bits não puder ser lida na hora de copiar código, não copiar: vale o ramo sem cópia do AC-033.
+- Depends on: TASK-010
+- Verification: TEST-018
+- Done when: TEST-018 passa, a suíte inteira continua verde e a referência `frontend-integrations.md` descreve as três integrações como opcionais, com a condição de licença de cada uma
+- Gate: check_proofs TEST-018
+- Status: pending
+
+#### Passos
+
+1. Escrever em `agent-system/tests/test_design_skills.py` o teste `test_design_integrations_contract`: confere que `frontend-integrations.md` existe e cita `shadcn`, `transitions.dev`, `React Bits`, `LICENSE.md`, `var(--` e `lint_design.py`; que `ui-ux/SKILL.md` e `agents/frontend-implementer.md` apontam para essa referência e dizem para usar o componente do shadcn antes de criar o próprio; que `design-review/SKILL.md` confere o mapeamento de tema. Ver que falha.
+2. Criar `skills/design/references/frontend-integrations.md` com as três integrações marcadas como opcionais: tabela de mapeamento dos tokens para as variáveis do shadcn, regra "componente do shadcn antes de componente próprio", condição de licença do transitions.dev, condição de `LICENSE.md` e lint do React Bits.
+3. Acrescentar a `ui-ux/SKILL.md`, `design-review/SKILL.md` e `agents/frontend-implementer.md` um ponteiro curto para a referência, só quando o usuário optou por uma integração.
+4. Acrescentar a `CREDITS.md` a seção das três fontes com licença "a verificar" até a leitura ser registrada.
+5. Rodar `python -I agent-system/scripts/test_system.py test_design_integrations_contract test_skills_follow_the_agent_skills_specification`.
+
+### TEST-018: integrações de front-end opcionais
+- Acceptance: AC-032, AC-033, AC-034
+- Task: TASK-013
+- Command: ["python", "agent-system/scripts/test_system.py", "test_design_integrations_contract", "test_skills_follow_the_agent_skills_specification"]
+- Expected: exit 0. Prova a presença do contrato e dos ponteiros; o comportamento do agente em AC-032 a AC-034 é observado num ensaio manual, não pelo script.
+
+---
+
 ## Correções da revisão independente
 
 Revisão: [docs/reviews/design-pipeline.md](../reviews/design-pipeline.md) (FAIL em 2026-11-12). Corrigido depois dela, com teste que falhava antes:
