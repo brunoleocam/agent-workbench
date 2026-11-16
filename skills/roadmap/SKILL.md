@@ -5,7 +5,7 @@ description: Creates, shows, and updates the project roadmap in docs/progress/RO
 
 # Roadmap
 
-A single file: `docs/progress/ROADMAP.md`, at the project root. It applies only in a project with `.cursor/agent-system/state.json`. Without it, tell the user to run `/init-agent-system` and stop.
+A single file: `docs/progress/ROADMAP.md`, at the project root. It applies only in a project with `.agent-system/state.json`. Without it, tell the user to run `/init-agent-system` and stop.
 
 ## Format
 

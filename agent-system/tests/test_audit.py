@@ -87,7 +87,7 @@ def test_append_event_is_one_line_per_event_under_concurrency() -> None:
             item.start()
         for item in threads:
             item.join()
-        lines = (root / ".cursor" / "timeline" / "events.jsonl").read_text(encoding="utf-8").splitlines()
+        lines = (root / ".agent-system" / "timeline" / "events.jsonl").read_text(encoding="utf-8").splitlines()
         assert len(lines) == 200
         assert all(json.loads(line)["event"] == "X" for line in lines)
 
@@ -113,7 +113,7 @@ def test_file_lock_serializes_and_recovers_from_stale_lock() -> None:
 def test_duplicate_edit_filter_survives_corrupt_state_file() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
-        agg = root / ".cursor" / "agent-system" / "agg.json"
+        agg = root / ".agent-system" / "agg.json"
         agg.parent.mkdir(parents=True)
         agg.write_text("{not json", encoding="utf-8")
         assert lib.should_skip_duplicate_edit(root, "a.py") is False

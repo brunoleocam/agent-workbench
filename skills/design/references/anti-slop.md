@@ -6,7 +6,7 @@ Run the lint:
 
 ```bash
 python <plugin>/agent-system/scripts/lint_design.py <path>             # plugin copy
-python .cursor/agent-system/scripts/lint_design.py <path>              # project after the init
+python .agent-system/scripts/lint_design.py <path>              # project after the init
 ```
 
 Options: `--design DESIGN.md`, `--tokens design/tokens.css` (both read by default when present), `--format json`. Exit 0 without P0, 1 with a P0, 2 on a usage error. A color declared in the tokens (a `--name: value` custom property) or in the `## 2. Cor` section of `DESIGN.md` is the brand, not a finding. Colors mentioned anywhere else, including the forbidden list in section 9, are not allowed by that mention.

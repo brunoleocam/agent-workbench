@@ -220,7 +220,7 @@ Check the installed version in `.cursor-plugin/plugin.json` (`version` field) an
 
 2. Reload the Cursor window using `Developer: Reload Window`. Rules, skills, subagents, and hooks are loaded from the plugin, so they are updated right away.
 
-3. In each project you initialized, run `/init-agent-system` again. It refreshes the managed scripts in `.cursor/agent-system/scripts/` and adds new state keys, while keeping the existing state, timeline, roadmap, documentation, and hooks.
+3. In each project you initialized, run `/init-agent-system` again. It refreshes the managed scripts in `.agent-system/scripts/` and adds new state keys, while keeping the existing state, timeline, roadmap, documentation, and hooks. A project initialized before the state moved out of `.cursor/` has its `.cursor/agent-system/` and `.cursor/timeline/` moved to `.agent-system/` on that run.
 
 For projects prepared with `--for-cloud`, existing rule and subagent copies are never overwritten. To refresh them, delete the copies that came from the plugin (rules `00` to `08` and the subagents) and run `/init-agent-system` with `--for-cloud` again.
 
@@ -241,7 +241,7 @@ For projects prepared with `--for-cloud`, existing rule and subagent copies are 
 
 - Rules: only rules `00` to `08` reach Claude Code, through `CLAUDE.md`. `economia-de-tokens`, `mcp-triagem-obrigatoria`, and `uso-ferramentas-mcp` are Cursor-only.
 - Hooks: Claude Code runs `hooks/claude-hooks.json`, which feeds the same timeline as the Cursor hooks.
-- State: projects keep their state in `.cursor/agent-system/` and `.cursor/timeline/` in both editors, so a project initialized in one editor continues in the other.
+- State: projects keep their state in `.agent-system/` and `.agent-system/timeline/` in both editors, so a project initialized in one editor continues in the other.
 - `--for-cloud` and `/roadmap visual` (Canvas) are Cursor-only.
 
 New in 0.5.0: the workflow is a declared graph (`workflow.json`) with a router (`next_step.py`) that stops on your decisions and escalates after 3 failed gates; validator verdicts leave a decision trace (`timeline_view.py --feature`); `metrics.py` reports time, tokens, and revisions per agent and feature; lessons can be promoted to a global store shared by your projects; and the UI/UX design pipeline (`/design`, three design agents, and the anti-slop lint) and the plan drift check (`check_drift.py`) arrived. Run `/init-agent-system` again in each project to get the new scripts, `workflow.json`, and the `revisions` state key.

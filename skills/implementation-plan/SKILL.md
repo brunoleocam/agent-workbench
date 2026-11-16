@@ -39,7 +39,7 @@ File header: goal in one sentence, approach, the stack already used in the repo,
 For M or larger, each task is a `### TASK-NNN` with `- Requirements:`, `- Acceptance:`, `- Files:`, `- Depends on:`, `- Verification:` (TEST IDs), `- Done when:`, `- Gate:`, `- Status:`, and, recommended, `- Out of scope:` and `- Stop if:`; each verification is a `### TEST-NNN` with `- Acceptance:`, `- Task:`, and a `- Command:` executable without a shell. Format in `agent-system/docs/artifacts.md`. Run `validate_tasks.py --feature <slug>` before delivering the plan, then stamp it against the code it was written for:
 
 ```bash
-python .cursor/agent-system/scripts/check_drift.py --feature <slug> --stamp
+python .agent-system/scripts/check_drift.py --feature <slug> --stamp
 ```
 
 This adds a `- Baseline:` line (short content digests of each task's `Files:`) to every todo task. An executor runs `check_drift.py --feature <slug> --task TASK-NNN --strict` before touching anything and stops when it exits 1: someone changed those files after the plan was written. A change made by another task of the same plan that is done or in progress is expected and does not stop the executor. After an intentional re-plan, `--stamp --refresh` records the new baseline. The per-file stamp is adapted from [shadcn/improve](https://github.com/shadcn/improve) (MIT), which stamps a git commit into each plan.

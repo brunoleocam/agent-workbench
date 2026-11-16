@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from lib import BASE_DIR, roadmap_summary  # noqa: E402
+from lib import BASE_DIR, roadmap_summary, system_dir  # noqa: E402
 
 
 def list_md(folder: Path) -> list[str]:
@@ -29,8 +29,8 @@ def main() -> int:
     parser.add_argument("--root", default=".")
     args = parser.parse_args()
     root = Path(args.root).resolve()
-    state_file = root / ".cursor" / "agent-system" / "state.json"
-    registry_file = root / ".cursor" / "agent-system" / "agents.json"
+    state_file = system_dir(root) / "state.json"
+    registry_file = system_dir(root) / "agents.json"
     user_registry = BASE_DIR / "agent-system" / "agents.json"
     registry = {}
     if registry_file.exists():

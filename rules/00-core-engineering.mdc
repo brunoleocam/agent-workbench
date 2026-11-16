@@ -26,5 +26,5 @@ Reading, terminal, and response size: rule `economia-de-tokens` (Cursor only).
 - Use a lean reporter from the test runner (e.g. `vitest run --reporter=dot`, `dotnet test -v q`).
 - Delegate to a subagent (`explore`, `tester`, `debugger`) only work that reads a lot and returns little: broad exploration, log investigation, a test suite with long output. In the prompt, ask for a short answer with findings, paths, and lines. Edit files you already read directly.
 - When an M or larger task is done, update `docs/progress/CURRENT.md` (rule `06`) and suggest the user continue in a new chat from it.
-- A project without `.cursor/agent-system/state.json` gets no empty docs and no timeline. Installation is `/init-agent-system`.
-- If `.cursor/agent-system/layout.json` exists, new ADRs, PRDs, and specs go to those paths. Do not move the documents the init found.
+- A project without `.agent-system/state.json` gets no empty docs and no timeline. Installation is `/init-agent-system`.
+- If `.agent-system/layout.json` exists, new ADRs, PRDs, and specs go to those paths. Do not move the documents the init found.

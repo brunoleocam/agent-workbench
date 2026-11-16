@@ -116,13 +116,13 @@ def test_workflows() -> None:
         assert "init-agent-system" in report["global_skills"]
         assert (project / "product" / "PDR.md").exists()
         assert not (project / "docs" / "product" / "PRD.md").exists()
-        layout = json.loads((project / ".cursor" / "agent-system" / "layout.json").read_text(encoding="utf-8"))
+        layout = json.loads((project / ".agent-system" / "layout.json").read_text(encoding="utf-8"))
         assert "product/PDR.md" in layout["prd"]
         assert "decisions" in layout["adr_dirs"]
         assert "decisions/0001-auth.md" in layout["adr_files"]
         assert "node" in layout["stack"]
         assert report["layout"]["adr_files"] == 1
-        suggestions = (project / ".cursor" / "agent-system" / "SUGGESTIONS.md").read_text(encoding="utf-8")
+        suggestions = (project / ".agent-system" / "SUGGESTIONS.md").read_text(encoding="utf-8")
         assert "frontend-reviewer" in suggestions
         assert "no tests found" in suggestions
         assert not (project / ".cursor" / "agents" / "frontend-reviewer.md").exists()
@@ -142,7 +142,7 @@ def test_workflows() -> None:
             "## Fase 1\n- [x] TASK-001 Modelo\n\n## Fase 2\n- [~] TASK-008 Reserva\n- [!] TASK-009 Pagamento\n- [ ] TASK-010 Webhook\n",
             encoding="utf-8",
         )
-        project_hook = project / ".cursor" / "agent-system" / "scripts" / "hook.py"
+        project_hook = project / ".agent-system" / "scripts" / "hook.py"
         started = hook_at(
             project_hook,
             {
@@ -213,14 +213,14 @@ def test_workflows() -> None:
             recorded = run("record_event.py", args)
             assert recorded.returncode == 0, recorded.stderr
 
-        lines = (project / ".cursor" / "timeline" / "events.jsonl").read_text(encoding="utf-8")
+        lines = (project / ".agent-system" / "timeline" / "events.jsonl").read_text(encoding="utf-8")
         assert "super-secret-value" not in lines
         assert "API_KEY" not in lines
         assert "[redacted-path]" in lines
         assert "SPEC_CREATED" in lines
         assert "CHANGE_REQUEST_CREATED" in lines
         assert "TEST_FAILED" in lines
-        state = json.loads((project / ".cursor" / "agent-system" / "state.json").read_text(encoding="utf-8"))
+        state = json.loads((project / ".agent-system" / "state.json").read_text(encoding="utf-8"))
         assert "TASK-021" in state["blocked_tasks"]
         assert state["next_step"].startswith("Next:")
 
@@ -229,7 +229,7 @@ def test_workflows() -> None:
         assert "orchestrator" in status.stdout
         view = run("timeline_view.py", ["--root", str(project), "--write-md"])
         assert view.returncode == 0
-        assert (project / ".cursor" / "timeline" / "TIMELINE.md").exists()
+        assert (project / ".agent-system" / "timeline" / "TIMELINE.md").exists()
 
         conflict = run("create_agent.py", ["check", "--name", "orchestrator"])
         assert conflict.returncode == 2

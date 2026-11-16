@@ -324,7 +324,7 @@ def test_infra_hook_reports_without_blocking() -> None:
             cursor = {"hook_event_name": "afterFileEdit", "workspace_roots": [str(root)], "file_path": str(path)}
             done = subprocess.run([PYTHON, str(SCRIPTS / "hook.py")], input=json.dumps(cursor), text=True, capture_output=True, check=False, timeout=20)
             assert done.returncode == 0 and json.loads(done.stdout) == {}, done.stdout
-        timeline = (root / ".cursor" / "timeline" / "events.jsonl").read_text(encoding="utf-8")
+        timeline = (root / ".agent-system" / "timeline" / "events.jsonl").read_text(encoding="utf-8")
         assert timeline.count('"INFRA_LINT"') == 2, timeline
         assert "sk-test-abc123" not in timeline and "python:latest" not in timeline
 

@@ -24,7 +24,7 @@ def claude_hook(payload: dict, project_dir: Path) -> dict:
 
 
 def events(root: Path) -> list[dict]:
-    return [json.loads(line) for line in (root / ".cursor" / "timeline" / "events.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [json.loads(line) for line in (root / ".agent-system" / "timeline" / "events.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
 def transcript_line(message_id: str, inp: int, out: int, text: str) -> str:
@@ -50,7 +50,7 @@ def test_hook_records_subagent_tokens_only_as_numbers() -> None:
         assert reply == {}
         stopped = [item for item in events(root) if item["event"] == "SUBAGENT_STOPPED"][-1]
         assert stopped["tokens"] == {"input": 120, "output": 70, "cache_read": 200, "cache_creation": 20}
-        raw = (root / ".cursor" / "timeline" / "events.jsonl").read_text(encoding="utf-8")
+        raw = (root / ".agent-system" / "timeline" / "events.jsonl").read_text(encoding="utf-8")
         assert "SECRET-ANSWER" not in raw and "hunter2" not in raw and "agent-1.jsonl" not in raw
 
         # Outside a subagents/ folder, missing, or with no usage: no tokens, and the hook still succeeds.
@@ -97,7 +97,7 @@ def test_report_per_agent_and_feature_is_read_only() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         opt_in(root)
-        write(root, ".cursor/timeline/events.jsonl", timeline(with_tokens=False))
+        write(root, ".agent-system/timeline/events.jsonl", timeline(with_tokens=False))
         before = digest(root)
         data = report(root)
         implementer = data["agents"]["implementer"]
@@ -124,7 +124,7 @@ def test_report_sums_tokens_when_present() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         opt_in(root)
-        write(root, ".cursor/timeline/events.jsonl", timeline(with_tokens=True))
+        write(root, ".agent-system/timeline/events.jsonl", timeline(with_tokens=True))
         data = report(root)
         assert data["tokens"] == "available"
         assert data["agents"]["implementer"]["tokens"] == {"input": 1500, "output": 300, "cache_read": 50, "cache_creation": 5, "total": 1855}

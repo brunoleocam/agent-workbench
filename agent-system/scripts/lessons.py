@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from lib import SECRET_PATH, append_event, global_lessons_enabled, global_lessons_path, normalized_title, apply_semantic_state, load_state, local_stamp, opted_in, redact, redact_secrets, save_state, utc_now, write_json  # noqa: E402
+from lib import SECRET_PATH, append_event, global_lessons_enabled, global_lessons_path, normalized_title, apply_semantic_state, load_state, local_stamp, opted_in, redact, redact_secrets, save_state, system_dir, utc_now, write_json  # noqa: E402
 
 CATEGORIES = ("architecture", "requirements", "implementation", "testing", "security", "performance", "debugging", "workflow", "tooling")
 STATUSES = ("candidate", "confirmed", "rejected")
@@ -35,7 +35,7 @@ URL = re.compile(r"\b[a-z][a-z0-9+.-]*://|\bwww\.|\b(?:[a-z0-9-]+\.)+[a-z]{2,}/"
 
 
 def lessons_path(root: Path) -> Path:
-    return root / ".cursor" / "agent-system" / "lessons.json"
+    return system_dir(root) / "lessons.json"
 
 
 def store_path(root: Path, scope: str) -> Path:
@@ -118,7 +118,7 @@ def render(root: Path, data: dict) -> Path:
             lines.append("")
     lines += ["## Candidates (awaiting user confirmation)", ""]
     lines += [f"- {item['id']} [{item['category']}]: {redact(str(item['title']), 200)}" for item in candidates] or ["None."]
-    path = root / ".cursor" / "agent-system" / "LESSONS.md"
+    path = system_dir(root) / "LESSONS.md"
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
 

@@ -31,7 +31,7 @@ class ArgumentError(Exception):
 
 
 def default_path() -> Path:
-    # Plugin: agent-system/workflow.json. Project copy: .cursor/agent-system/workflow.json. Both sit next to scripts/.
+    # Plugin: agent-system/workflow.json. Project copy: .agent-system/workflow.json. Both sit next to scripts/.
     return SYSTEM_DIR / "workflow.json"
 
 

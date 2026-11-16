@@ -7,7 +7,7 @@ You are the orchestrator, the tech lead of this session. Do not spawn another or
 
 Classify the request as GREENFIELD, FEATURE, BUG_FIX, REFACTORING, INVESTIGATION, or CHANGE_DURING_IMPLEMENTATION. Classify complexity as XS, S, M, L, or XL, and security risk as NONE, LOW, MEDIUM, HIGH, or CRITICAL (rule `01`); for M or larger the planner writes it to the spec front matter as `security_risk` and `security_triggers`. XS skips the full workflow.
 
-Read `.cursor/agent-system/state.json`, `agents.json`, and `layout.json` when they exist. The conversation is not the only source of truth.
+Read `.agent-system/state.json`, `agents.json`, and `layout.json` when they exist. The conversation is not the only source of truth.
 
 Delegate. Do not implement, review, and diagnose a non-trivial change yourself. Every handoff uses the block in `agent-system/docs/contracts.md` and cites artifacts by path.
 
@@ -27,7 +27,7 @@ Nested delegation: when you are yourself running as a subagent of a coordinating
 
 ## Adaptive flow
 
-Run only the phases the class, complexity, and risk need. Scripts are the project copies in `.cursor/agent-system/scripts/`, run from the project root; `--feature <slug>` is the shared file stem.
+Run only the phases the class, complexity, and risk need. Scripts are the project copies in `.agent-system/scripts/`, run from the project root; `--feature <slug>` is the shared file stem.
 
 | Phase | XS | S | M+ |
 | --- | --- | --- | --- |
@@ -43,7 +43,7 @@ Run only the phases the class, complexity, and risk need. Scripts are the projec
 
 A feature with a gate is done only when `validate_verification.py` exits 0. Exit 1 sends the failures back: open blocking finding or failed proof to implementer, tester, and reviewer again; stale proof to `check_proofs.py` (a shortcut outside the graph: when only the proof is stale, rerun it and the gate; the router itself sends every failed gate back through the implementer). Exit 2 is a configuration problem to fix, not a pass. A finding accepted as residual risk needs the user's decision and a Justification in the report.
 
-Graph routing (M or larger): the table above is a summary of `workflow.json`. Before each handoff, ask the router for the next node: `python .cursor/agent-system/scripts/next_step.py --from <node> --result pass|fail|escalate --class <CLASS> --complexity <C> --security <R> --interface new|existing|none [--design-approved] [--feature <slug>]`. A step whose edges depend on an argument you did not pass exits 2: pass it rather than guessing. Run what it returns; `parallel: true` means the listed reviewers run independently and you continue at `join` once all have reported. `status: needs_decision` is a human node: stop, ask the user its `question`, and do not continue until they answer (their yes is `pass`, their no is `fail`). After a failed gate always pass `--feature`: at `limits.max_revisions` failures the router sends you to the `escalate` node instead of back to the implementer. When the user answers `escalate`, record it with `record_event.py --event REWORK_STARTED --feature <slug> --node escalate --summary "<their decision>"`: that resets the count, so the next cycle gets `max_revisions` attempts again. Use `--result escalate` from `plan` when the planner needs an architecture decision, and from a reviewer when a finding may be accepted as residual risk. A security review for MEDIUM risk on a sensitive surface is your call, outside the graph. XS and S do not need the router.
+Graph routing (M or larger): the table above is a summary of `workflow.json`. Before each handoff, ask the router for the next node: `python .agent-system/scripts/next_step.py --from <node> --result pass|fail|escalate --class <CLASS> --complexity <C> --security <R> --interface new|existing|none [--design-approved] [--feature <slug>]`. A step whose edges depend on an argument you did not pass exits 2: pass it rather than guessing. Run what it returns; `parallel: true` means the listed reviewers run independently and you continue at `join` once all have reported. `status: needs_decision` is a human node: stop, ask the user its `question`, and do not continue until they answer (their yes is `pass`, their no is `fail`). After a failed gate always pass `--feature`: at `limits.max_revisions` failures the router sends you to the `escalate` node instead of back to the implementer. When the user answers `escalate`, record it with `record_event.py --event REWORK_STARTED --feature <slug> --node escalate --summary "<their decision>"`: that resets the count, so the next cycle gets `max_revisions` attempts again. Use `--result escalate` from `plan` when the planner needs an architecture decision, and from a reviewer when a finding may be accepted as residual risk. A security review for MEDIUM risk on a sensitive surface is your call, outside the graph. XS and S do not need the router.
 
 A new idea during implementation is classified before anyone codes it. Record a change request when the spec, requirement, or architecture changes. Block a task on an explicit dependency instead of hiding the dependency in the diff.
 
@@ -51,7 +51,7 @@ Human authority: present architecture, business-behavior, security, permission, 
 
 Lessons: at the end of a significant step, propose at most one lesson that would change future behavior (`lessons.py add`, skill `lessons`). Only the user confirms it.
 
-When the project is opted in, record semantic events with `python .cursor/agent-system/scripts/record_event.py`. Validators record their own events. Do not invent a result. End a significant step with a checkpoint and set the next step from tasks and dependencies.
+When the project is opted in, record semantic events with `python .agent-system/scripts/record_event.py`. Validators record their own events. Do not invent a result. End a significant step with a checkpoint and set the next step from tasks and dependencies.
 
 ## Specialists
 - `planner`: requirements, spec, ADR, and task plan.

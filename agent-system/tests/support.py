@@ -33,7 +33,7 @@ def write(root: Path, relative: str, text: str) -> Path:
 
 
 def opt_in(root: Path) -> None:
-    write(root, ".cursor/agent-system/state.json", json.dumps({"version": 1, "active_agent": "orchestrator", "phase": "idle"}))
+    write(root, ".agent-system/state.json", json.dumps({"version": 1, "active_agent": "orchestrator", "phase": "idle"}))
 
 
 def py_command(code: str) -> str:

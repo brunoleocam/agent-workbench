@@ -74,7 +74,7 @@ def test_validate_architecture_reads_the_adr_folder_from_layout() -> None:
         (root / "docs" / "architecture" / "ADR" / "0001-postgres.md").rename(root / "0001-postgres.md")
         assert check(root)[0] == 1
         write(root, "decisions/0001-postgres.md", (root / "0001-postgres.md").read_text(encoding="utf-8"))
-        write(root, ".cursor/agent-system/layout.json", json.dumps({"overrides": {"adr_dir": "decisions"}}))
+        write(root, ".agent-system/layout.json", json.dumps({"overrides": {"adr_dir": "decisions"}}))
         code, report, _ = check(root)
         assert code == 0, report
 

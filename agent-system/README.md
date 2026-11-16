@@ -143,7 +143,7 @@ EARS is recommended for behavioral requirements; a technical requirement can be 
 
 Common exit codes: `0` ok, `1` gate failed, `2` configuration. `--json` and `--strict` on all.
 
-A proof does not require a commit. The fingerprint (the content of each project file, excluding `.cursor/` and the Markdown of the doc folders; it does not depend on HEAD) says whether the code changed after the test, and stays the same after committing the same content. `check_proofs.py` runs without a shell, only allowed executables, refuses known install and publish subcommands (best effort, by name; not a sandbox), refuses inline code on a best-effort basis (`python -c`, `node -e`, also behind `uv run` and similar), and terminates the process tree on timeout. A TEST points to the runner or to a project test file. Proofs live in `.cursor/agent-system/proofs/`, are local, and must not be versioned.
+A proof does not require a commit. The fingerprint (the content of each project file, excluding `.cursor/`, `.agent-system/`, and the Markdown of the doc folders; it does not depend on HEAD) says whether the code changed after the test, and stays the same after committing the same content. `check_proofs.py` runs without a shell, only allowed executables, refuses known install and publish subcommands (best effort, by name; not a sandbox), refuses inline code on a best-effort basis (`python -c`, `node -e`, also behind `uv run` and similar), and terminates the process tree on timeout. A TEST points to the runner or to a project test file. Proofs live in `.agent-system/proofs/`, are local, and must not be versioned.
 
 ## Security
 
@@ -154,7 +154,7 @@ A proof does not require a commit. The fingerprint (the content of each project 
 
 ## Lessons learned
 
-`lessons.py` writes to `.cursor/agent-system/lessons.json` (source of truth) and generates `LESSONS.md`. Agents propose (`candidate`); only the user confirms or rejects. Session start injects up to five confirmed titles; the rest is loaded by category (`list --status confirmed --category X`). Text that looks like a secret and duplicates are refused.
+`lessons.py` writes to `.agent-system/lessons.json` (source of truth) and generates `LESSONS.md`. Agents propose (`candidate`); only the user confirms or rejects. Session start injects up to five confirmed titles; the rest is loaded by category (`list --status confirmed --category X`). Text that looks like a secret and duplicates are refused.
 
 Global lessons: `lessons.py promote --id LESSON-NNN` copies a confirmed project lesson to `$AGENT_WORKBENCH_HOME/lessons.json` (default `~/.agent-workbench/`), created on first use; `add`, `list`, `confirm`, and `reject` take `--scope global`. Promotion and global confirmation are user decisions and refuse a text with the project's path or folder name, any absolute path, a URL, or a secret; the copy keeps no evidence or origin. Session start adds up to three global titles after the project's, skipping any with the same normalized title as a project lesson. `"global_lessons": false` in `layout.json` (kept across inits) turns the global store off for that project.
 
@@ -171,8 +171,8 @@ Deferred in this version, for lack of a concrete consumer: aggregate timeline me
 ## What is automatic
 
 - Rules, skills, and subagents come in through the plugin.
-- Plugin hooks run in every workspace, but write nothing if the project has no `.cursor/agent-system/state.json`.
-- In an initialized project, the hooks write to `.cursor/timeline/events.jsonl`: session, subagent, file edit (no content), tool failure, a test recognized in the shell (marked `inferred: true`), and the size of the agent's response. Events are appended under a file lock so parallel subagents do not interleave lines.
+- Plugin hooks run in every workspace, but write nothing if the project has no `.agent-system/state.json`.
+- In an initialized project, the hooks write to `.agent-system/timeline/events.jsonl`: session, subagent, file edit (no content), tool failure, a test recognized in the shell (marked `inferred: true`), and the size of the agent's response. Events are appended under a file lock so parallel subagents do not interleave lines.
 - `sessionStart` injects the active task, the next step, the roadmap line, and the confirmed lessons.
 - The validators write their own events and update `state.json → verification.<slug>`.
 
@@ -190,7 +190,7 @@ Deferred in this version, for lack of a concrete consumer: aggregate timeline me
 
 `workspaceOpen` does not install the system and does not change an existing project.
 
-`/init-agent-system` copies the scripts and a `hooks.json` to the project, preserving hooks that already existed (backup in `hooks.json.bak-agent-system`). A local script without the `agent-system-managed` mark that differs from the plugin's is preserved. An existing `state.json` only gains new keys. `overrides` and `proof_allow` in `layout.json` survive a new init. Rules and subagents are not copied, because the plugin already loads them. Cloud Agents do not load the plugin: for them, `--for-cloud` copies rules `00` to `08` and the subagents. Under Claude Code, `--claude` skips `.cursor/hooks.json` and writes the condensed rules into a managed block of `CLAUDE.md`.
+`/init-agent-system` copies the scripts and a `hooks.json` to the project, preserving hooks that already existed (backup in `hooks.json.bak-agent-system`). A local script without the `agent-system-managed` mark that differs from the plugin's is preserved. An existing `state.json` only gains new keys. `overrides` and `proof_allow` in `layout.json` survive a new init. Rules and subagents are not copied, because the plugin already loads them. Cloud Agents do not load the plugin: for them, `--for-cloud` copies rules `00` to `08` and the subagents. Under Claude Code, `--claude` creates no `.cursor/` folder and writes the condensed rules into a managed block of `CLAUDE.md`. The state, scripts, and timeline live in `.agent-system/` under both editors; an init over an older install moves `.cursor/agent-system/` and `.cursor/timeline/` there and rewrites the Cursor hook commands.
 
 ## Agents
 
@@ -214,7 +214,7 @@ Skills with `disable-model-invocation: true` are explicit commands: `/init-agent
 
 ## State
 
-`.cursor/agent-system/state.json` holds the phase, active task, active agent, blocked tasks, open CRs, review, next step, and each gate's result per feature (`verification`). It survives the end of the conversation.
+`.agent-system/state.json` holds the phase, active task, active agent, blocked tasks, open CRs, review, next step, and each gate's result per feature (`verification`). It survives the end of the conversation.
 
 ## Roadmap
 
@@ -222,7 +222,7 @@ Skills with `disable-model-invocation: true` are explicit commands: `/init-agent
 
 ## Timeline
 
-`.cursor/timeline/events.jsonl` is append-only and is the source of truth. Verdicts are also a decision trace: each validator event records the graph node, the artifact paths it read, and the workspace fingerprint, so `timeline_view.py --feature <slug>` shows what each decision was based on and where the code changed between decisions. `/timeline` generates `TIMELINE.md`. Repeated edits to the same file within 20 seconds become a single `FILE_EDIT`. Passwords, tokens (including `--token value`, known prefixes, and credentials in a URL), and file contents are not written. A `.env` or private-key path becomes `[redacted-path]`.
+`.agent-system/timeline/events.jsonl` is append-only and is the source of truth. Verdicts are also a decision trace: each validator event records the graph node, the artifact paths it read, and the workspace fingerprint, so `timeline_view.py --feature <slug>` shows what each decision was based on and where the code changed between decisions. `/timeline` generates `TIMELINE.md`. Repeated edits to the same file within 20 seconds become a single `FILE_EDIT`. Passwords, tokens (including `--token value`, known prefixes, and credentials in a URL), and file contents are not written. A `.env` or private-key path becomes `[redacted-path]`.
 
 ## A project already under way
 

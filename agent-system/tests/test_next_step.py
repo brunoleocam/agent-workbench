@@ -102,7 +102,7 @@ def test_gate_failures_escalate_at_the_limit() -> None:
         for expected in (1, 2):
             done = run("validate_verification.py", ["--root", str(root), "--feature", "reset"])
             assert done.returncode == 1, done.stdout
-            state = json.loads((root / ".cursor" / "agent-system" / "state.json").read_text(encoding="utf-8"))
+            state = json.loads((root / ".agent-system" / "state.json").read_text(encoding="utf-8"))
             assert state["revisions"]["reset"] == expected
         code, data = route(*gate, root=root)
         assert code == 0 and data["next"] == ["implement"], data
@@ -113,7 +113,7 @@ def test_gate_failures_escalate_at_the_limit() -> None:
         assert data["status"] == "needs_decision" and data["result"] == "escalate"
         assert any("revisions 3 >= max_revisions 3" in reason for reason in data["reason"])
 
-        state_path = root / ".cursor" / "agent-system" / "state.json"
+        state_path = root / ".agent-system" / "state.json"
         state = json.loads(state_path.read_text(encoding="utf-8"))
         assert state["phase"] == "verification"
         # Manual events cannot move the counter: only validate_verification.py records the gate node.
@@ -144,13 +144,13 @@ def test_the_limit_comes_from_the_graph() -> None:
     with tempfile.TemporaryDirectory() as raw:
         tmp = Path(raw)
         root = tmp / "project"
-        write(root, ".cursor/agent-system/state.json", json.dumps({"revisions": {"f": 1}}))
+        write(root, ".agent-system/state.json", json.dumps({"revisions": {"f": 1}}))
         gate = ["--from", "gate", "--result", "fail", "--feature", "f", "--interface", "none"]
         code, data = route(*gate, "--workflow", str(custom_limit(tmp / "one", {"max_revisions": 1})), root=root)
         assert data["next"] == ["escalate"], data
         default = custom_limit(tmp / "default", None)
         assert route(*gate, "--workflow", str(default), root=root)[1]["next"] == ["implement"]
-        write(root, ".cursor/agent-system/state.json", json.dumps({"revisions": {"f": 3}}))
+        write(root, ".agent-system/state.json", json.dumps({"revisions": {"f": 3}}))
         assert route(*gate, "--workflow", str(default), root=root)[1]["next"] == ["escalate"]
 
 

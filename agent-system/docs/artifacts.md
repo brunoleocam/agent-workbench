@@ -16,7 +16,7 @@ Keys (Portuguese aliases such as `Requisitos`, `Critérios`, `Dependências`, an
 
 ## Where each file lives
 
-One slug per feature, the same in every folder. The folders come from `.cursor/agent-system/layout.json`: first `overrides`, then what the init discovered, then the default.
+One slug per feature, the same in every folder. The folders come from `.agent-system/layout.json`: first `overrides`, then what the init discovered, then the default.
 
 | Artifact | Layout key | Default |
 | --- | --- | --- |
@@ -26,7 +26,7 @@ One slug per feature, the same in every folder. The folders come from `.cursor/a
 | Review | `reviews_dir` | `docs/reviews/<slug>.md` |
 | Security | `security_dir` | `docs/security/<slug>.md` |
 | ADR | `adr_dir` | `docs/architecture/ADR/` |
-| Proofs | fixed | `.cursor/agent-system/proofs/<slug>.json` and `.md` |
+| Proofs | fixed | `.agent-system/proofs/<slug>.json` and `.md` |
 
 Override example, preserved when the init runs again:
 

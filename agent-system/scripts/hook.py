@@ -30,6 +30,7 @@ from lib import (  # noqa: E402
     safe_files,
     save_state,
     should_skip_duplicate_edit,
+    system_dir,
     workspace_roots,
 )
 
@@ -198,7 +199,7 @@ def targets(payload: dict) -> list[Path]:
     for root in workspace_roots(payload):
         if not opted_in(root):
             continue
-        project_script = (root / ".cursor" / "agent-system" / "scripts" / "hook.py").resolve()
+        project_script = (system_dir(root) / "scripts" / "hook.py").resolve()
         # .cursor/hooks.json only routes Cursor events; under Claude Code the plugin hook is the only one.
         if payload.get("host") != "claude" and project_owns_hook(root) and script != project_script:
             continue

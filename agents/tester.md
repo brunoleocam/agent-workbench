@@ -14,7 +14,7 @@ Prefer Red, then Green, then Refactor when the behavior is new or a bug is being
 
 Choose the smallest useful level: unit, integration, contract, end-to-end, acceptance, property-based, or an eval when the behavior is model-dependent. A traditional unit test is not enough for probabilistic AI behavior.
 
-When the feature has TEST definitions, run them through `python .cursor/agent-system/scripts/check_proofs.py --feature <slug>` (or `--task`, `--only`). That is the only source of a real exit code; the shell hook only infers. Do not install dependencies to make a check run. A TEST Command calls the project's runner or a versioned test file, never inline code (`python -c`, `node -e`); do not pass `--allow-inline` or `--allow-shell` without the user's authorization.
+When the feature has TEST definitions, run them through `python .agent-system/scripts/check_proofs.py --feature <slug>` (or `--task`, `--only`). That is the only source of a real exit code; the shell hook only infers. Do not install dependencies to make a check run. A TEST Command calls the project's runner or a versioned test file, never inline code (`python -c`, `node -e`); do not pass `--allow-inline` or `--allow-shell` without the user's authorization.
 
 Separate an application failure, a bad test, and an environment problem (ERROR, TIMEOUT, REFUSED). Say which one the evidence supports.
 

@@ -15,13 +15,13 @@ Not to be confused with Cursor's built-in subagent called `security-review`: tha
 ## Procedure
 
 1. Scope. Feature: use the spec slug (`docs/specs/<slug>.md`). No feature given: the whole repository.
-2. Start event, only if `.cursor/agent-system/state.json` exists:
+2. Start event, only if `.agent-system/state.json` exists:
 
    ```bash
-   python .cursor/agent-system/scripts/record_event.py --event SECURITY_REVIEW_STARTED --summary "<scope>" --agent security-reviewer
+   python .agent-system/scripts/record_event.py --event SECURITY_REVIEW_STARTED --summary "<scope>" --agent security-reviewer
    ```
 
-3. Stack and architecture. Read `.cursor/agent-system/layout.json` (`frameworks`, `security_references`) when it exists; otherwise the manifests. Map inputs, layers, storage, and integrations.
+3. Stack and architecture. Read `.agent-system/layout.json` (`frameworks`, `security_references`) when it exists; otherwise the manifests. Map inputs, layers, storage, and integrations.
 4. Attack surfaces: authentication, authorization, session, upload, payment, webhooks, admin, public APIs, calls to external URLs, deserialization, command execution, secrets, and production configuration.
 5. Load only the stack's references from `../security-best-practices/references/`. Never all of them.
 6. Analyze the surfaces' code. Follow the data from the input to the sensitive point. Also record the controls that already exist.
@@ -30,15 +30,15 @@ Not to be confused with Cursor's built-in subagent called `security-review`: tha
 9. Fingerprint of the reviewed state:
 
    ```bash
-   python .cursor/agent-system/scripts/check_proofs.py --root . --fingerprint
+   python .agent-system/scripts/check_proofs.py --root . --fingerprint
    ```
 
    Without the script (project not initialized), leave the fingerprint blank and say in the Executive Summary that the report is not tied to a code state. HEAD alone does not work: it ignores modified files.
 10. Write the report (see Output) and recommend next steps.
-11. End event, only if `.cursor/agent-system/state.json` exists:
+11. End event, only if `.agent-system/state.json` exists:
 
     ```bash
-    python .cursor/agent-system/scripts/record_event.py --event SECURITY_REVIEW_COMPLETED --result "<STATUS> findings=<N>" --agent security-reviewer
+    python .agent-system/scripts/record_event.py --event SECURITY_REVIEW_COMPLETED --result "<STATUS> findings=<N>" --agent security-reviewer
     ```
 
 ## Refutation pass
@@ -58,7 +58,7 @@ A refuter that disagrees with the original rating changes the finding; it does n
 
 ## Output
 
-Directory: `overrides.security_dir` or `security_dir` from `.cursor/agent-system/layout.json`; default `docs/security`.
+Directory: `overrides.security_dir` or `security_dir` from `.agent-system/layout.json`; default `docs/security`.
 
 - Feature: `<security_dir>/<slug>.md`
 - Repository: `<security_dir>/security_assessment.md`

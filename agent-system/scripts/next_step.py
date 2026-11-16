@@ -14,12 +14,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import workflow  # noqa: E402
-from lib import read_json  # noqa: E402
+from lib import read_json, system_dir  # noqa: E402
 
 
 def revision_count(root: Path, feature: str) -> int:
     try:
-        state = read_json(root / ".cursor" / "agent-system" / "state.json", {})
+        state = read_json(system_dir(root) / "state.json", {})
     except (OSError, json.JSONDecodeError):
         return 0
     revisions = state.get("revisions") if isinstance(state, dict) else None

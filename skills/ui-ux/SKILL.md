@@ -16,7 +16,7 @@ Builds the interface already chosen. If alternatives are still open, use `ui-ux-
 4. Cover the empty, loading, error, and success states. Each with the user's next step. Write the text following the microcopy rules in `skills/design/references/microcopy.md` of the plugin.
 5. Controls with an accessible name, keyboard focus, and readable contrast.
 6. Implement from the spec or the plan. Follow `tdd` where the interface logic is testable. Drag, swipe, sheets, and spring animation follow `apple-design`.
-7. Before delivering, run the anti-slop lint on the changed files: `python <plugin>/agent-system/scripts/lint_design.py <files>` (or `.cursor/agent-system/scripts/lint_design.py` after the init). No P0 may remain open. Then run `design-review` on the screen.
+7. Before delivering, run the anti-slop lint on the changed files: `python <plugin>/agent-system/scripts/lint_design.py <files>` (or `.agent-system/scripts/lint_design.py` after the init). No P0 may remain open. Then run `design-review` on the screen.
 8. In a web application, verify the flow in the browser: click, type, submit, navigate. A screenshot alone does not close the task. Also check the other screen that reads the same state.
 
 Do not create `AGENTS.md`. Do not commit unless the user asks.

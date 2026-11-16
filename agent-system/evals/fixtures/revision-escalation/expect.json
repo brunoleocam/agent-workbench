@@ -3,7 +3,7 @@
   "description": "The gate fails three times: the router sends the work back to the implementer twice, then escalates to the user; a passing gate resets the count.",
   "steps": [
     {
-      "write": ".cursor/agent-system/state.json",
+      "write": ".agent-system/state.json",
       "content": "{\"version\": 1, \"active_agent\": \"orchestrator\", \"phase\": \"idle\"}\n"
     },
     {

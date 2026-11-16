@@ -37,7 +37,7 @@ Write `ARCHITECTURE.md` from [references/architecture-template.md](references/ar
 
 For every choice between real alternatives in sections 3 to 8 (for example PostgreSQL or MongoDB, Redis or in-process cache, queue or direct call, VPS or PaaS, RBAC or ABAC, shared tables or schema per tenant):
 
-1. Create an ADR in the project's ADR folder: `adr_dir` in `.cursor/agent-system/layout.json` when it exists, otherwise `docs/architecture/ADR/`. Use the next free number and the format of the existing ADRs: `# ADR-NNNN: <title>`, `Status:`, `Date:`, `## Context`, `## Decision`, `## Alternatives`, `## Consequences`. Name the problem, the rationale, and the risks inside Context, Decision, and Consequences, as the `planner` does.
+1. Create an ADR in the project's ADR folder: `adr_dir` in `.agent-system/layout.json` when it exists, otherwise `docs/architecture/ADR/`. Use the next free number and the format of the existing ADRs: `# ADR-NNNN: <title>`, `Status:`, `Date:`, `## Context`, `## Decision`, `## Alternatives`, `## Consequences`. Name the problem, the rationale, and the risks inside Context, Decision, and Consequences, as the `planner` does.
 2. Cite it in the section as `ADR-NNNN`.
 
 Choices with no real alternative for this project do not need an ADR. Never edit an accepted ADR: when a decision changes, write a new ADR that supersedes the old one, and set the old one to `Status: superseded by ADR-NNNN`.

@@ -47,11 +47,11 @@ def test_lessons_lifecycle() -> None:
         started = hook(SCRIPTS / "hook.py", {"hook_event_name": "sessionStart", "workspace_roots": [str(root)]})
         context = started["additional_context"]
         assert "Avoid testing implementation details" in context and "Bad category" not in context
-        rendered = (root / ".cursor/agent-system/LESSONS.md").read_text(encoding="utf-8")
+        rendered = (root / ".agent-system/LESSONS.md").read_text(encoding="utf-8")
         assert "LESSON-001" in rendered and "Bad category" not in rendered.split("## Candidates")[0]
-        events = (root / ".cursor/timeline/events.jsonl").read_text(encoding="utf-8")
+        events = (root / ".agent-system/timeline/events.jsonl").read_text(encoding="utf-8")
         assert "LESSON_PROPOSED" in events and "LESSON_CONFIRMED" in events and "sk_live_" not in events
-        write(root, ".cursor/agent-system/lessons.json", "{broken")
+        write(root, ".agent-system/lessons.json", "{broken")
         assert run("lessons.py", ["--root", str(root), "list"]).returncode == 2
 
 
@@ -62,7 +62,7 @@ def test_lessons_edited_by_hand_stay_redacted() -> None:
         opt_in(root)
         base = ["--root", str(root)]
         assert run("lessons.py", [*base, "add", "--category", "testing", "--title", "Run proofs before review", "--description", "Stale proofs fail the gate."]).returncode == 0
-        path = root / ".cursor/agent-system/lessons.json"
+        path = root / ".agent-system/lessons.json"
         data = json.loads(path.read_text(encoding="utf-8"))
         data["lessons"][0]["description"] = "use password=hunter2 for the fixture"
         path.write_text(json.dumps(data), encoding="utf-8")
@@ -78,7 +78,7 @@ def test_lessons_edited_by_hand_stay_redacted() -> None:
         data["lessons"][0]["status"] = "confirmed"
         path.write_text(json.dumps(data), encoding="utf-8")
         assert run("lessons.py", [*base, "render"]).returncode == 0
-        assert "hunter2" not in (root / ".cursor/agent-system/LESSONS.md").read_text(encoding="utf-8")
+        assert "hunter2" not in (root / ".agent-system/LESSONS.md").read_text(encoding="utf-8")
 
 
 def test_hook_marks_inferred_and_redacts() -> None:
@@ -87,9 +87,9 @@ def test_hook_marks_inferred_and_redacts() -> None:
         opt_in(root)
         base = {"hook_event_name": "afterShellExecution", "workspace_roots": [str(root)]}
         hook(SCRIPTS / "hook.py", {**base, "command": "pytest --token sekret-value-123 -q", "output": "1 failed"})
-        hook(SCRIPTS / "hook.py", {**base, "command": "python .cursor/agent-system/scripts/check_proofs.py --feature x", "output": "pytest 1 failed"})
+        hook(SCRIPTS / "hook.py", {**base, "command": "python .agent-system/scripts/check_proofs.py --feature x", "output": "pytest 1 failed"})
         hook(SCRIPTS / "hook.py", {**base, "command": "mvn test -Ddb.url=https://admin:hunter2@db.local", "output": "BUILD SUCCESS"})
-        events = [json.loads(line) for line in (root / ".cursor/timeline/events.jsonl").read_text(encoding="utf-8").splitlines()]
+        events = [json.loads(line) for line in (root / ".agent-system/timeline/events.jsonl").read_text(encoding="utf-8").splitlines()]
         assert len(events) == 2, events
         assert all(item["inferred"] is True for item in events)
         assert events[0]["event"] == "TEST_FAILED" and events[0]["result"].startswith("inferred from output")
@@ -120,29 +120,29 @@ def test_init_stack_detection_migration_and_cloud() -> None:
         write(root, "src/payments/stripe_client.py", "")
         write(root, "src/auth/login.py", "")
         write(root, "docs/tests/strategy.md", "# strategy\n")
-        write(root, ".cursor/agent-system/state.json", json.dumps({"version": 1, "phase": "review", "next_step": "keep me"}))
-        write(root, ".cursor/agent-system/layout.json", json.dumps({"version": 1, "overrides": {"specs_dir": "product/specs"}, "proof_allow": ["bats"]}))
+        write(root, ".agent-system/state.json", json.dumps({"version": 1, "phase": "review", "next_step": "keep me"}))
+        write(root, ".agent-system/layout.json", json.dumps({"version": 1, "overrides": {"specs_dir": "product/specs"}, "proof_allow": ["bats"]}))
         done = run("init_project.py", ["--root", str(root)])
         assert done.returncode == 0, done.stderr
         report = json.loads(done.stdout)
         assert {"fastapi", "express", "laravel", "aspnetcore", "spring"} <= set(report["layout"]["frameworks"])
         assert "python-fastapi-security.md" in report["layout"]["security_references"]
         assert "java-spring-security.md" in report["layout"]["security_references"]
-        layout = json.loads((root / ".cursor/agent-system/layout.json").read_text(encoding="utf-8"))
+        layout = json.loads((root / ".agent-system/layout.json").read_text(encoding="utf-8"))
         assert layout["overrides"] == {"specs_dir": "product/specs"} and layout["proof_allow"] == ["bats"]
         assert layout["tests_dir"] == "docs/tests"
         surfaces = layout["signals"]["attack_surfaces"]
         assert {"authentication", "file_upload", "payments"} <= set(surfaces)
-        state = json.loads((root / ".cursor/agent-system/state.json").read_text(encoding="utf-8"))
+        state = json.loads((root / ".agent-system/state.json").read_text(encoding="utf-8"))
         assert state["phase"] == "review" and state["next_step"] == "keep me" and state["verification"] == {}
         assert "verification" in report["migrated_state_keys"]
-        suggestions = (root / ".cursor/agent-system/SUGGESTIONS.md").read_text(encoding="utf-8")
+        suggestions = (root / ".agent-system/SUGGESTIONS.md").read_text(encoding="utf-8")
         assert "Sensitive surfaces" in suggestions
         for name in ("validate_spec.py", "check_proofs.py", "validate_verification.py", "lessons.py", "artifacts.py"):
-            assert (root / ".cursor/agent-system/scripts" / name).exists(), name
-        copied = root / ".cursor/agent-system/scripts"
+            assert (root / ".agent-system/scripts" / name).exists(), name
+        copied = root / ".agent-system/scripts"
         write(root, "docs/specs/x.md", "---\nstatus: draft\n---\n## Requirements\n### REQ-001: a\nTHE SYSTEM SHALL a.\n## Acceptance Criteria\n### AC-001: a\n- Requirements: REQ-001\nok\n")
-        write(root, ".cursor/agent-system/layout.json", json.dumps({**layout, "overrides": {}}))
+        write(root, ".agent-system/layout.json", json.dumps({**layout, "overrides": {}}))
         from_project = subprocess.run([PYTHON, str(copied / "validate_spec.py"), "--root", str(root), "--feature", "x", "--no-record"], capture_output=True, text=True, check=False)
         assert from_project.returncode == 0, from_project.stdout + from_project.stderr
 
@@ -237,13 +237,13 @@ def test_new_semantic_events_update_state() -> None:
         for event in ("SPEC_VALIDATION_COMPLETED", "PROOF_EXECUTION_COMPLETED", "SECURITY_REVIEW_COMPLETED", "VERIFICATION_COMPLETED", "LESSON_PROPOSED"):
             done = run("record_event.py", ["--root", str(root), "--event", event, "--summary", "demo", "--feature", "demo", "--result", "passed"])
             assert done.returncode == 0, event + done.stderr
-        state = json.loads((root / ".cursor/agent-system/state.json").read_text(encoding="utf-8"))
+        state = json.loads((root / ".agent-system/state.json").read_text(encoding="utf-8"))
         entry = state["verification"]["demo"]
         assert entry["spec"] == entry["gate"] == entry["security"] == "passed"
         assert state["phase"] == "verified" and state["version"] == 1 and state["active_agent"] == "orchestrator"
-        timeline = root / ".cursor/timeline/events.jsonl"
+        timeline = root / ".agent-system/timeline/events.jsonl"
         legacy = {"timestamp": "2026-01-01T00:00:00+00:00", "event": "NOTE", "summary": "password=hunter2 used", "files": [".env"], "result": "ok"}
         timeline.write_text(timeline.read_text(encoding="utf-8") + json.dumps(legacy) + "\nnot json\n", encoding="utf-8")
         view = run("timeline_view.py", ["--root", str(root), "--write-md"])
         assert view.returncode == 0 and "hunter2" not in view.stdout and "[redacted-path]" in view.stdout, view.stdout + view.stderr
-        assert "hunter2" not in (root / ".cursor/timeline/TIMELINE.md").read_text(encoding="utf-8")
+        assert "hunter2" not in (root / ".agent-system/timeline/TIMELINE.md").read_text(encoding="utf-8")

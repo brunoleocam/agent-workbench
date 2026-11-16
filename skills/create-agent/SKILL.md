@@ -12,7 +12,7 @@ The argument is the name, for example `security-reviewer`.
 
 1. Run `python "<plugin>/agent-system/scripts/create_agent.py" check --name <name>`. If it conflicts with a built-in or existing agent, stop.
 2. Write `<plugin>/agents/<name>.md` with `name` and `description` frontmatter. The description says when the orchestrator should delegate. The body has role, responsibilities, limits, input, output, and a definition of done. Do not use generic text.
-3. Run `register --name <name> --purpose "<one sentence>" --recommended-for "<when to delegate>"`. If the current project has `.cursor/agent-system/state.json`, pass `--root` with the project root.
+3. Run `register --name <name> --purpose "<one sentence>" --recommended-for "<when to delegate>"`. If the current project has `.agent-system/state.json`, pass `--root` with the project root.
 4. Do not register Cursor's built-in agents.
 5. The new agent lives in the plugin's repository. Do not commit unless the user asks.
 
