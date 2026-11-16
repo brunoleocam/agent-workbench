@@ -65,13 +65,13 @@ def test_validate_spec_layout_and_paths() -> None:
     with tempfile.TemporaryDirectory() as raw:
         root = Path(raw)
         write(root, "product/requirements/reset.md", SPEC)
-        write(root, ".cursor/agent-system/layout.json", json.dumps({"specs": ["spec"], "overrides": {"specs_dir": "product/requirements"}}))
+        write(root, ".agent-system/layout.json", json.dumps({"specs": ["spec"], "overrides": {"specs_dir": "product/requirements"}}))
         assert run("validate_spec.py", ["--root", str(root), "--feature", "reset"]).returncode == 0
         assert run("validate_spec.py", ["--root", str(root), "--feature", "../reset"]).returncode == 2
         outside = run("validate_spec.py", ["--root", str(root), "--spec", "../../etc/passwd"])
         assert outside.returncode == 2 and "outside the project root" in outside.stderr
         assert run("validate_spec.py", ["--root", str(root), "--feature", "missing"]).returncode == 2
-        write(root, ".cursor/agent-system/layout.json", "{not json")
+        write(root, ".agent-system/layout.json", "{not json")
         invalid = run("validate_spec.py", ["--root", str(root), "--feature", "reset"])
         assert invalid.returncode == 2 and "Invalid JSON" in invalid.stderr
 

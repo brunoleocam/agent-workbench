@@ -59,7 +59,7 @@ def test_init_copies_graph_and_router() -> None:
         write(root, "README.md", "# demo\n")
         done = run("init_project.py", ["--root", str(root), "--claude"])
         assert done.returncode == 0, done.stderr
-        system = root / ".cursor" / "agent-system"
+        system = root / ".agent-system"
         for name in ("workflow.py", "validate_workflow.py", "next_step.py"):
             assert (system / "scripts" / name).is_file(), name
         assert json.loads((system / "workflow.json").read_text(encoding="utf-8")) == GRAPH

@@ -7,7 +7,7 @@ description: Reviews code and infrastructure against ARCHITECTURE.md and its ADR
 
 Last step of `architecture`, and the check run after a change that touches infrastructure or adds a component. It compares what exists with what the contract says. It reports; it does not fix.
 
-Inputs: `ARCHITECTURE.md`, the ADRs it cites (in `adr_dir` of `.cursor/agent-system/layout.json`, or `docs/architecture/ADR/` by default), and the code and infrastructure files in scope (the changed files, or the whole project on a full review). Without an approved `ARCHITECTURE.md`, stop and say to run `architecture` first; there is nothing to compare against.
+Inputs: `ARCHITECTURE.md`, the ADRs it cites (in `adr_dir` of `.agent-system/layout.json`, or `docs/architecture/ADR/` by default), and the code and infrastructure files in scope (the changed files, or the whole project on a full review). Without an approved `ARCHITECTURE.md`, stop and say to run `architecture` first; there is nothing to compare against.
 
 ## 1. Run the infrastructure lint
 
@@ -15,7 +15,7 @@ Run the lint from the plugin, or from the copy the init puts in the project:
 
 ```bash
 python <plugin>/agent-system/scripts/lint_infra.py <files or directories> --format text
-# or, after the init: python .cursor/agent-system/scripts/lint_infra.py <files or directories>
+# or, after the init: python .agent-system/scripts/lint_infra.py <files or directories>
 ```
 
 Every P0 is a blocking finding. P1 and P2 are reported with their severity. If neither path has `lint_infra.py` in this installation, say so in the report and check the P0 items listed under item 11 of the checklist by reading the files.

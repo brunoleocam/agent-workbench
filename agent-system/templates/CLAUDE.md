@@ -1,6 +1,6 @@
 ## Agent Workbench (traceable engineering)
 
-Condensed version of rules `00` to `08` of the agent-workbench plugin for Claude Code. The plugin's skills and subagents have the `agent-workbench:` prefix (e.g. `/agent-workbench:feature`, subagent `agent-workbench:planner`). Project state lives in `.cursor/agent-system/` and is the same in Cursor and Claude Code.
+Condensed version of rules `00` to `08` of the agent-workbench plugin for Claude Code. The plugin's skills and subagents have the `agent-workbench:` prefix (e.g. `/agent-workbench:feature`, subagent `agent-workbench:planner`). Project state lives in `.agent-system/` and is the same in Cursor and Claude Code.
 
 ### 00 · Principles
 
@@ -11,10 +11,10 @@ Condensed version of rules `00` to `08` of the agent-workbench plugin for Claude
 - A high-impact decision (architecture, business rule, security, new infrastructure, removing behavior) goes to the user before it becomes final.
 - Smallest sufficient change: before writing code, ask in order whether it needs to exist, whether the codebase already has it, whether the standard library or platform covers it, and whether an installed dependency does; only then write the minimum new code. Never trim validation at trust boundaries, error handling that prevents data loss, security, accessibility, required tests, or anything the user asked for. Adapted from ponytail (MIT).
 - You are the orchestrator. For M, L, and XL, delegate to `planner`, `implementer`, `tester`, `reviewer`, and `debugger` only the slice that justifies its own context. XS and S: do it directly, with no PRD, ADR, CR, checkpoint, or subagents; S still requires the test that proves the change.
-- For M or larger in an initialized project, the gates are scripts: `validate_spec.py`, `validate_tasks.py`, `check_proofs.py`, and `validate_verification.py` in `.cursor/agent-system/scripts/`. A feature is only done when `validate_verification.py` exits 0.
-- For M or larger, the flow is the graph in `.cursor/agent-system/workflow.json`. Before each handoff run `next_step.py --from <node> --result pass|fail|escalate` with `--class`, `--complexity`, `--security`, `--interface new|existing|none` (and `--feature` after a failed gate). A missing argument that an edge needs exits 2, so a new UI is never routed past design by omission. On `status: needs_decision` stop and ask the user the returned `question`; at the revision limit the router escalates to the user instead of looping.
+- For M or larger in an initialized project, the gates are scripts: `validate_spec.py`, `validate_tasks.py`, `check_proofs.py`, and `validate_verification.py` in `.agent-system/scripts/`. A feature is only done when `validate_verification.py` exits 0.
+- For M or larger, the flow is the graph in `.agent-system/workflow.json`. Before each handoff run `next_step.py --from <node> --result pass|fail|escalate` with `--class`, `--complexity`, `--security`, `--interface new|existing|none` (and `--feature` after a failed gate). A missing argument that an edge needs exits 2, so a new UI is never routed past design by omission. On `status: needs_decision` stop and ask the user the returned `question`; at the revision limit the router escalates to the user instead of looping.
 - When an M or larger task is done, update `docs/progress/CURRENT.md` and suggest continuing in a new chat from it.
-- If `.cursor/agent-system/layout.json` exists, new ADRs, PRDs, and specs go to those paths. Do not move what the init found.
+- If `.agent-system/layout.json` exists, new ADRs, PRDs, and specs go to those paths. Do not move what the init found.
 
 ### 01 · Request classification
 
@@ -59,7 +59,7 @@ An idea, bug, requirement, or dependency discovered mid-task does not change the
 
 ### 07 · Artifacts
 
-A tree in the repository, created on demand, never with an empty file: `docs/product/PRD.md`, `docs/architecture/ARCHITECTURE.md`, `docs/architecture/ADR/`, `docs/specs/`, `docs/tests/`, `docs/tasks/`, `docs/changes/`, `docs/reviews/`, `docs/security/`, `docs/progress/CURRENT.md`, and `ROADMAP.md`. Same feature, same slug in every folder. Proofs live in `.cursor/agent-system/proofs/`. If the repository already has a canonical place for specs or ADRs, use the existing one.
+A tree in the repository, created on demand, never with an empty file: `docs/product/PRD.md`, `docs/architecture/ARCHITECTURE.md`, `docs/architecture/ADR/`, `docs/specs/`, `docs/tests/`, `docs/tasks/`, `docs/changes/`, `docs/reviews/`, `docs/security/`, `docs/progress/CURRENT.md`, and `ROADMAP.md`. Same feature, same slug in every folder. Proofs live in `.agent-system/proofs/`. If the repository already has a canonical place for specs or ADRs, use the existing one.
 
 ### 08 · Security
 

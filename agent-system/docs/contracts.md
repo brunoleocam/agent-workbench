@@ -27,7 +27,7 @@ status: completed              # completed | blocked | failed | needs_decision
 task: TASK-001
 changed_files: [src/reset.py, tests/test_reset.py]
 tests: [TEST-001]
-evidence: [.cursor/agent-system/proofs/reset-password.json]
+evidence: [.agent-system/proofs/reset-password.json]
 findings: []                   # IDs (FIND-NNN, SEC-NNN) or "none"
 blockers: []
 next_step: tester

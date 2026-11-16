@@ -72,7 +72,7 @@ def test_promote_creates_the_global_store_only_for_confirmed_lessons() -> None:
         assert {item["status"] for item in listed} == {"confirmed", "candidate"}
         assert lessons(home, root, "confirm", "--id", candidate, "--scope", "global").returncode == 0
         assert lessons(home, root, "list", "--scope", "global", "--status", "confirmed").stdout.count("LESSON-") == 2
-        project_file = json.loads((root / ".cursor/agent-system/lessons.json").read_text(encoding="utf-8"))["lessons"]
+        project_file = json.loads((root / ".agent-system/lessons.json").read_text(encoding="utf-8"))["lessons"]
         assert [item["id"] for item in project_file] == [first, second]  # the project store is unchanged by global work
 
 
@@ -136,7 +136,7 @@ def test_session_injects_project_then_global_and_respects_the_opt_out() -> None:
         assert "number 2" not in global_part.lower()  # same normalized title as a project lesson: the project wins
         assert len(context) <= 900
 
-        write(root, ".cursor/agent-system/layout.json", json.dumps({"global_lessons": False}))
+        write(root, ".agent-system/layout.json", json.dumps({"global_lessons": False}))
         off = session(home, root)
         assert "Global lessons" not in off and "Project rule number" in off
         refused = lessons(home, root, "list", "--scope", "global")

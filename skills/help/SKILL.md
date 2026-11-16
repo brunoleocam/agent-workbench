@@ -22,9 +22,9 @@ Every UI file goes through `lint_design.py`, an anti-slop lint that blocks the c
 
 A trivial change needs no command. An old repository is not migrated wholesale.
 
-For M or larger with `/init-agent-system`, the gates are scripts in `.cursor/agent-system/scripts/`: `validate_spec.py`, `validate_tasks.py`, `check_proofs.py` (runs the tests and records the real exit code), and `validate_verification.py` (exits 0 only with tested criteria, proofs of the current code, a review, and blocking findings resolved). Contracts in the plugin's `agent-system/docs/cli.md`.
+For M or larger with `/init-agent-system`, the gates are scripts in `.agent-system/scripts/`: `validate_spec.py`, `validate_tasks.py`, `check_proofs.py` (runs the tests and records the real exit code), and `validate_verification.py` (exits 0 only with tested criteria, proofs of the current code, a review, and blocking findings resolved). Contracts in the plugin's `agent-system/docs/cli.md`.
 
-The flow itself is a graph in `.cursor/agent-system/workflow.json`. `validate_workflow.py` checks it (`--mermaid` draws it), `next_step.py` says which node comes next and stops on your decisions, escalating to you after 3 failed gates, `metrics.py` shows time, tokens, and revisions per agent and feature, and `timeline_view.py --feature <slug>` shows what each verdict was based on.
+The flow itself is a graph in `.agent-system/workflow.json`. `validate_workflow.py` checks it (`--mermaid` draws it), `next_step.py` says which node comes next and stops on your decisions, escalating to you after 3 failed gates, `metrics.py` shows time, tokens, and revisions per agent and feature, and `timeline_view.py --feature <slug>` shows what each verdict was based on.
 
 ## Commands
 

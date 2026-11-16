@@ -8,4 +8,6 @@ __pycache__/
 Thumbs.db
 
 # Operational evidence from check_proofs.py; regenerated locally, tied to the workspace fingerprint.
+.agent-system/proofs/
+# Location used by installs before the move to .agent-system.
 .cursor/agent-system/proofs/

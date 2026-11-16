@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # /timeline
 
-The source of truth is `.cursor/timeline/events.jsonl`. Do not rewrite that file by hand.
+The source of truth is `.agent-system/timeline/events.jsonl`. Do not rewrite that file by hand.
 
 `<plugin>` is the agent-workbench plugin root. In Claude Code it is `${CLAUDE_PLUGIN_ROOT}` (the path arrives already substituted). In Cursor, it is two levels above this `SKILL.md`.
 

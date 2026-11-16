@@ -25,7 +25,7 @@ def proof_run(args: list[str]):
 
 
 def proofs(root: Path) -> dict:
-    data = json.loads((root / ".cursor/agent-system/proofs/reset.json").read_text(encoding="utf-8"))
+    data = json.loads((root / ".agent-system/proofs/reset.json").read_text(encoding="utf-8"))
     return {item["test"]: item for item in data["proofs"]}
 
 
@@ -50,7 +50,7 @@ def test_check_proofs_exit_codes_and_timeout() -> None:
         assert set(proofs(root)) == {"TEST-001"}, "proof of a removed TEST must be dropped"
         feature_project(root, cmd1=py_command("print('token=abc123supersecret'); raise SystemExit(0)"), cmd2=py_command("import sys; sys.stderr.write('boom'); raise SystemExit(3)"))
         proof_run(["--root", str(root), "--feature", "reset"])
-        markdown = (root / ".cursor/agent-system/proofs/reset.md").read_text(encoding="utf-8")
+        markdown = (root / ".agent-system/proofs/reset.md").read_text(encoding="utf-8")
         assert "## PROOF-002" in markdown and "Exit Code: 3" in markdown
 
         write(root, "docs/tasks/reset.md", tasks(cmd1=py_command("import time; time.sleep(30)")).replace("- Timeout: 60", "- Timeout: 1"))
@@ -209,7 +209,7 @@ def test_fingerprint_tracks_code_not_harness_docs() -> None:
         first = workspace_fingerprint(root, layout)["digest"]
         write(root, "docs/reviews/reset.md", REVIEW_PASS)
         write(root, "docs/progress/CURRENT.md", "# now\n")
-        write(root, ".cursor/agent-system/state.json", "{}")
+        write(root, ".agent-system/state.json", "{}")
         assert workspace_fingerprint(root, layout)["digest"] == first
         write(root, "src/reset.py", "TOKEN_TTL = 16\n")
         assert workspace_fingerprint(root, layout)["digest"] != first
@@ -297,9 +297,9 @@ def test_validate_verification_gate() -> None:
         write(root, "docs/reviews/reset.md", stamped(root))
         passed = run("validate_verification.py", args)
         assert passed.returncode == 0, passed.stdout + passed.stderr
-        events = (root / ".cursor/timeline/events.jsonl").read_text(encoding="utf-8")
+        events = (root / ".agent-system/timeline/events.jsonl").read_text(encoding="utf-8")
         assert "PROOF_EXECUTION_COMPLETED" in events and "VERIFICATION_COMPLETED" in events
-        state = json.loads((root / ".cursor/agent-system/state.json").read_text(encoding="utf-8"))
+        state = json.loads((root / ".agent-system/state.json").read_text(encoding="utf-8"))
         assert state["verification"]["reset"]["gate"] == "passed" and state["phase"] == "verified"
 
         write(root, "src/reset.py", "TOKEN_TTL = 30\n")

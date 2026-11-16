@@ -12,9 +12,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from lib import MANAGED_MARK, BASE_DIR, read_json, utc_now, write_json  # noqa: E402
+from lib import MANAGED_MARK, BASE_DIR, STATE_DIRNAME, legacy_system_dir, read_json, utc_now, write_json  # noqa: E402
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+HOOK_SCRIPT = f"{STATE_DIRNAME}/scripts/hook.py"
+LEGACY_HOOK_SCRIPT = ".cursor/agent-system/scripts/hook.py"
 HOOK_EVENTS = [
     "workspaceOpen",
     "sessionStart",
@@ -121,8 +123,54 @@ def merge_hooks(path: Path, command: str) -> str:
     return "added " + ", ".join(added) if added else "hooks already present"
 
 
+def rewrite_legacy_hooks(path: Path) -> int:
+    """Point Cursor hook commands written by an older init at the moved hook script. Returns how many changed."""
+    try:
+        data = read_json(path, None)
+    except (OSError, json.JSONDecodeError):
+        return 0
+    if not isinstance(data, dict) or not isinstance(data.get("hooks"), dict):
+        return 0
+    changed = 0
+    for entries in data["hooks"].values():
+        for item in entries if isinstance(entries, list) else []:
+            command = item.get("command") if isinstance(item, dict) else None
+            if not isinstance(command, str):
+                continue
+            for old, new in ((LEGACY_HOOK_SCRIPT, HOOK_SCRIPT), (LEGACY_HOOK_SCRIPT.replace("/", "\\"), HOOK_SCRIPT.replace("/", "\\"))):
+                if old in command:
+                    item["command"] = command.replace(old, new)
+                    changed += 1
+                    break
+    if changed:
+        write_json(path, data)
+    return changed
+
+
+def migrate_legacy_state(root: Path) -> list[str]:
+    """Move .cursor/agent-system and .cursor/timeline from older installs into .agent-system."""
+    notes = []
+    legacy = legacy_system_dir(root)
+    current = root / STATE_DIRNAME
+    if legacy.is_dir():
+        if current.exists():
+            notes.append(f"kept .cursor/agent-system: {STATE_DIRNAME} already exists, merge by hand")
+            return notes
+        shutil.move(str(legacy), str(current))
+        notes.append(f".cursor/agent-system -> {STATE_DIRNAME}")
+        old_timeline = root / ".cursor" / "timeline"
+        if old_timeline.is_dir() and not (current / "timeline").exists():
+            shutil.move(str(old_timeline), str(current / "timeline"))
+            notes.append(f".cursor/timeline -> {STATE_DIRNAME}/timeline")
+        cursor = root / ".cursor"
+        if cursor.is_dir() and not any(cursor.iterdir()):
+            cursor.rmdir()
+            notes.append("removed empty .cursor")
+    return notes
+
+
 def copy_scripts(root: Path) -> None:
-    dest = root / ".cursor" / "agent-system" / "scripts"
+    dest = root / STATE_DIRNAME / "scripts"
     dest.mkdir(parents=True, exist_ok=True)
     for name in COPY_SCRIPTS:
         target = dest / name
@@ -222,6 +270,7 @@ USER_LAYOUT_KEYS = ("overrides", "proof_allow", "global_lessons")
 SKIP_DIRS = {
     ".git",
     ".cursor",
+    STATE_DIRNAME,
     "node_modules",
     "dist",
     "build",
@@ -515,7 +564,7 @@ def write_suggestions(root: Path, items: list[dict]) -> None:
         lines.append(f"Evidence: {evidence}")
         lines.append(item["suggestion"])
         lines.append("")
-    path = root / ".cursor" / "agent-system" / "SUGGESTIONS.md"
+    path = root / STATE_DIRNAME / "SUGGESTIONS.md"
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
@@ -542,19 +591,24 @@ def main() -> int:
     # Locally the plugin already loads rules and agents; project copies would load them twice.
     parser.add_argument("--for-cloud", action="store_true", help="copy rules and agents into the project for Cloud Agents")
     # Claude Code has no always-on plugin rules: the condensed rules go into the project CLAUDE.md instead.
-    parser.add_argument("--claude", action="store_true", help="running under Claude Code: write the rules block in CLAUDE.md and skip .cursor/hooks.json")
+    parser.add_argument("--claude", action="store_true", help="running under Claude Code: write the rules block in CLAUDE.md and do not create .cursor")
     args = parser.parse_args()
     root = Path(args.root).resolve()
     if root == Path.home().resolve() and not args.force_home:
         print("Refusing to initialize the user home directory. Pass a project root.")
         return 2
 
-    cursor = root / ".cursor"
-    cursor.mkdir(parents=True, exist_ok=True)
-    system = cursor / "agent-system"
-    system.mkdir(parents=True, exist_ok=True)
-
     report = {"root": str(root), "created": [], "preserved": [], "hooks": ""}
+    migrated_dirs = migrate_legacy_state(root)
+    if migrated_dirs:
+        report["migrated"] = migrated_dirs
+    # .cursor holds only what Cursor itself reads (hooks.json, and rules/agents with --for-cloud); it is created on demand.
+    cursor = root / ".cursor"
+    system = root / STATE_DIRNAME
+    system.mkdir(parents=True, exist_ok=True)
+    rewritten = rewrite_legacy_hooks(cursor / "hooks.json")
+    if rewritten:
+        report["rewritten_hook_commands"] = rewritten
     rules = sorted(path.name for path in (cursor / "rules").glob("*.mdc")) if (cursor / "rules").is_dir() else []
     skills = sorted(path.parent.name for path in (cursor / "skills").glob("*/SKILL.md")) if (cursor / "skills").is_dir() else []
     agents = sorted(path.name for path in (cursor / "agents").glob("*.md")) if (cursor / "agents").is_dir() else []
@@ -601,7 +655,7 @@ def main() -> int:
             if not backup.exists():
                 shutil.copyfile(hooks_path, backup)
                 report["preserved"].append("hooks.json.bak-agent-system")
-        report["hooks"] = merge_hooks(hooks_path, "python .cursor/agent-system/scripts/hook.py")
+        report["hooks"] = merge_hooks(hooks_path, f"python {HOOK_SCRIPT}")
 
     layout = discover_layout(root)
     layout_file = system / "layout.json"
@@ -640,7 +694,7 @@ def main() -> int:
     else:
         state = default_state(root)
         if layout["prd"] or layout["adr_files"] or layout["architecture"]:
-            state["next_step"] = "Use the documents recorded in .cursor/agent-system/layout.json. Do not move them."
+            state["next_step"] = f"Use the documents recorded in {STATE_DIRNAME}/layout.json. Do not move them."
         write_json(state_file, state)
         report["created"].append("state.json")
 

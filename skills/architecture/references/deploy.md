@@ -50,7 +50,7 @@ Write down in section 6 what differs between them. The fewer differences, the fe
 
 ## From commit to production
 
-1. CI runs lint and tests on every change, plus the Workbench infrastructure lint when the project carries it (`.cursor/agent-system/scripts/lint_infra.py` after the init).
+1. CI runs lint and tests on every change, plus the Workbench infrastructure lint when the project carries it (`.agent-system/scripts/lint_infra.py` after the init).
 2. CI builds one image per commit, tagged with the commit hash, and pushes it to a registry. The same image goes to staging and production.
 3. Deploy to staging, run smoke tests.
 4. Deploy to production: rolling update or blue-green, with health checks gating traffic.

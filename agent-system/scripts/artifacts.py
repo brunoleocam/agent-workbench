@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from lib import append_event, apply_semantic_state, load_state, local_stamp, opted_in, redact, safe_files, save_state, utc_now  # noqa: E402
+from lib import append_event, apply_semantic_state, load_state, local_stamp, opted_in, redact, safe_files, save_state, system_dir, utc_now  # noqa: E402
 
 ID_KINDS = ("REQ", "AC", "ADR", "TASK", "TEST", "PROOF", "FIND", "SEC")
 ID_RE = re.compile(r"\b(" + "|".join(ID_KINDS) + r")-(\d{3,})\b")
@@ -66,7 +66,7 @@ LAYOUT_DEFAULTS = {
     "adr_dir": "docs/architecture/ADR",
 }
 FINGERPRINT_SKIP = {
-    ".git", ".cursor", "node_modules", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache",
+    ".git", ".cursor", ".agent-system", "node_modules", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache",
     ".venv", "venv", ".tox", "coverage", ".coverage", "dist", "build", "bin", "obj", "target", ".next", ".gradle",
 }
 FINGERPRINT_FILE_LIMIT = 5000
@@ -247,7 +247,7 @@ def load_json_file(path: Path, default):
 
 
 def load_layout(root: Path) -> dict:
-    data = load_json_file(root / ".cursor" / "agent-system" / "layout.json", {})
+    data = load_json_file(system_dir(root) / "layout.json", {})
     if not isinstance(data, dict):
         raise ConfigError("layout.json must contain a JSON object")
     return data
@@ -369,7 +369,7 @@ def _changed_paths(root: Path) -> list[str]:
 
 
 def workspace_fingerprint(root: Path, layout: dict | None = None) -> dict:
-    """Content of every project file (git blob ids), without harness docs, caches, or .cursor.
+    """Content of every project file (git blob ids), without harness docs, caches, .cursor, or .agent-system.
 
     HEAD is not part of the digest: committing the same content keeps the fingerprint, so a review
     recorded before the commit still matches after it.
@@ -508,7 +508,7 @@ def load_bundle(args, need: tuple[str, ...]) -> Bundle:
 
 
 def proofs_file(root: Path, slug: str) -> Path:
-    return root / ".cursor" / "agent-system" / "proofs" / f"{check_slug(slug)}.json"
+    return system_dir(root) / "proofs" / f"{check_slug(slug)}.json"
 
 
 def load_proofs(root: Path, slug: str) -> dict:

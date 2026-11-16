@@ -6,7 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
-from lib import redact, safe_files
+from lib import redact, safe_files, timeline_dir
 
 
 def feature_trace(lines: list[str], feature: str, as_json: bool) -> int:
@@ -58,7 +58,7 @@ def main() -> int:
     parser.add_argument("--json", action="store_true", help="with --feature, structured output")
     args = parser.parse_args()
     root = Path(args.root).resolve()
-    path = root / ".cursor" / "timeline" / "events.jsonl"
+    path = timeline_dir(root) / "events.jsonl"
     if not path.exists():
         print("No timeline yet.")
         return 0
@@ -91,7 +91,7 @@ def main() -> int:
         print(block)
         print()
     if args.write_md:
-        view = root / ".cursor" / "timeline" / "TIMELINE.md"
+        view = timeline_dir(root) / "TIMELINE.md"
         view.parent.mkdir(parents=True, exist_ok=True)
         view.write_text("# Timeline\n\n" + "\n\n".join(blocks) + "\n", encoding="utf-8")
         print(f"Wrote {view}")

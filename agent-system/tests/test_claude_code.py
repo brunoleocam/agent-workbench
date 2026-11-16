@@ -29,7 +29,7 @@ def claude_hook(payload: dict, project_dir: str | None = None) -> dict:
 
 
 def events(root: Path) -> list[dict]:
-    path = root / ".cursor" / "timeline" / "events.jsonl"
+    path = root / ".agent-system" / "timeline" / "events.jsonl"
     if not path.exists():
         return []
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
@@ -65,7 +65,7 @@ def test_claude_hook_adapter() -> None:
         root = Path(raw)
         opt_in(root)
         # A Cursor-only project hook must not silence the plugin hook under Claude Code.
-        write(root, ".cursor/hooks.json", '{"version":1,"hooks":{"stop":[{"command":"python .cursor/agent-system/scripts/hook.py"}]}}')
+        write(root, ".cursor/hooks.json", '{"version":1,"hooks":{"stop":[{"command":"python .agent-system/scripts/hook.py"}]}}')
         write(root, "docs/progress/ROADMAP.md", "# Roadmap\n\n> You are here: Phase 1 · TASK-001\n\n- [~] TASK-001 Modelo\n- [ ] TASK-002 API\n")
         common = {"session_id": "sess-1", "cwd": str(root / "src"), "transcript_path": "/tmp/t.jsonl"}
 
@@ -107,11 +107,11 @@ def test_claude_hook_adapter() -> None:
         assert all(item["session"] == "sess-1" for item in logged)
         assert logged[3]["agent"] == "agent-workbench:planner"
         assert logged[-1]["result"] == "prompt_input_exit"
-        text = (root / ".cursor" / "timeline" / "events.jsonl").read_text(encoding="utf-8")
+        text = (root / ".agent-system" / "timeline" / "events.jsonl").read_text(encoding="utf-8")
         for secret in ("API_KEY", "abc123secretvalue", "hunter2", "super-secret-value"):
             assert secret not in text, secret
         assert "[redacted-path]" in text
-        state = json.loads((root / ".cursor" / "agent-system" / "state.json").read_text(encoding="utf-8"))
+        state = json.loads((root / ".agent-system" / "state.json").read_text(encoding="utf-8"))
         assert state["active_agent"] == "orchestrator"
         assert state["session_id"] == "sess-1"
 
@@ -141,9 +141,10 @@ def test_init_claude_md_block() -> None:
         report = json.loads(first.stdout)
         assert report["claude_md"] == "created"
         assert report["hooks"] == "plugin hooks (Claude Code)"
-        assert not (root / ".cursor" / "hooks.json").exists()
-        assert (root / ".cursor" / "agent-system" / "state.json").exists()
-        assert (root / ".cursor" / "agent-system" / "scripts" / "check_proofs.py").exists()
+        # Under Claude Code nothing Cursor-specific is written: the state lives in the tool-neutral folder.
+        assert not (root / ".cursor").exists()
+        assert (root / ".agent-system" / "state.json").exists()
+        assert (root / ".agent-system" / "scripts" / "check_proofs.py").exists()
         text = (root / "CLAUDE.md").read_text(encoding="utf-8")
         assert text.startswith(BEGIN) and text.rstrip().endswith(END)
         for section in ("### 00 · Principles", "### 01 · Request classification", "### 05 · Independent review", "### 08 · Security"):
@@ -184,3 +185,64 @@ def test_init_claude_md_block() -> None:
         assert "claude_md" not in report
         assert not (root / "CLAUDE.md").exists()
         assert (root / ".cursor" / "hooks.json").exists()
+
+
+LEGACY_HOOK = "python .cursor/agent-system/scripts/hook.py"
+
+
+def legacy_install(root: Path) -> None:
+    """The layout an older init left: state, scripts, and timeline under .cursor."""
+    write(root, ".cursor/agent-system/state.json", json.dumps({"version": 1, "phase": "review", "next_step": "keep me"}))
+    write(root, ".cursor/agent-system/lessons.json", json.dumps({"lessons": []}))
+    write(root, ".cursor/agent-system/scripts/hook.py", "# agent-system-managed\n")
+    write(root, ".cursor/timeline/events.jsonl", json.dumps({"event": "SESSION_STARTED"}) + "\n")
+
+
+def test_legacy_state_is_read_until_init_moves_it() -> None:
+    with tempfile.TemporaryDirectory() as raw:
+        root = Path(raw)
+        legacy_install(root)
+        # Before a new init, hooks still find the old folder and keep appending there.
+        assert claude_hook({"session_id": "s", "cwd": str(root), "hook_event_name": "Stop"}, str(root)) == {}
+        assert len((root / ".cursor/timeline/events.jsonl").read_text(encoding="utf-8").splitlines()) == 2
+        assert not (root / ".agent-system").exists()
+
+
+def test_init_migrates_legacy_state() -> None:
+    # Claude Code: everything moves out and the emptied .cursor is removed.
+    with tempfile.TemporaryDirectory() as raw:
+        root = Path(raw)
+        legacy_install(root)
+        report = json.loads(run("init_project.py", ["--root", str(root), "--claude"]).stdout)
+        assert ".cursor/agent-system -> .agent-system" in report["migrated"]
+        assert not (root / ".cursor").exists()
+        state = json.loads((root / ".agent-system/state.json").read_text(encoding="utf-8"))
+        assert state["next_step"] == "keep me" and state["phase"] == "review"
+        assert (root / ".agent-system/timeline/events.jsonl").read_text(encoding="utf-8").count("SESSION_STARTED") == 1
+        assert (root / ".agent-system/lessons.json").exists()
+        again = json.loads(run("init_project.py", ["--root", str(root), "--claude"]).stdout)
+        assert "migrated" not in again
+
+    # Cursor: hooks.json stays in .cursor, its old commands point at the moved script, nothing is duplicated.
+    with tempfile.TemporaryDirectory() as raw:
+        root = Path(raw)
+        legacy_install(root)
+        hooks = {"version": 1, "hooks": {"stop": [{"command": LEGACY_HOOK, "timeout": 20}, {"command": "python mine.py"}]}}
+        write(root, ".cursor/hooks.json", json.dumps(hooks))
+        report = json.loads(run("init_project.py", ["--root", str(root)]).stdout)
+        assert report["rewritten_hook_commands"] == 1
+        assert not (root / ".cursor/agent-system").exists() and not (root / ".cursor/timeline").exists()
+        text = (root / ".cursor/hooks.json").read_text(encoding="utf-8")
+        assert ".cursor/agent-system" not in text and "python mine.py" in text
+        stop = json.loads(text)["hooks"]["stop"]
+        assert [item["command"] for item in stop].count("python .agent-system/scripts/hook.py") == 1
+
+    # Both folders present: the new one wins and the old one is left for the user to merge.
+    with tempfile.TemporaryDirectory() as raw:
+        root = Path(raw)
+        legacy_install(root)
+        write(root, ".agent-system/state.json", json.dumps({"version": 1, "next_step": "new"}))
+        report = json.loads(run("init_project.py", ["--root", str(root), "--claude"]).stdout)
+        assert report["migrated"][0].startswith("kept .cursor/agent-system")
+        assert (root / ".cursor/agent-system/state.json").exists()
+        assert json.loads((root / ".agent-system/state.json").read_text(encoding="utf-8"))["next_step"] == "new"

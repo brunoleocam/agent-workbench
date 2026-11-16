@@ -11,9 +11,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 SYSTEM_DIR = Path(__file__).resolve().parents[1]
-# Plugin root when run from the plugin; the project's .cursor when run from a project copy.
+# Plugin root when run from the plugin; the project root (or legacy .cursor) when run from a project copy.
 BASE_DIR = SYSTEM_DIR.parent
 MANAGED_MARK = "agent-system-managed"
+# Project state lives in one tool-neutral folder, shared by Cursor and Claude Code.
+STATE_DIRNAME = ".agent-system"
+# Older installs kept the state under .cursor/agent-system (and the timeline under .cursor/timeline).
+LEGACY_STATE_PARTS = (".cursor", "agent-system")
 
 SECRET_PATH = re.compile(
     r"(^|[\\/])(\.env|.*\.pem|id_rsa|id_ed25519|credentials|secrets?)(\.|$|[\\/])",
@@ -118,8 +122,26 @@ def write_json(path: Path, data) -> None:
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+def legacy_system_dir(root: Path) -> Path:
+    return root.joinpath(*LEGACY_STATE_PARTS)
+
+
+def system_dir(root: Path) -> Path:
+    """The project's state folder: .agent-system, or the legacy .cursor/agent-system until the next init moves it."""
+    current = root / STATE_DIRNAME
+    legacy = legacy_system_dir(root)
+    if not current.is_dir() and legacy.is_dir():
+        return legacy
+    return current
+
+
+def timeline_dir(root: Path) -> Path:
+    folder = system_dir(root)
+    return root / ".cursor" / "timeline" if folder == legacy_system_dir(root) else folder / "timeline"
+
+
 def opted_in(root: Path) -> bool:
-    return (root / ".cursor" / "agent-system" / "state.json").is_file()
+    return (system_dir(root) / "state.json").is_file()
 
 
 def project_owns_hook(root: Path) -> bool:
@@ -183,7 +205,7 @@ def safe_files(paths) -> list[str]:
 
 
 def state_path(root: Path) -> Path:
-    return root / ".cursor" / "agent-system" / "state.json"
+    return system_dir(root) / "state.json"
 
 
 def load_state(root: Path) -> dict:
@@ -237,7 +259,7 @@ def global_lessons_path() -> Path:
 def global_lessons_enabled(root: Path) -> bool:
     """False when the project's layout.json says "global_lessons": false."""
     try:
-        layout = read_json(root / ".cursor" / "agent-system" / "layout.json", {})
+        layout = read_json(system_dir(root) / "layout.json", {})
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return True
     return not (isinstance(layout, dict) and layout.get("global_lessons") is False)
@@ -258,7 +280,7 @@ def confirmed_lessons(root: Path, limit: int = 5, global_limit: int = 3) -> str:
 
     Candidates never load. A global lesson with the same normalized title as a project lesson is left out.
     """
-    project = _confirmed(root / ".cursor" / "agent-system" / "lessons.json")
+    project = _confirmed(system_dir(root) / "lessons.json")
     parts = []
     if project:
         shown = "; ".join(f"[{item.get('category')}] {redact(str(item.get('title') or ''), 90)}" for item in project[:limit])
@@ -323,7 +345,7 @@ def save_state(root: Path, state: dict) -> None:
 
 
 def append_event(root: Path, event: dict) -> None:
-    path = root / ".cursor" / "timeline" / "events.jsonl"
+    path = timeline_dir(root) / "events.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
     data = (json.dumps(event, ensure_ascii=False) + "\n").encode("utf-8")
     # One O_APPEND write per event; the lock covers Windows, where O_APPEND is not atomic across processes.
@@ -336,7 +358,7 @@ def append_event(root: Path, event: dict) -> None:
 
 
 def should_skip_duplicate_edit(root: Path, file_path: str, window_s: int = 20) -> bool:
-    agg_path = root / ".cursor" / "agent-system" / "agg.json"
+    agg_path = system_dir(root) / "agg.json"
     now = datetime.now(timezone.utc).timestamp()
     with file_lock(agg_path):
         try:

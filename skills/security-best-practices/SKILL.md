@@ -10,7 +10,7 @@ Use it during implementation and maintenance. It does not replace `/code-review`
 ## Procedure
 
 1. Identify the language and framework.
-   - If `.cursor/agent-system/layout.json` exists, read the `frameworks` and `security_references` fields.
+   - If `.agent-system/layout.json` exists, read the `frameworks` and `security_references` fields.
    - Otherwise, read only the manifests: `composer.json`, `package.json`, `pyproject.toml` or `requirements*.txt`, `*.csproj`, `pom.xml` or `build.gradle*`.
 2. Load only the reference for the stack in use, from the table below. Two at most when the change crosses layers (e.g. Express API and React front end). Never load all of them.
 3. Apply the recommendations to the code being changed. Do not rewrite code outside the task's scope.
@@ -43,10 +43,10 @@ Next.js already covers React; do not load both. A stack outside the table: use t
 This project's confirmed security lessons:
 
 ```bash
-python .cursor/agent-system/scripts/lessons.py list --status confirmed --category security
+python .agent-system/scripts/lessons.py list --status confirmed --category security
 ```
 
-Run only if the project has `.cursor/agent-system/`. A confirmed lesson outranks generic advice when the two conflict; cite which one you applied.
+Run only if the project has `.agent-system/`. A confirmed lesson outranks generic advice when the two conflict; cite which one you applied.
 
 ## Output
 

@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from lib import redact  # noqa: E402
+from lib import redact, timeline_dir  # noqa: E402
 
 PLUGIN_PREFIX = "agent-workbench:"
 RESPONSE_CHARS = re.compile(r"\((\d+) chars\)")
@@ -139,7 +139,7 @@ def main() -> int:
         if since is None:
             print(f"[ERROR] --since must be an ISO date or time, got {args.since!r}", file=sys.stderr)
             return 2
-    path = Path(args.root).resolve() / ".cursor" / "timeline" / "events.jsonl"
+    path = timeline_dir(Path(args.root).resolve()) / "events.jsonl"
     if not path.is_file():
         print(json.dumps({"agents": {}, "features": {}, "tokens": "unavailable", "skipped": 0}) if args.json else "No timeline yet.")
         return 0

@@ -47,7 +47,7 @@ All four stages use the files in `references/`:
 - [examples/](references/examples/editorial-calm.md): four complete `DESIGN.md` files for fictional products.
 - [CREDITS.md](references/CREDITS.md): sources and licenses.
 
-The lint is `agent-system/scripts/lint_design.py` in the plugin, or `.cursor/agent-system/scripts/lint_design.py` in a project after the init.
+The lint is `agent-system/scripts/lint_design.py` in the plugin, or `.agent-system/scripts/lint_design.py` in a project after the init.
 
 ## After the pipeline
 

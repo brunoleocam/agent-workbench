@@ -10,7 +10,7 @@ Input: the handoff in `agent-system/docs/contracts.md` (scope, feature slug, cha
 
 Workflow:
 
-1. Identify languages, frameworks, and components. Read `.cursor/agent-system/layout.json` (`frameworks`, `security_references`, `signals.attack_surfaces`) when it exists.
+1. Identify languages, frameworks, and components. Read `.agent-system/layout.json` (`frameworks`, `security_references`, `signals.attack_surfaces`) when it exists.
 2. Load only the matching files in the `security-best-practices` skill `references/`. Never all of them.
 3. Map the attack surface of the scope: entry points, trust boundaries, data stores, external calls, secrets.
 4. Read the code on those paths. Confirm each finding in the code before writing it.

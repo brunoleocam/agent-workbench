@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from lib import BUILTIN_AGENTS, BASE_DIR, read_json, utc_now, write_json  # noqa: E402
+from lib import BUILTIN_AGENTS, BASE_DIR, read_json, system_dir, utc_now, write_json  # noqa: E402
 
 NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
@@ -112,14 +112,14 @@ def main() -> int:
 
     if args.root:
         root = Path(args.root).resolve()
-        project_registry = root / ".cursor" / "agent-system" / "agents.json"
+        project_registry = system_dir(root) / "agents.json"
         if project_registry.exists():
             local = read_json(project_registry, {"version": 1, "agents": []})
             if not any(item.get("name") == name for item in local.get("agents", [])):
                 local.setdefault("agents", []).append(registry["agents"][-1])
                 write_json(project_registry, local)
         project_agent = root / ".cursor" / "agents" / f"{name}.md"
-        if (root / ".cursor" / "agent-system" / "state.json").exists() and not project_agent.exists():
+        if (system_dir(root) / "state.json").exists() and not project_agent.exists():
             project_agent.parent.mkdir(parents=True, exist_ok=True)
             project_agent.write_text(agent_file.read_text(encoding="utf-8"), encoding="utf-8")
 

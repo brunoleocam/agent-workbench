@@ -13,7 +13,7 @@ from support import feature_project, fingerprint, opt_in, run, stamped, write  #
 
 
 def events(root: Path) -> list[dict]:
-    path = root / ".cursor" / "timeline" / "events.jsonl"
+    path = root / ".agent-system" / "timeline" / "events.jsonl"
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
@@ -35,8 +35,8 @@ def test_verdict_events_carry_the_trace() -> None:
         expected = {
             "SPEC_VALIDATION_COMPLETED": ("spec_check", {"docs/specs/reset.md"}),
             "TASK_VALIDATION_COMPLETED": ("tasks_check", {"docs/tasks/reset.md", "docs/specs/reset.md"}),
-            "PROOF_EXECUTION_COMPLETED": ("proofs", {"docs/tasks/reset.md", ".cursor/agent-system/proofs/reset.json"}),
-            "VERIFICATION_COMPLETED": ("gate", {"docs/specs/reset.md", "docs/tasks/reset.md", "docs/reviews/reset.md", ".cursor/agent-system/proofs/reset.json"}),
+            "PROOF_EXECUTION_COMPLETED": ("proofs", {"docs/tasks/reset.md", ".agent-system/proofs/reset.json"}),
+            "VERIFICATION_COMPLETED": ("gate", {"docs/specs/reset.md", "docs/tasks/reset.md", "docs/reviews/reset.md", ".agent-system/proofs/reset.json"}),
         }
         current = fingerprint(root)
         for kind, (node, inputs) in expected.items():
@@ -47,7 +47,7 @@ def test_verdict_events_carry_the_trace() -> None:
             assert all(not item.startswith("/") and ":" not in item for item in event["inputs"]), event["inputs"]
             assert isinstance(event["fingerprint"], str) and len(event["fingerprint"]) >= 12, kind
         assert last(root, "VERIFICATION_COMPLETED")["fingerprint"] == current
-        raw = (root / ".cursor" / "timeline" / "events.jsonl").read_text(encoding="utf-8")
+        raw = (root / ".agent-system" / "timeline" / "events.jsonl").read_text(encoding="utf-8")
         assert "TOKEN_TTL" not in raw  # file content never reaches the trace
         assert "Token expires" not in raw  # neither does spec text
 

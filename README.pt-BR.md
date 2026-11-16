@@ -1,5 +1,5 @@
 <div align="right">
-  <img src="https://img.shields.io/badge/version-0.5.0-green?style=flat-square" alt="Versão 0.5.0" />
+  <img src="https://img.shields.io/badge/version-0.6.0-green?style=flat-square" alt="Versão 0.6.0" />
   <a href="README.md">
     <img src="https://img.shields.io/badge/README-EN-blue?style=flat-square" alt="English 🇺🇸" />
   </a>
@@ -220,7 +220,7 @@ Confira a versão instalada em `.cursor-plugin/plugin.json` (campo `version`) e 
 
 2. Recarregue a janela do Cursor com `Developer: Reload Window`. Rules, skills, subagents e hooks vêm do plugin, então já ficam atualizados.
 
-3. Em cada projeto inicializado, rode `/init-agent-system` de novo. Ele atualiza os scripts gerenciados em `.cursor/agent-system/scripts/` e adiciona chaves novas ao estado, mantendo o estado, a timeline, o roadmap, a documentação e os hooks existentes.
+3. Em cada projeto inicializado, rode `/init-agent-system` de novo. Ele atualiza os scripts gerenciados em `.agent-system/scripts/` e adiciona chaves novas ao estado, mantendo o estado, a timeline, o roadmap, a documentação e os hooks existentes. Num projeto inicializado antes de o estado sair de `.cursor/`, essa execução move `.cursor/agent-system/` e `.cursor/timeline/` para `.agent-system/`.
 
 Em projetos preparados com `--for-cloud`, as cópias de rules e subagents nunca são sobrescritas. Para atualizá-las, apague as cópias que vieram do plugin (rules `00` a `08` e os subagents) e rode `/init-agent-system` com `--for-cloud` de novo.
 
@@ -241,8 +241,10 @@ Em projetos preparados com `--for-cloud`, as cópias de rules e subagents nunca 
 
 - Rules: só as rules `00` a `08` chegam ao Claude Code, pelo `CLAUDE.md`. `economia-de-tokens`, `mcp-triagem-obrigatoria` e `uso-ferramentas-mcp` são exclusivas do Cursor.
 - Hooks: o Claude Code roda `hooks/claude-hooks.json`, que alimenta a mesma timeline dos hooks do Cursor.
-- Estado: o projeto guarda o estado em `.cursor/agent-system/` e `.cursor/timeline/` nos dois editores, então um projeto inicializado num editor continua no outro.
+- Estado: o projeto guarda o estado em `.agent-system/` e `.agent-system/timeline/` nos dois editores, então um projeto inicializado num editor continua no outro.
 - `--for-cloud` e `/roadmap visual` (Canvas) são exclusivos do Cursor.
+
+Novo na 0.6.0: o estado do projeto saiu de `.cursor/agent-system/` e `.cursor/timeline/` para uma pasta neutra, `.agent-system/`, e o Claude Code não cria mais a pasta `.cursor`; rodar `/init-agent-system` de novo move uma instalação existente e reescreve os comandos de hook do Cursor. O pipeline de arquitetura chegou em duas fases: as skills `architecture`, `architecture-discovery`, `architecture-options`, `architecture-system` e `architecture-review`, o lint de infraestrutura (`lint_infra.py`, para Dockerfiles, Compose e Kubernetes) e o validador do contrato `ARCHITECTURE.md` (`validate_architecture.py`). Os agentes dedicados chegam numa versão seguinte.
 
 Novo na 0.5.0: o workflow virou um grafo declarado (`workflow.json`) com um roteador (`next_step.py`) que para nas suas decisões e escala para você depois de 3 gates reprovados; os vereditos dos validadores deixam um rastro de decisão (`timeline_view.py --feature`); o `metrics.py` mostra tempo, tokens e revisões por agente e por feature; lições podem ser promovidas para um repositório global compartilhado pelos seus projetos; e chegaram o pipeline de design de UI/UX (`/design`, três agentes de design e o lint anti-slop) e a checagem de deriva do plano (`check_drift.py`). Rode `/init-agent-system` de novo em cada projeto para receber os scripts novos, o `workflow.json` e a chave `revisions` no estado.
 

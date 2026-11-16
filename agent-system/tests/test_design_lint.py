@@ -232,7 +232,7 @@ def test_design_lint_hook_reports_without_blocking() -> None:
         cursor = {"hook_event_name": "afterFileEdit", "workspace_roots": [str(root)], "file_path": str(hero)}
         done = subprocess.run([PYTHON, str(SCRIPTS / "hook.py")], input=json.dumps(cursor), text=True, capture_output=True, check=False, timeout=20)
         assert done.returncode == 0 and json.loads(done.stdout) == {}, done.stdout
-        timeline = (root / ".cursor" / "timeline" / "events.jsonl").read_text(encoding="utf-8")
+        timeline = (root / ".agent-system" / "timeline" / "events.jsonl").read_text(encoding="utf-8")
         assert '"DESIGN_LINT"' in timeline and "Agenda" not in timeline
 
 
