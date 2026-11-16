@@ -104,7 +104,7 @@ WHEN o lint encontra um P0, THE SYSTEM SHALL terminar com exit code 1. As regras
 - `P0-UNPINNED-IMAGE`: `FROM` ou `image:` sem tag, ou com tag `latest` (um digest `@sha256:` conta como fixado; `FROM` que referencia um estágio anterior do mesmo Dockerfile não conta);
 - `P0-ROOT-USER`: Dockerfile cujo último estágio não tem `USER`, ou tem `USER root` ou `USER 0`; manifest Kubernetes com `runAsUser: 0` ou `runAsNonRoot: false`;
 - `P0-PRIVILEGED`: `privileged: true` em Compose ou Kubernetes, ou `allowPrivilegeEscalation: true` em Kubernetes;
-- `P0-SECRET-LITERAL`: valor literal para uma chave cujo nome contém `PASSWORD`, `PASSWD`, `SECRET`, `TOKEN`, `API_KEY`, `APIKEY`, `PRIVATE_KEY` ou `ACCESS_KEY`, em `ENV` ou `ARG` do Dockerfile, em `environment` do Compose ou em `env[].value` do Kubernetes. Interpolação (`${VAR}`, `$VAR`), valor vazio, `valueFrom`, `secretKeyRef` e `env_file` não contam;
+- `P0-SECRET-LITERAL`: valor literal para uma chave cujo nome contém `PASSWORD`, `PASSWD`, `SECRET`, `TOKEN`, `API_KEY`, `APIKEY`, `PRIVATE_KEY` ou `ACCESS_KEY`, em `ENV` ou `ARG` do Dockerfile, em `environment` do Compose ou em `env[].value` do Kubernetes. Interpolação (`${VAR}`, `$VAR`), valor vazio, `null` ou `~`, valor só numérico ou de duração (`3600`, `15m`), chave terminada em `_FILE` cujo valor é um caminho absoluto (o padrão de Docker secrets, como `POSTGRES_PASSWORD_FILE: /run/secrets/pg`), `valueFrom`, `secretKeyRef` e `env_file` não contam;
 - `P0-DB-PORT-PUBLIC`: porta de banco, cache ou broker (5432, 3306, 1433, 27017, 6379, 11211, 9200, 5672, 9092) publicada em todas as interfaces no Compose (sem `127.0.0.1:`), ou exposta por `Service` Kubernetes do tipo `LoadBalancer` ou `NodePort`;
 - `P0-DOCKER-SOCKET`: montagem de `/var/run/docker.sock`.
 
@@ -401,3 +401,4 @@ Fora de escopo: provisionamento real de infraestrutura (criar VPS, cluster ou re
 - Opções em Markdown com Mermaid, não em HTML: a escolha de arquitetura se faz lendo trade-offs, não reagindo a um visual.
 - Skills separadas (`architecture-discovery`, `architecture-options`, `architecture-system`, `architecture-review`) mais a skill `architecture` que encadeia as quatro, espelhando o pipeline de design.
 - O canal Renato Augusto Tech entra como checklist de temas a cobrir, não como fonte de texto.
+- Change request (2026-11-16, aprovado pelo usuário, a partir do FIND-019 da revisão da fase 2): o `P0-SECRET-LITERAL` deixa de valer para `null`/`~`, para valores só numéricos ou de duração e para chaves `_FILE` com caminho absoluto. Antes, o padrão seguro de Docker secrets (`POSTGRES_PASSWORD_FILE`) e chaves como `JWT_TOKEN_TTL: 3600` eram bloqueados, o que empurrava para supressões.

@@ -1,11 +1,11 @@
 ---
 status: PASS
 reviewer: reviewer
-fingerprint: 634ed5a651eb142f84cddcebe2dc5186ef71b90a348f995a131a244b3ef85fbf
+fingerprint: 7f4a1d89f3b0d610a167bae67cc096836b6d8cc6f186c1e2be849cb5dbf813f6
 ---
 # Review: architecture pipeline, phase 1 (skills and references)
 
-Reviews 2 and 3 (re-reviews after the fixes) are at the end of this file. The text below is Review 1, kept as the record. Each finding now carries the status from the latest review; the current verdict is in Review 3.
+Phase 1 was closed by Review 3 (PASS; FIND-001 to FIND-015 resolved). The current verdict is in the last section, "Fase 2 / Review 3" (FIND-016 to FIND-028 resolved; Fase 2 / Reviews 1 and 2 are kept as the record), which covers the lint, the contract validator, and the hook. The phase-1 text below is kept as the record.
 
 Scope: the uncommitted working tree on `docs/design-ensaio-2` (HEAD 273d29e), phase 1 only (REQ-001 to REQ-020, TASK-001 to TASK-006). Phases 2 and 3 (REQ-021 to REQ-038) are not implemented yet and are out of scope. The unrelated changes to `docs/specs/design-pipeline.md` and `docs/tasks/design-pipeline.md` were not reviewed.
 
@@ -251,3 +251,254 @@ Regression pass:
 - Every `Gatilho:` trigger line in the case studies, `scaling-stages.md`, and the format reference's Accepted example still matches. The only lines that do not match are label mentions, template placeholders, and the Refused example, as intended.
 - The rate alternative widens the accepted set slightly. A value with a bad separator such as `> 1.0000 usuários` is accepted through the plain-decimal branch, and so is any `<word>/s`. Neither lets a vague or duration-only trigger through, so I am recording this as a note, not a finding.
 - No other files changed beyond those the coordinator listed.
+
+# Fase 2 / Review 1 (lint de infraestrutura, validador do contrato e hook)
+
+Scope: the uncommitted working tree on `feat/architecture-lint` against base e9f04e5 (phase 1). Requirements REQ-021 to REQ-030; acceptance AC-010, AC-011, AC-012, and AC-017 to AC-026. Phase 3 (REQ-031 to REQ-038) is out of scope. I compared, in order: the spec, the "Fase 2" section of the tasks file (TASK-007 to TASK-009, TEST-007 to TEST-009), the tests (`agent-system/tests/test_infra_lint.py`, `test_validate_architecture.py`, the changed `test_architecture_skills.py`), and the code (`agent-system/scripts/lint_infra.py`, `validate_architecture.py`, the `hook.py`, `init_project.py`, and `run_evals.py` diffs, and the eval fixture `architecture-contract`).
+
+Commands run:
+- `python -I agent-system/scripts/test_system.py`: 134 passed, 0 failed.
+- `python -I agent-system/scripts/run_evals.py`: 10/10.
+- `python -I agent-system/scripts/check_proofs.py --fingerprint`: digest `365ebefa...5651`. The proof file records TEST-001 to TEST-009 as PASS on this digest, so the proofs are current. As instructed, I did not run `check_proofs.py --feature`.
+- `validate_verification.py --feature architecture-pipeline --no-record`: the 9 required checks are proven. The only ACs without a TEST are AC-027 to AC-035 (phase 3).
+- In the scratchpad: realistic Compose, Dockerfile, and Kubernetes files through the CLI; a 3,000-input crash fuzz of `lint_paths` (0 crashes); timing on 500 KB inputs (0.47 s and 0.15 s); and 19 mutations of `lint_infra.py` and `validate_architecture.py`, run against the phase-2 tests in a copy of `agent-system/`. The repository was not touched.
+- The project is not opted in, so no REVIEW_* events were recorded.
+
+Verdict: FAIL. There is one blocker. Compose and Kubernetes files written with compact (non-indented) block sequences, which is valid YAML and the style used in the Kubernetes documentation, silently lose P0-SECRET-LITERAL and P0-DB-PORT-PUBLIC in Compose and P1-NO-PROBE and P1-NO-RESOURCE-LIMITS in Kubernetes, with exit 0 (FIND-016). There are also four majors. Two make the lint report a clean result for files it did not really read (FIND-017, FIND-018). One is a P0 false positive on the secure Docker-secrets pattern (FIND-019). The last is a set of test gaps: 14 of the 19 mutations that applied survive (FIND-023).
+
+Things I checked that hold:
+- **Secrets:** no secret value reaches any output path. Text, JSON, hook context, and the timeline carry only the key and the line. Verified with literal values in Compose (map and list), Dockerfile `ENV` (both forms), `ARG`, and Kubernetes `env[].value`. The fuzz never crashed, so no traceback can echo input.
+- **Design lint hook:** `test_design_lint_hook_*` still pass. Claude gets both lints, and Cursor drops both keys.
+- **Portability:** the new scripts need Python 3.8 or later (assignment expressions; `X | None` only appears in annotations under `from __future__ import annotations`). The code uses `pathlib` and UTF-8 with `errors="replace"`. CRLF files keep correct line numbers. CI already runs both test_system and run_evals on Ubuntu and Windows.
+
+## Verification Audit (Fase 2)
+
+Mutations run against the phase-2 tests. KILLED means a test failed; SURVIVED means every test still passed.
+
+| Mutation | Result |
+| --- | --- |
+| `latest` tag no longer flagged | KILLED |
+| `USER 0`, `0:0`, `root:root` no longer flagged (only `root`) | SURVIVED |
+| `runAsNonRoot: false` no longer flagged | SURVIVED |
+| `SECRET`, `PRIVATE_KEY`, `ACCESS_KEY` removed from the key words | SURVIVED |
+| interpolation `$...` treated as literal | KILLED |
+| loopback reduced to `127.0.0.1` (drop `localhost`, `::1`) | SURVIVED |
+| `NodePort` no longer exposes | SURVIVED |
+| long-syntax ports ignored entirely | SURVIVED |
+| `.dockerignore` presence ignored | KILLED |
+| `children()` nesting `<=` changed to `<` | SURVIVED |
+| suppression of the next line removed | KILLED |
+| `livenessProbe` no longer required | SURVIVED |
+| P1-ADD-REMOTE also fires on `COPY` | SURVIVED |
+| DB ports reduced to `{5432, 6379}` | SURVIVED |
+| exit 2 for an unreadable file replaced by 0 | SURVIVED |
+| `scratch` exemption removed | SURVIVED |
+| `(fonte:` not required | KILLED |
+| section-order check disabled | SURVIVED in the tests; KILLED only by `run_evals.py` |
+| duplicated-section check disabled | SURVIVED |
+
+| AC | TEST | Assessment |
+| --- | --- | --- |
+| AC-017 scan, exclusions, non-infra YAML | TEST-007 | Proven (`node_modules`, GitHub Actions, and a plain YAML config are skipped). |
+| AC-018 each P0 fails, complete finding | TEST-007 | Partial. One or two variants per rule; NodePort, `runAsNonRoot: false`, `USER 0`, long-syntax ports, most DB ports, and three key words are untested (see mutations). No compact-sequence case (FIND-016). |
+| AC-019 not-P0 cases | TEST-007 | Proven for the AC's exact inputs. Not tested: `FROM --platform`, lowercase `as`, `localhost`/`::1`. |
+| AC-020 P1/P2 only warn | TEST-007 | Proven for P1-NO-RESTART and P1-NO-RESOURCE-LIMITS (Compose and Job). The P1-NO-PROBE test lacks both probes, so a missing liveness alone is unproven. |
+| AC-021 secret never printed | TEST-007, TEST-009 | Proven for text, JSON, Claude context, and the timeline (Compose map form). Not tested for the Dockerfile and Kubernetes forms; I checked those by hand and they hold. |
+| AC-022 JSON | TEST-007 | Proven (exact key set). |
+| AC-023 suppression | TEST-007 | Proven for the AC's inputs. Edge in FIND-022. |
+| AC-024 hook | TEST-009 | Proven: Claude context, Cursor `{}`, two `INFRA_LINT` events without snippet or value, and `.py`/`.md`/outside-root edits skipped. The timeout is not asserted; timing is 0.5 s worst case on a 500 KB file. |
+| AC-025 CI | TEST-007 | Proven (the suite runs in the Ubuntu/Windows matrix). |
+| AC-010, AC-011, AC-012 | TEST-008 | Proven: valid contract exit 0, vague trigger names the stage, missing ADR fails, and `adr_dir` from `layout.json` is honored. All four case studies validate. |
+| AC-026 eval | TEST-008 | Not proven by TEST-008: its command does not run `run_evals.py`, and the order check survives every test (it is caught only by the eval, which CI runs separately). |
+
+How the implementation can be wrong while every test passes: everything in FIND-016 to FIND-022, plus each SURVIVED mutation above.
+
+### FIND-016: Compact block sequences hide P0 secrets and public DB ports in Compose and drop container checks in Kubernetes
+- Severity: blocker
+- Status: resolved
+- Location: agent-system/scripts/lint_infra.py:133-143 (`children`), :341-344 and :350-365 (Compose `nested`), :393-412 (`container_blocks`)
+- Evidence: `children()` keeps only lines indented more than the key. In YAML a block sequence may sit at the same indent as its key (`environment:` followed by `- POSTGRES_PASSWORD=hunter2` at the same column). This is the style of the Kubernetes documentation and many hand-written files. Reproduced:
+  - A Compose service with `environment:\n- POSTGRES_PASSWORD=hunter2` and `ports:\n- "5432:5432"` gives only P0-DOCKER-SOCKET. The secret and the public DB port are both missed. Without the socket line it exits 0.
+  - A Deployment with `containers:\n- name: web` and no probes or resources gives no P1-NO-PROBE and no P1-NO-RESOURCE-LIMITS.
+  - The Kubernetes secret check still works in this style because it does not use `children()`.
+
+  No message tells the user anything was skipped. The `<=` to `<` mutation of `children()` survives the tests.
+- Requirement: REQ-022 (P0-SECRET-LITERAL, P0-DB-PORT-PUBLIC), REQ-023, REQ-024; AC-018, AC-020
+- Recommendation: In `children()`, also accept lines at the key's indent that start with `- ` when the key's value is empty (the YAML rule for a sequence under a mapping key), and stop at the first sibling key. Add Compose and Kubernetes fixtures in compact style for environment, ports, and containers.
+
+### FIND-017: A Compose file whose `services:` line carries a comment is not linted at all
+- Severity: major
+- Status: resolved
+- Location: agent-system/scripts/lint_infra.py:318
+- Evidence: `re.match(r"^services:\s*$", line)` fails for `services:   # app stack`. `lint_compose` then returns before any rule, so every service rule (including P0-PRIVILEGED, P0-SECRET-LITERAL, and P0-DB-PORT-PUBLIC) is skipped. Reproduced with a published 5432: exit 0, no finding, no note. The same exact-match pattern applies wherever a key is detected with `\s*$` (`containers:` at :396).
+- Requirement: REQ-021, REQ-022
+- Recommendation: Strip an inline comment before matching (`^services:\s*(?:#.*)?$`, and the same for `containers:`). Add a test.
+
+### FIND-018: Files over 512 KB are skipped and the CLI still exits 0
+- Severity: major
+- Status: resolved
+- Location: agent-system/scripts/lint_infra.py:27, :524-526, :576
+- Evidence: A rendered manifest bundle over 512 KB with `image: nginx:latest` prints `skipped (larger than 512 KB)` on stderr and exits 0. That is the exit code the implementer and the platform-implementer read as "no P0 open" (REQ-035, REQ-037). The cap protects the hook's timeout, but the CLI does not need it: a 500 KB worst-case file lints in 0.47 s.
+- Requirement: REQ-021, REQ-022 (exit 1 on P0)
+- Recommendation: Keep the cap only in `hook.infra_lint` (or raise it there). In the CLI, lint every file, or exit 2 when a file was skipped, as is already done for unreadable files. Test both.
+
+### FIND-019: P0-SECRET-LITERAL fires on non-secret keys, including the Docker-secrets `_FILE` pattern
+- Severity: major
+- Status: resolved
+- Location: agent-system/scripts/lint_infra.py:29, :78-94
+- Evidence: Each of these exits 1 with P0-SECRET-LITERAL:
+  - `POSTGRES_PASSWORD_FILE: /run/secrets/pg`, which is the official image's way to avoid a literal password.
+  - `JWT_TOKEN_TTL: 3600`.
+  - `API_KEY: null`.
+
+  Other likely hits are `PASSWORD_MIN_LENGTH` and `TOKEN_URL`. The rule matches the spec's text (key contains the word, value is literal), but a blocking P0 on the secure pattern forces suppressions or worse workarounds.
+- Requirement: REQ-022 (intent), REQ-035, REQ-037 (no delivery with P0 open)
+- Recommendation: Needs the user's decision on the spec. My suggestion: exempt keys ending in `_FILE` whose value is an absolute path, YAML null/`~`, and values that are only digits or durations. Record the exemptions in REQ-022 and in checklist item 11, and add tests.
+
+### FIND-020: Kubernetes secret and root checks miss flow mappings and value-before-name
+- Severity: minor
+- Status: resolved
+- Location: agent-system/scripts/lint_infra.py:437-443, :429-432
+- Evidence: Each of these is missed:
+  - `- {name: DB_PASSWORD, value: hunter2}` (flow mapping).
+  - `- value: sk-live-xyz` followed by `name: API_TOKEN` (value before name).
+  - `securityContext: {runAsUser: 0}` at pod level (flow mapping).
+
+  The spec accepts heuristic limits, but these are not listed in the module docstring or the spec's assumptions.
+- Requirement: REQ-022
+- Recommendation: Parse a one-line flow mapping (`{k: v, ...}`) into keys. Collect `name` and `value` per sequence item regardless of order. Document what stays out.
+
+### FIND-021: Dockerfile user and healthcheck rules are imprecise for multi-stage builds
+- Severity: minor
+- Status: resolved
+- Location: agent-system/scripts/lint_infra.py:211-221, :233-234, :255-261, :189-198
+- Evidence:
+  - `USER 0:1000` and `USER root:staff` in the final stage pass: only `root`, `0`, `0:0`, and `root:root` are recognized.
+  - A final stage `FROM runtime` that inherits `USER 1000` from the earlier stage `runtime` is reported as P0-ROOT-USER, a false positive that blocks.
+  - A HEALTHCHECK in a non-final stage counts for the image.
+  - P1-NO-HEALTHCHECK is silenced by any `healthcheck:` in any Compose file of the folder, not by the service built from this Dockerfile.
+- Requirement: REQ-022 (P0-ROOT-USER), REQ-023 (P1-NO-HEALTHCHECK)
+- Recommendation: Treat a user whose part before `:` is `root` or `0` as root. Inherit `user` and `healthcheck` from the alias a stage starts from. Reset `healthcheck` per stage. Match the Compose service whose `build` points at this folder or Dockerfile. Add tests.
+
+### FIND-022: A suppression with a reason but without `--` is silently ignored
+- Severity: minor
+- Status: resolved
+- Location: agent-system/scripts/lint_infra.py:35, :482-494
+- Evidence: `# infra-lint-disable P0-DOCKER-SOCKET because CI` does not match `SUPPRESS` at all, because the lazy class cannot absorb lowercase text. The finding is reported, but neither suppressed nor accompanied by P1-SUPPRESSION-NO-REASON, so the author gets no hint why the comment did nothing. The same happens with a lowercase rule id.
+- Requirement: REQ-027
+- Recommendation: Match `infra-lint-disable\s+(\S+)(.*)$`, accept the suppression only with `--` and a reason, and report P1-SUPPRESSION-NO-REASON (or a P1 for a malformed suppression) otherwise.
+
+### FIND-023: The tests miss most P0 branches, and TEST-008 does not run the eval it claims
+- Severity: major
+- Status: resolved
+- Location: agent-system/tests/test_infra_lint.py:104-146; agent-system/tests/test_validate_architecture.py; docs/tasks/architecture-pipeline.md (TEST-008 Command)
+- Evidence: 14 of the 19 mutations that applied survive (Verification Audit table). AC-018 says "uma fixture para cada regra P0", but whole branches of those rules are untested:
+  - NodePort;
+  - `runAsNonRoot: false`;
+  - `USER 0` and `USER 0:0`;
+  - long-syntax ports;
+  - 7 of 9 DB ports;
+  - the key words `SECRET`, `PRIVATE_KEY`, and `ACCESS_KEY`;
+  - `localhost` and `::1` as loopback;
+  - the `scratch` exemption.
+
+  Also untested: liveness-only, exit 2 for an unreadable file, and duplicated sections. AC-026's order check is not exercised by any test. TEST-008's command does not include `run_evals.py`, yet the proof lists AC-026.
+- Requirement: AC-018, AC-019, AC-020, AC-026; REQ-029
+- Recommendation: Turn `P0_CASES` into one positive per branch and one near-miss per rule. Add the compact-style, comment-on-`services:`, and large-file cases from FIND-016 to FIND-018. Add an out-of-order and a duplicated-section test in `test_validate_architecture.py`, or add `run_evals.py architecture-contract` to TEST-008.
+
+### FIND-024: validate_architecture strips code fences for headings but not for sections and ADR citations
+- Severity: minor
+- Status: resolved
+- Location: agent-system/scripts/validate_architecture.py:47-59, :124-128
+- Evidence: `contract_headings` removes fenced blocks, but `contract_section` splits on the first occurrence in the raw text. A fenced example `## 9. Estágios de escala` in section 2 makes section 9 parse the example, and the valid contract fails ("at least two stages after the current one"). An `ADR-0004` inside a fenced example also counts as a citation.
+- Requirement: REQ-030
+- Recommendation: Run `FENCE.sub` once in `validate()` and pass the cleaned text to all three checks.
+
+### FIND-025: The hook context is cut at 1,500 characters and lists findings by line, not by severity
+- Severity: minor
+- Status: resolved
+- Location: agent-system/scripts/hook.py:124-126, the new `infra_lint` function
+- Evidence: Eight findings with suggestions run about 200 characters each, so `redact(lint, 1500)` truncates the tail. Findings are sorted by line, so in a long Compose file the P0 lines can be the ones cut or left beyond `LINT_SHOWN`. The header still gives the P0 count.
+- Requirement: REQ-028 (findings reach the agent)
+- Recommendation: Sort the hook's list by severity, then line. Drop the suggestion text for P1/P2 lines in the hook, or raise the limit to fit `LINT_SHOWN` lines.
+
+# Fase 2 / Review 2 (re-review of FIND-016 to FIND-025)
+
+Scope: the rewritten `agent-system/scripts/lint_infra.py`, the `validate_architecture.py` and `hook.py` changes, the new tests, the REQ-022 change in the spec (with its Decisions entry), and checklist item 11. Per the coordinator's instruction, I did not run `check_proofs.py --feature`.
+
+Commands run:
+- `python -I agent-system/scripts/check_proofs.py --fingerprint`: digest `a7ec52c4...6afc`. The proof file records TEST-001 to TEST-009 as PASS on this digest, so the proofs are current.
+- `test_system.py`, `run_evals.py`, and `validate_verification.py`: results are in the last lines of this section.
+- In the scratchpad:
+  - I re-ran every reproduction from Fase 2 / Review 1, plus new edge cases (mixed indentation, value-before-name, flow lists, `[::1]` hosts, `USER 0:1000`, inherited stages, a Compose in a subfolder that builds the Dockerfile, suppression variants, a 600 KB manifest).
+  - I ran 31 mutations against the phase-2 tests in a copy of `agent-system/`. 27 were KILLED. The 4 survivors are listed under FIND-023 and FIND-028.
+  - Secret values never appeared in any output of these runs (asserted on stdout and stderr).
+
+Verdict: PASS_WITH_WARNINGS. FIND-016, FIND-017, FIND-018, and FIND-020 to FIND-025 are resolved, and FIND-019 is resolved under the user's decision. The fixes leave one major regression-class gap: P0-SECRET-LITERAL is missed when env lists in one document use different indentation (FIND-026). There are also two minors (FIND-027, FIND-028).
+
+| Finding | Status | Evidence |
+| --- | --- | --- |
+| FIND-016 | Resolved | `children()` (:112-126) accepts `- ` items at the key's indent when the key has an empty value. In compact style, Compose now reports P0-SECRET-LITERAL (line 9) and P0-DB-PORT-PUBLIC (line 11), and a compact `containers:` gets P1-NO-PROBE and P1-NO-RESOURCE-LIMITS. Mutating `children()` back is KILLED. |
+| FIND-017 | Resolved | `services:   # app stack` with long-syntax 5432 now gives P0-DB-PORT-PUBLIC and exit 1. The `^services:\s*$` mutation is KILLED. |
+| FIND-018 | Resolved | The CLI reads a 600 KB manifest and reports its P0 (exit 1). The cap is only in the hook (`HOOK_MAX_BYTES`), and the CLI exits 2 when anything lands in notes. A cap mutation is KILLED. Exit 2 itself is untested (FIND-028). |
+| FIND-019 | Resolved (user decision) | The user decided on 2026-11-16 ("Sim, com exceções", relayed by the coordinator). REQ-022, the spec's Decisions entry, checklist item 11, and `is_literal_secret()` (:184-192) agree. `POSTGRES_PASSWORD_FILE: /run/secrets/pg`, `JWT_TOKEN_TTL: 3600`, and `API_KEY: null` are no longer P0, while `SECRET_KEY: "sk-abc"` still is. Each exemption has a KILLED mutation. Residual by design: a purely numeric secret (`DB_PASSWORD: 123456`) is now exempt too. If that matters, restrict the number/duration exemption to keys that end in `_TTL`, `_TIMEOUT`, `_LENGTH`, or `_EXPIRY`. |
+| FIND-020 | Resolved, except mixed indentation | `securityContext: {runAsUser: 0}` gives P0-ROOT-USER, and `- {name: DB_PASSWORD, value: hunter2}` and value-before-name in a single env list both give P0-SECRET-LITERAL. Mixed indentation across env lists is FIND-026. |
+| FIND-021 | Resolved | `USER 0:1000` gives P0-ROOT-USER. `FROM base AS final` inherits `USER 1000` and the HEALTHCHECK (no finding). A HEALTHCHECK only in an earlier non-parent stage does not count. A Compose `other` service's healthcheck no longer silences the Dockerfile, while the service that builds it (`context` and `dockerfile`) does. `ARG` before the first `FROM` is checked. Each part has a KILLED mutation. |
+| FIND-022 | Resolved | `# infra-lint-disable P0-DOCKER-SOCKET because CI` now gives P1-SUPPRESSION-NO-REASON and keeps the P0. A lowercase id with `-- reason` suppresses. The empty-reason branch (`-- ` with nothing after) has a surviving mutation (FIND-028). |
+| FIND-023 | Resolved, residual in FIND-028 | Of the 14 survivors from Review 1, 12 are now KILLED, including NodePort, `runAsNonRoot`, `USER 0`, the key words, loopback, long syntax, DB ports, `scratch`, liveness, order, and duplicates. TEST-008 now runs `run_evals.py architecture-contract`, so AC-026 is proven by its own TEST. The two left are P1-ADD-REMOTE scope and exit 2 (FIND-028). |
+| FIND-024 | Resolved | `validate()` strips fences once (:131-134). The fence mutation is KILLED. |
+| FIND-025 | Resolved | The hook sorts by severity, P1/P2 lines carry no fix, and the limit is 3,000. The ordering mutation is KILLED; the limit change survives, because no test produces more than 1,500 characters (FIND-028). |
+
+### FIND-026: P0-SECRET-LITERAL is missed when env lists in one document have different indentation
+- Severity: major
+- Status: resolved
+- Location: agent-system/scripts/lint_infra.py:551-553 (`list_items(doc_items(doc))`), :565-571 (`doc_items`), :147 (`item_indent`)
+- Evidence: `doc_items()` concatenates the items of every `env:` list in the document. `list_items()` then fixes `item_indent` to the indent of the first item and ignores items at any other indent. Reproduced:
+  - A Deployment whose `initContainers` env is compact (items at 8 spaces) and whose `containers` env is block style (items at 12) reports `DB_PASSWORD` from the init container but not `API_TOKEN: sk-live-xyz` from the main container. Exit 1 only because of the first.
+  - A `kind: List` with two Pods whose env lists use different styles reports only `A_TOKEN`, missing `B_TOKEN`.
+
+  With a single env list, or lists at the same indent, the check works. This is silent, the same class of defect as FIND-016, and it hits a P0. It shows up wherever snippets in two styles are pasted into one manifest.
+- Requirement: REQ-022 (P0-SECRET-LITERAL), REQ-024
+- Recommendation: Call `list_items(children(doc, index))` once per `env:` key and check the items of each list separately, instead of concatenating them. Add the mixed-indent Deployment as a test case.
+
+### FIND-027: A Compose `environment` written as a flow list is not checked
+- Severity: minor
+- Status: resolved
+- Location: agent-system/scripts/lint_infra.py:452-465
+- Evidence: `environment: ["API_KEY=sk-flow"]` gives no P0-SECRET-LITERAL; the service gets only P1/P2 and the published port. `flow_pairs` handles `{A: b}` mappings, and `ports: [...]` flow lists are parsed, but `environment: [...]` is not. The module docstring says one-line flow mappings are read and says nothing about flow lists.
+- Requirement: REQ-022
+- Recommendation: When the `environment` value starts with `[`, split it like `port_entries` does and run each `KEY=value` through `check_secret`. Add a test.
+
+### FIND-028: Four remaining test gaps
+- Severity: minor
+- Status: resolved
+- Location: agent-system/tests/test_infra_lint.py
+- Evidence: These mutations still pass every test:
+  - P1-ADD-REMOTE also firing on `COPY https://...`: no near-miss.
+  - `return 2 if notes else 0` replaced by `return 0`: acknowledged; no portable way to force an unreadable file.
+  - A suppression with `--` and an empty reason accepted: only the no-`--` case is tested.
+  - The hook limit back at 1,500: no test exceeds it.
+- Requirement: AC-018, AC-023, AC-024
+- Recommendation:
+  - Add a `COPY` near-miss and a `# infra-lint-disable P0-DOCKER-SOCKET -- ` case.
+  - Test the hook with a Compose file that has nine or more findings, and assert that a P0 with its fix is in the context.
+  - For exit 2, call `lint_infra.main()` in process with `Path.read_text` patched to raise `OSError`.
+
+# Fase 2 / Review 3 (re-review of FIND-026 to FIND-028)
+
+Scope: the changes for FIND-026 to FIND-028 in `agent-system/scripts/lint_infra.py` and `agent-system/tests/test_infra_lint.py`, plus a regression pass. Per the coordinator's instruction, I did not run `check_proofs.py --feature`.
+
+Commands run:
+- `python -I agent-system/scripts/check_proofs.py --fingerprint`: digest `7f4a1d89...13f6`. The proofs are re-recorded on this tree (pass=9, as reported); the gate line below confirms they are current.
+- In the scratchpad, I re-ran the Review 2 reproductions for FIND-026 and FIND-027, asserting that no secret value appears in the output.
+- I ran six targeted mutations against the `test_infra_` tests in a copy of `agent-system/`: all six were KILLED.
+
+Verdict: PASS. FIND-016 to FIND-028 are all resolved. Residual by user decision (FIND-019): a purely numeric secret value is exempt from P0-SECRET-LITERAL; the coordinator reported this to the user.
+
+| Finding | Status | Evidence |
+| --- | --- | --- |
+| FIND-026 | Resolved | `env_lists()` (:572-574) returns each `env:` list separately, and `lint_manifest` runs `list_items()` per list (:557-558). The mixed-indent Deployment now reports both secrets (lines 13 and 18), and the two-style `kind: List` reports both (lines 11 and 20). No value is printed. Concatenating the lists again is KILLED by `test_infra_lint_env_lists_with_mixed_indentation`. |
+| FIND-027 | Resolved | `environment: ["API_KEY=sk-flow"]` gives P0-SECRET-LITERAL at line 4 (:457-461), without the value. Disabling the branch is KILLED by `test_infra_lint_compose_environment_flow_list`. |
+| FIND-028 | Resolved | All four former survivors are now KILLED: P1-ADD-REMOTE extended to `COPY`, `return 0` instead of exit 2 for an unreadable file, a `-- ` suppression with an empty reason accepted, and the hook limit back at 1,500. |
+
+Regression pass: the Review 1 and Review 2 reproductions still behave as recorded in Review 2. That covers compact lists, the comment after `services:`, large files, the FIND-019 exemptions, flow mappings, multi-stage inheritance, and suppressions.

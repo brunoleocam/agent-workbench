@@ -1,0 +1,28 @@
+{
+  "description": "ARCHITECTURE.md structure: a valid contract passes; the same contract with section 9 before section 8 fails, citing the section.",
+  "steps": [
+    {
+      "script": "validate_architecture.py",
+      "args": [],
+      "exit_code": 0,
+      "contains": [
+        "ARCHITECTURE.md: valid"
+      ]
+    },
+    {
+      "write": "out-of-order.md",
+      "content": "---\nstatus: approved\noption: A\nstage: 0\n---\n\n# Arquitetura: agenda de clínicas\n\n## 1. Contexto e atributos de qualidade\n\nAgenda para 200 clínicas; pico de 40 req/s; p95 abaixo de 300 ms.\n\n## 2. Componentes e fronteiras\n\n```mermaid\nflowchart LR\n  U[Navegador] --> A[App]\n  A --> DB[(PostgreSQL)]\n```\n\nMonólito com os módulos `agenda` e `clientes`; um módulo não lê as tabelas do outro.\n\n## 3. Dados\n\nPostgreSQL (ADR-0001).\n\n- Migrações: num passo do deploy, compatíveis com a versão anterior.\n\n## 4. Cache\n\nSem cache: toda leitura é uma consulta indexada abaixo de 20 ms no pico.\n\n## 5. Comunicação\n\nTudo síncrono; e-mails por job a partir de uma tabela outbox.\n\n- Garantia de entrega: pelo menos uma vez, consumidor idempotente pelo id do lembrete.\n\n## 6. Deploy e infraestrutura\n\nVPS com Docker Compose.\n\n- Ambientes: local e produção.\n- Caminho até produção: CI, imagem com o hash do commit, deploy por SSH.\n\n## 7. Observabilidade\n\nLogs JSON com id de correlação; alerta de taxa de erro acima de 1% por 5 minutos.\n\n## 9. Estágios de escala\n\n### Estágio 0: monólito numa VPS (atual)\n- Mudança: desenho acima.\n\n### Estágio 1: banco gerenciado\n- Gatilho: CPU do banco > 60% por 7 dias (fonte: métricas do servidor)\n- Mudança: PostgreSQL gerenciado\n- Custo: mais 30 dólares por mês\n- Pré-requisito: string de conexão vinda da configuração\n\n### Estágio 2: duas instâncias\n- Gatilho: p95 da agenda > 300 ms por 7 dias (fonte: APM)\n- Mudança: duas instâncias atrás do Caddy\n- Custo: uma VPS a mais\n- Pré-requisito: sessão fora da memória do processo\n\n## 8. Segurança e permissões\n\nRBAC com `recepcao` e `admin`.\n\n- Portas expostas: 443.\n\n## 10. Anti-padrões\n\n- Nenhum módulo lê as tabelas de outro.\n"
+    },
+    {
+      "script": "validate_architecture.py",
+      "args": [
+        "--file",
+        "out-of-order.md"
+      ],
+      "exit_code": 1,
+      "contains": [
+        "section out of order: ## 9. Estágios de escala"
+      ]
+    }
+  ]
+}
