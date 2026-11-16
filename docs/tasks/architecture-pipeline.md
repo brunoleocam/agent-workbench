@@ -406,3 +406,65 @@ A revisão independente (`docs/reviews/architecture-pipeline.md`, PASS_WITH_WARN
 - `stage_errors()` valida a seção 9 estágio por estágio (FIND-001), com testes negativos (`test_stage_check_*`), e os estudos de caso exigem os mínimos do REQ-012 por rótulo (`- Migrações:`, `- Garantia de entrega:`, `- Ambientes:`, `- Caminho até produção:`, `- Portas expostas:`) (FIND-003).
 - As agulhas de palavra solta viraram frases das skills (FIND-004).
 - Cobertura: os TEST-001 a TEST-006 são estruturais. Provam que as instruções e os formatos existem, não o comportamento do agente; AC-001 a AC-015 só fecham no ensaio depois da fase 3. AC-010, AC-011 e AC-012 saíram do TEST-002 e do TEST-005 e serão provados pelos testes do `validate_architecture.py` na fase 2.
+
+---
+
+# Fase 2: lint de infraestrutura, validador do contrato e hook
+
+**Objetivo:** reprovar de forma determinística os erros de sempre em Dockerfile, Compose e manifests Kubernetes (REQ-021 a REQ-027, REQ-029), checar a estrutura de um `ARCHITECTURE.md` (REQ-030) e avisar o agente a cada edição (REQ-028).
+
+**Abordagem:** `lint_infra.py` segue o formato do `lint_design.py` (mesma classe de achado, mesma saída texto/JSON, mesmo tipo de supressão, exit 0/1/2), com leitura de YAML linha a linha (só stdlib, sem parser YAML; limitações aceitas na spec). `validate_architecture.py` passa a ser a fonte de `stage_errors()` e `MEASURABLE`; o teste da fase 1 importa do script em vez de manter uma cópia. O hook ganha `infra_lint()` ao lado de `design_lint()`, com o mesmo comportamento por host. As duas novas ferramentas entram em `COPY_SCRIPTS` do init.
+
+Branch: `feat/architecture-lint`, a partir de `feat/architecture-pipeline` (PR #13).
+
+### TASK-007: lint_infra.py
+- Requirements: REQ-021, REQ-022, REQ-023, REQ-024, REQ-025, REQ-026, REQ-027, REQ-029
+- Acceptance: AC-017, AC-018, AC-019, AC-020, AC-021, AC-022, AC-023, AC-025
+- Files: agent-system/scripts/lint_infra.py, agent-system/tests/test_infra_lint.py
+- Baseline: agent-system/scripts/lint_infra.py=absent, agent-system/tests/test_infra_lint.py=absent
+- Out of scope: o hook (TASK-009); Helm, Terraform e templates com `{{ }}`
+- Stop if: alguma regra só puder ser implementada com parser YAML externo
+- Depends on: TASK-006
+- Verification: TEST-007
+- Done when: TEST-007 passa e a suíte inteira continua verde
+- Gate: check_proofs TEST-007
+- Status: done
+
+### TEST-007: regras, saída, exclusões e supressão do lint de infraestrutura
+- Acceptance: AC-017, AC-018, AC-019, AC-020, AC-021, AC-022, AC-023, AC-025
+- Task: TASK-007
+- Command: ["python", "agent-system/scripts/test_system.py", "test_infra_lint_"]
+- Expected: exit 0; cada P0 com exit 1 e achado completo; casos não P0 limpos; P1/P2 com exit 0; segredo ausente de texto e JSON; GitHub Actions e `node_modules` ignorados; supressão com e sem motivo
+
+### TASK-008: validate_architecture.py e eval
+- Requirements: REQ-030, REQ-013, REQ-014, REQ-015
+- Acceptance: AC-010, AC-011, AC-012, AC-026
+- Files: agent-system/scripts/validate_architecture.py, agent-system/scripts/run_evals.py, agent-system/evals/fixtures/architecture-contract/expect.json, agent-system/evals/fixtures/architecture-contract/project/ARCHITECTURE.md, agent-system/evals/fixtures/architecture-contract/project/docs/architecture/ADR/0001-postgres.md, agent-system/tests/test_validate_architecture.py, agent-system/tests/test_architecture_skills.py
+- Baseline: agent-system/scripts/validate_architecture.py=absent, agent-system/tests/test_validate_architecture.py=absent
+- Depends on: TASK-007
+- Verification: TEST-008
+- Done when: TEST-008 passa, `run_evals.py` passa com a fixture nova e a suíte inteira continua verde
+- Gate: check_proofs TEST-008
+- Status: done
+
+### TEST-008: validador do contrato e eval de estrutura
+- Acceptance: AC-010, AC-011, AC-012, AC-026
+- Task: TASK-008
+- Command: ["python", "agent-system/scripts/test_system.py", "test_validate_architecture_", "test_stage_check", "test_measurable_trigger", "test_architecture_case_studies"]
+- Expected: exit 0; contrato válido passa; seção fora de ordem, gatilho vago e ADR citada inexistente reprovam com exit 1 citando a seção, o estágio ou a ADR; `adr_dir` do `layout.json` é respeitado; o eval `architecture-contract` passa
+
+### TASK-009: hook do lint de infraestrutura e cópia pelo init
+- Requirements: REQ-028, REQ-024
+- Acceptance: AC-024, AC-021
+- Files: agent-system/scripts/hook.py, agent-system/scripts/init_project.py, agent-system/tests/test_infra_lint.py
+- Depends on: TASK-007
+- Verification: TEST-009
+- Done when: TEST-009 passa e a suíte inteira continua verde, incluindo os testes do hook do lint de design
+- Gate: check_proofs TEST-009
+- Status: done
+
+### TEST-009: hook informativo do lint de infraestrutura
+- Acceptance: AC-024, AC-021
+- Task: TASK-009
+- Command: ["python", "agent-system/scripts/test_system.py", "test_infra_hook_", "test_design_lint_hook"]
+- Expected: exit 0; no Claude Code o achado aparece como contexto; no Cursor resposta vazia e evento `INFRA_LINT` sem trecho nem valor de segredo; `.py`, `.md` e arquivo fora da raiz não disparam; o init copia `lint_infra.py` e `validate_architecture.py`

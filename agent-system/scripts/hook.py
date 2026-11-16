@@ -121,9 +121,9 @@ def to_claude(event: str, reply: dict) -> dict:
     context = reply.get("additional_context")
     if event == "SessionStart" and context:
         return {"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": context}}
-    lint = reply.get("design_lint")
+    lint = "\n".join(item for item in (reply.get("design_lint"), reply.get("infra_lint")) if item)
     if event == "PostToolUse" and lint:
-        return {"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": redact(lint, 1500)}}
+        return {"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": redact(lint, 3000)}}
     return {}
 
 
@@ -158,6 +158,37 @@ def design_lint(path: str, roots: list[Path]) -> str:
     lines += [f"line {item.line}: {item.rule} {item.message} Fix: {item.suggestion}" for item in findings[:LINT_SHOWN]]
     if len(findings) > LINT_SHOWN:
         lines.append(f"{len(findings) - LINT_SHOWN} more; run lint_design.py {file.name} for the full list.")
+    return "\n".join(lines)
+
+
+def infra_lint(path: str, roots: list[Path]) -> str:
+    """Informational lint summary for one edited Dockerfile, Compose file, or manifest. Empty when clean or on any error.
+
+    A P0-SECRET-LITERAL finding names the key only, so the summary never carries a secret value.
+    """
+    try:
+        import lint_infra
+
+        file = Path(path)
+        if not file.is_file() or not lint_infra.is_candidate(file):
+            return ""
+        resolved = file.resolve()
+        if not any(item.resolve() in resolved.parents for item in roots):  # outside every workspace root
+            return ""
+        findings = lint_infra.by_severity(lint_infra.lint_paths([file], max_bytes=lint_infra.HOOK_MAX_BYTES))
+    except Exception:
+        return ""
+    if not findings:
+        return ""
+    counts = lint_infra.summary(findings)
+    lines = [f"Infra lint (informational) for {file.name}: {counts['P0']} P0, {counts['P1']} P1, {counts['P2']} P2. P0 blocks review."]
+    # Most severe first, and only P0 lines carry the fix, so the P0s survive the context limit.
+    lines += [
+        f"line {item.line}: {item.rule} {item.message}" + (f" Fix: {item.suggestion}" if item.severity == "P0" else "")
+        for item in findings[:LINT_SHOWN]
+    ]
+    if len(findings) > LINT_SHOWN:
+        lines.append(f"{len(findings) - LINT_SHOWN} more; run lint_infra.py {file.name} for the full list.")
     return "\n".join(lines)
 
 
@@ -323,12 +354,18 @@ def handle(payload: dict) -> dict:
             if path and should_skip_duplicate_edit(root, path):
                 continue
             log(root, payload, "FILE_EDIT", f"Edited {Path(path).name}" if path else "Edited a file", files=[path])
+        reply = {}
         report = design_lint(path, workspace_roots(payload)) if path else ""
         if report:
             for root in roots:
                 log(root, payload, "DESIGN_LINT", report.splitlines()[0], result="warning", files=[path])
-            return {"design_lint": report}
-        return {}
+            reply["design_lint"] = report
+        infra = infra_lint(path, workspace_roots(payload)) if path else ""
+        if infra:
+            for root in roots:
+                log(root, payload, "INFRA_LINT", infra.splitlines()[0], result="warning", files=[path])
+            reply["infra_lint"] = infra
+        return reply
 
     if name == "postToolUseFailure":
         for root in roots:
@@ -372,6 +409,7 @@ def main() -> int:
         else:
             reply = handle(payload)
             reply.pop("design_lint", None)  # Cursor's afterFileEdit has no channel back to the agent
+            reply.pop("infra_lint", None)
             emit(reply)
     except Exception:
         if name == "subagentStart":

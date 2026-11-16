@@ -43,6 +43,8 @@ COPY_SCRIPTS = [
     "next_step.py",
     "metrics.py",
     "lint_design.py",
+    "lint_infra.py",
+    "validate_architecture.py",
     "validate_verification.py",
     "lessons.py",
 ]
