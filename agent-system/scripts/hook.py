@@ -18,6 +18,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from lib import (  # noqa: E402
+    DESIGN_REL,
+    contract_path,
     append_event,
     base_event,
     confirmed_lessons,
@@ -148,7 +150,7 @@ def design_lint(path: str, roots: list[Path]) -> str:
         root = next((item for item in roots if item.resolve() in resolved.parents), None)
         if root is None:  # outside every workspace root: not this project's UI
             return ""
-        design, tokens = root / "DESIGN.md", root / "design" / "tokens.css"
+        design, tokens = contract_path(root, DESIGN_REL), root / "design" / "tokens.css"
         findings = lint_design.lint_paths([file], design if design.is_file() else None, tokens if tokens.is_file() else None)
     except Exception:
         return ""

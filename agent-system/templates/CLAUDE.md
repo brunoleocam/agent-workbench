@@ -59,7 +59,7 @@ An idea, bug, requirement, or dependency discovered mid-task does not change the
 
 ### 07 · Artifacts
 
-A tree in the repository, created on demand, never with an empty file: `docs/product/PRD.md`, `docs/architecture/ARCHITECTURE.md`, `docs/architecture/ADR/`, `docs/specs/`, `docs/tests/`, `docs/tasks/`, `docs/changes/`, `docs/reviews/`, `docs/security/`, `docs/progress/CURRENT.md`, and `ROADMAP.md`. Same feature, same slug in every folder. Proofs live in `.agent-system/proofs/`. If the repository already has a canonical place for specs or ADRs, use the existing one.
+A tree in the repository, created on demand, never with an empty file: `docs/product/PRD.md`, `docs/architecture/ARCHITECTURE.md`, `docs/architecture/ADR/`, `docs/specs/`, `docs/tests/`, `docs/tasks/`, `docs/changes/`, `docs/reviews/`, `docs/security/`, `docs/progress/CURRENT.md`, and `ROADMAP.md`; the visual contract is `design/DESIGN.md`. Nothing the workflow produces goes at the repository root: every document and contract lives in a folder. Same feature, same slug in every folder. Proofs live in `.agent-system/proofs/`. If the repository already has a canonical place for specs or ADRs, use the existing one.
 
 ### 08 · Security
 

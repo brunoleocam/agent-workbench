@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from support import SYSTEM, run, write  # noqa: E402
 
 FIXTURE = SYSTEM / "evals" / "fixtures" / "architecture-contract" / "project"
+ARCH = "docs/architecture/ARCHITECTURE.md"
 
 
 def project() -> tempfile.TemporaryDirectory:
@@ -27,7 +28,7 @@ def check(root: Path, *args: str):
 
 
 def contract(root: Path) -> str:
-    return (root / "ARCHITECTURE.md").read_text(encoding="utf-8")
+    return (root / ARCH).read_text(encoding="utf-8")
 
 
 def test_validate_architecture_accepts_a_valid_contract() -> None:
@@ -40,7 +41,7 @@ def test_validate_architecture_refuses_sections_out_of_order_or_missing() -> Non
     with project() as raw:
         root = Path(raw)
         text = contract(root)
-        write(root, "ARCHITECTURE.md", text.replace("## 4. Cache", "## 4. Caching"))
+        write(root, ARCH, text.replace("## 4. Cache", "## 4. Caching"))
         code, report, _ = check(root)
         assert code == 1
         assert "missing section: ## 4. Cache" in report["errors"], report
@@ -52,7 +53,7 @@ def test_validate_architecture_refuses_a_vague_trigger_citing_the_stage() -> Non
     with project() as raw:
         root = Path(raw)
         text = contract(root).replace("CPU do banco > 60% por 7 dias (fonte: métricas do servidor)", "quando crescer por 7 dias (fonte: intuição)")
-        write(root, "ARCHITECTURE.md", text)
+        write(root, ARCH, text)
         code, report, _ = check(root)
         assert code == 1
         assert "### Estágio 1: banco gerenciado: trigger without operator, number, and unit" in report["errors"], report
@@ -62,7 +63,7 @@ def test_validate_architecture_refuses_a_missing_adr() -> None:
     """AC-012: a cited ADR must exist."""
     with project() as raw:
         root = Path(raw)
-        write(root, "ARCHITECTURE.md", contract(root).replace("RBAC com", "RBAC (ADR-0002) com"))
+        write(root, ARCH, contract(root).replace("RBAC com", "RBAC (ADR-0002) com"))
         code, report, _ = check(root)
         assert code == 1
         assert any(error.startswith("ADR-0002 is cited but not found") for error in report["errors"]), report
@@ -96,7 +97,7 @@ def test_validate_architecture_accepts_every_case_study_contract() -> None:
         for path in sorted(examples.glob("*.md")):
             text = path.read_text(encoding="utf-8")
             body = text.split("## Contrato", 1)[1].split("## O que este caso ensina", 1)[0]
-            write(root, "ARCHITECTURE.md", body)
+            write(root, ARCH, body)
             code, report, _ = check(root)
             assert code == 0, (path.name, report)
 
@@ -107,11 +108,11 @@ def test_validate_architecture_refuses_order_and_duplicates() -> None:
         root = Path(raw)
         text = contract(root)
         s8, s9, s10 = (text.index(h) for h in ("## 8. Segurança", "## 9. Estágios", "## 10. Anti"))
-        write(root, "ARCHITECTURE.md", text[:s8] + text[s9:s10] + text[s8:s9] + text[s10:])
+        write(root, ARCH, text[:s8] + text[s9:s10] + text[s8:s9] + text[s10:])
         code, report, _ = check(root)
         assert code == 1
         assert any(error.startswith("section out of order: ## 9. Estágios de escala") for error in report["errors"]), report
-        write(root, "ARCHITECTURE.md", text + "\n## 4. Cache\n\nDe novo.\n")
+        write(root, ARCH, text + "\n## 4. Cache\n\nDe novo.\n")
         code, report, _ = check(root)
         assert code == 1 and "duplicated section: ## 4. Cache" in report["errors"], report
 
@@ -122,7 +123,7 @@ def test_validate_architecture_ignores_fenced_examples() -> None:
     with project() as raw:
         root = Path(raw)
         text = contract(root)
-        write(root, "ARCHITECTURE.md", text.replace("## 3. Dados", sample + "\n## 3. Dados", 1))
+        write(root, ARCH, text.replace("## 3. Dados", sample + "\n## 3. Dados", 1))
         code, report, _ = check(root)
         assert code == 0, report
 
@@ -131,3 +132,16 @@ def test_validate_architecture_eval_fixture_passes() -> None:
     """AC-026 through the eval runner, so TEST-008 covers it."""
     done = run("run_evals.py", ["architecture-contract"])
     assert done.returncode == 0 and "[PASS] architecture-contract" in done.stdout, done.stdout + done.stderr
+
+
+def test_validate_architecture_reads_a_legacy_root_contract_with_a_warning() -> None:
+    with project() as raw:
+        root = Path(raw)
+        (root / ARCH).replace(root / "ARCHITECTURE.md")
+        code, report, done = check(root)
+        assert code == 0 and report["file"] == "ARCHITECTURE.md", done.stdout
+        assert "move it to docs/architecture/ARCHITECTURE.md" in done.stderr, done.stderr
+        # Once moved, the folder copy wins and the warning goes away.
+        write(root, ARCH, (root / "ARCHITECTURE.md").read_text(encoding="utf-8"))
+        code, report, done = check(root)
+        assert code == 0 and report["file"] == ARCH and "[WARN]" not in done.stderr, done.stderr

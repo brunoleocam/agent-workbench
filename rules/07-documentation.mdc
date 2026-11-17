@@ -5,7 +5,7 @@ alwaysApply: false
 
 # Project artifacts
 
-Create this tree in the work repository, not in the user's profile. Do not create an empty file without useful content. For a trivial change, do not create the tree.
+Create this tree in the work repository, not in the user's profile. Nothing the workflow produces goes at the repository root: every document and contract lives in a folder. The visual contract is `design/DESIGN.md`, with `design/tokens.css`. Do not create an empty file without useful content. For a trivial change, do not create the tree.
 
 ```
 docs/

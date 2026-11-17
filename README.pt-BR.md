@@ -1,5 +1,5 @@
 <div align="right">
-  <img src="https://img.shields.io/badge/version-0.6.0-green?style=flat-square" alt="Versão 0.6.0" />
+  <img src="https://img.shields.io/badge/version-0.6.1-green?style=flat-square" alt="Versão 0.6.1" />
   <a href="README.md">
     <img src="https://img.shields.io/badge/README-EN-blue?style=flat-square" alt="English 🇺🇸" />
   </a>
@@ -243,6 +243,8 @@ Em projetos preparados com `--for-cloud`, as cópias de rules e subagents nunca 
 - Hooks: o Claude Code roda `hooks/claude-hooks.json`, que alimenta a mesma timeline dos hooks do Cursor.
 - Estado: o projeto guarda o estado em `.agent-system/` e `.agent-system/timeline/` nos dois editores, então um projeto inicializado num editor continua no outro.
 - `--for-cloud` e `/roadmap visual` (Canvas) são exclusivos do Cursor.
+
+Novo na 0.6.1: nada que o fluxo produz fica na raiz do repositório. O contrato de arquitetura é `docs/architecture/ARCHITECTURE.md` e o de design é `design/DESIGN.md`. Um contrato que uma versão anterior deixou na raiz continua sendo lido (o `validate_architecture.py` avisa) até você movê-lo.
 
 Novo na 0.6.0: o estado do projeto saiu de `.cursor/agent-system/` e `.cursor/timeline/` para uma pasta neutra, `.agent-system/`, e o Claude Code não cria mais a pasta `.cursor`; rodar `/init-agent-system` de novo move uma instalação existente e reescreve os comandos de hook do Cursor. O pipeline de arquitetura chegou em duas fases: as skills `architecture`, `architecture-discovery`, `architecture-options`, `architecture-system` e `architecture-review`, o lint de infraestrutura (`lint_infra.py`, para Dockerfiles, Compose e Kubernetes) e o validador do contrato `ARCHITECTURE.md` (`validate_architecture.py`). Os agentes dedicados chegam numa versão seguinte.
 

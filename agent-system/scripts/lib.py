@@ -213,6 +213,23 @@ def load_state(root: Path) -> dict:
 
 
 ROADMAP_REL = "docs/progress/ROADMAP.md"
+# Contracts live in folders, never at the project root.
+ARCHITECTURE_REL = "docs/architecture/ARCHITECTURE.md"
+DESIGN_REL = "design/DESIGN.md"
+
+
+def contract_path(root: Path, rel: str) -> Path:
+    """A contract in its folder. One that an older version left at the root is still found until it is moved."""
+    path = root / rel
+    legacy = root / Path(rel).name
+    return legacy if not path.is_file() and legacy.is_file() else path
+
+
+def legacy_contract_note(root: Path, path: Path, rel: str) -> str:
+    """Warning for a contract still at the root; empty when it is in its folder."""
+    if path.parent.resolve() == root.resolve() and path.name == Path(rel).name:
+        return f"{path.name} is at the project root; move it to {rel}."
+    return ""
 # "You are here:" is the marker; the Portuguese form is still read so existing roadmaps keep working.
 ROADMAP_POSITION = re.compile(r"(?:you\s+are\s+here|voc[eê]\s+est[aá]\s+aqui)\s*:\s*(.+)", re.IGNORECASE)
 ROADMAP_ITEM = re.compile(r"^\s*[-*]\s+\[([xX~ !])\]")

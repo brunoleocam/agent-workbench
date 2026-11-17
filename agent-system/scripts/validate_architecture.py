@@ -19,6 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from artifacts import ConfigError, project_root, resolve_layout  # noqa: E402
+from lib import ARCHITECTURE_REL, contract_path, legacy_contract_note  # noqa: E402
 
 SECTIONS = [
     "## 1. Contexto e atributos de qualidade",
@@ -137,7 +138,7 @@ def validate(text: str, root: Path, layout: dict) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Validate the structure of ARCHITECTURE.md.")
     parser.add_argument("--root", default=".", help="project root (default: current directory)")
-    parser.add_argument("--file", default="ARCHITECTURE.md", help="contract path relative to the root")
+    parser.add_argument("--file", help=f"contract path relative to the root (default: {ARCHITECTURE_REL})")
     parser.add_argument("--json", action="store_true", help="structured output")
     args = parser.parse_args(argv)
     try:
@@ -146,9 +147,16 @@ def main(argv: list[str] | None = None) -> int:
     except ConfigError as exc:
         print(f"[ERROR] {exc}", file=sys.stderr)
         return 2
-    path = (root / args.file).resolve()
+    if args.file:
+        path, shown = (root / args.file).resolve(), args.file
+    else:
+        path = contract_path(root, ARCHITECTURE_REL)
+        shown = path.relative_to(root).as_posix()
+        note = legacy_contract_note(root, path, ARCHITECTURE_REL)
+        if note:
+            print(f"[WARN] {note}", file=sys.stderr)
     if not path.is_file():
-        print(f"[ERROR] {args.file} not found", file=sys.stderr)
+        print(f"[ERROR] {shown} not found", file=sys.stderr)
         return 2
     text = path.read_text(encoding="utf-8", errors="replace")
     errors = validate(text, root, layout)
@@ -156,11 +164,11 @@ def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     if args.json:
-        print(json.dumps({"file": args.file, "ok": not errors, "errors": errors}, ensure_ascii=False))
+        print(json.dumps({"file": shown, "ok": not errors, "errors": errors}, ensure_ascii=False))
     else:
         for error in errors:
             print(f"[FAIL] {error}")
-        print(f"{args.file}: {'valid' if not errors else f'{len(errors)} problem(s)'}")
+        print(f"{shown}: {'valid' if not errors else f'{len(errors)} problem(s)'}")
     return 1 if errors else 0
 
 

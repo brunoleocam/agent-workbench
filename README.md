@@ -1,5 +1,5 @@
 <div align="right">
-  <img src="https://img.shields.io/badge/version-0.6.0-green?style=flat-square" alt="Version 0.6.0" />
+  <img src="https://img.shields.io/badge/version-0.6.1-green?style=flat-square" alt="Version 0.6.1" />
   <a href="README.pt-BR.md">
     <img src="https://img.shields.io/badge/README-PT--BR-blue?style=flat-square" alt="Português 🇧🇷" />
   </a>
@@ -243,6 +243,8 @@ For projects prepared with `--for-cloud`, existing rule and subagent copies are 
 - Hooks: Claude Code runs `hooks/claude-hooks.json`, which feeds the same timeline as the Cursor hooks.
 - State: projects keep their state in `.agent-system/` and `.agent-system/timeline/` in both editors, so a project initialized in one editor continues in the other.
 - `--for-cloud` and `/roadmap visual` (Canvas) are Cursor-only.
+
+New in 0.6.1: nothing the workflow produces goes at the repository root. The architecture contract is `docs/architecture/ARCHITECTURE.md` and the design contract is `design/DESIGN.md`. A contract an older version left at the root is still read (`validate_architecture.py` warns) until you move it.
 
 New in 0.6.0: the project state moved from `.cursor/agent-system/` and `.cursor/timeline/` to a tool-neutral `.agent-system/`, so Claude Code no longer creates a `.cursor` folder; running `/init-agent-system` again moves an existing install and rewrites the Cursor hook commands. The architecture pipeline arrived in two phases: the `architecture`, `architecture-discovery`, `architecture-options`, `architecture-system`, and `architecture-review` skills, the infrastructure lint (`lint_infra.py`, for Dockerfiles, Compose, and Kubernetes), and the `ARCHITECTURE.md` contract validator (`validate_architecture.py`). Its dedicated agents come in a later version.
 

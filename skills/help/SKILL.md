@@ -45,7 +45,7 @@ The flow itself is a graph in `.agent-system/workflow.json`. `validate_workflow.
 - `/design` — the full design pipeline for a new interface: interview, three directions, `DESIGN.md`, review. Skips what is approved and stops wherever you must answer or choose.
 - `/design-discovery` — a short interview (at most 5 questions, each with a recommended answer) that produces `design/brief.md`. No design jargon.
 - `/design-directions` — three structurally different directions as HTML previews in `design/directions/`; you choose one and tune it with dials. Writes no `DESIGN.md`.
-- `/design-system` — turns the chosen direction into `DESIGN.md` and `design/tokens.css`, with contrast checked. Overwrites an existing `DESIGN.md` only with your confirmation.
+- `/design-system` — turns the chosen direction into `design/DESIGN.md` and `design/tokens.css`, with contrast checked. Overwrites an existing `DESIGN.md` only with your confirmation.
 - `/design-review` — six-axis self-critique, a 28-question checklist, and the lint, reported in plain prose. Fixes before delivering.
 - `/architecture` — the full architecture pipeline for a new system or a structural change: interview, options, `ARCHITECTURE.md` with scaling stages and ADRs, review. Skips what is approved and stops wherever you must answer or choose.
 - `/architecture-discovery` — a short interview (at most 6 questions, each with a recommended answer; the infrastructure target is always asked) and a capacity estimate with the arithmetic shown, in `architecture/brief.md`.
