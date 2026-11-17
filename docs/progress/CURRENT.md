@@ -1,6 +1,6 @@
 # Current progress
 
-State of the repository at version 0.6.0, which ships architecture phases 1 and 2 and moves the project state to `.agent-system/`. The audit-improvements front (PR #8), the design pipeline (PR #9), the workflow graph (PR #10), the 0.5.0 bump (PR #11), and the second design acceptance run (PR #12) are merged into `main`. The architecture front is in progress on `feat/architecture-pipeline`.
+State of the repository at version 0.6.1. 0.6.0 shipped architecture phases 1 and 2 and moved the project state to `.agent-system/`; 0.6.1 keeps every contract in a folder (`docs/architecture/ARCHITECTURE.md`, `design/DESIGN.md`), never at the root. The audit-improvements front (PR #8), the design pipeline (PR #9), the workflow graph (PR #10), the 0.5.0 bump (PR #11), and the second design acceptance run (PR #12) are merged into `main`. The architecture front is in progress on `feat/architecture-pipeline`.
 
 ## Delivered (merged)
 

@@ -1,6 +1,6 @@
 ---
 name: design-system
-description: Turns the chosen visual direction into the project's design contract, DESIGN.md at the root plus design/tokens.css, with color roles and contrast pairs, a type scale of at most three families, a 4px spacing scale, component states, motion, voice, and anti-patterns. Use after a direction is chosen in design-directions, or to update an existing DESIGN.md (design system, DESIGN.md, tokens, sistema de design, paleta e tipografia do projeto).
+description: Turns the chosen visual direction into the project's design contract, design/DESIGN.md plus design/tokens.css, with color roles and contrast pairs, a type scale of at most three families, a 4px spacing scale, component states, motion, voice, and anti-patterns. Use after a direction is chosen in design-directions, or to update an existing DESIGN.md (design system, DESIGN.md, tokens, sistema de design, paleta e tipografia do projeto).
 ---
 
 # Design system
@@ -9,7 +9,7 @@ Third step of `design`. Input: the direction the user chose in `design/direction
 
 ## 1. Existing DESIGN.md
 
-If `DESIGN.md` already exists at the root, read it first. Show the user what would change, section by section, and overwrite only after explicit confirmation. Without confirmation, change nothing. Prefer updating the affected sections over rewriting the file.
+If `design/DESIGN.md` already exists, read it first. A `DESIGN.md` left at the project root by an older version is the same contract: move it to `design/DESIGN.md` (with the user's confirmation) before changing it. Show the user what would change, section by section, and overwrite only after explicit confirmation. Without confirmation, change nothing. Prefer updating the affected sections over rewriting the file.
 
 ## 2. Write DESIGN.md
 
@@ -49,7 +49,7 @@ When one page needs a different rule (a dashboard that must be denser than the m
 
 ## 5. Approve
 
-Write `DESIGN.md` with `status: draft`, summarize it in a few lines (stance, distinctive choice, colors, fonts, density), and ask for approval. Change to `status: approved` only after the user's explicit approval.
+Write `design/DESIGN.md` with `status: draft`, summarize it in a few lines (stance, distinctive choice, colors, fonts, density), and ask for approval. Change to `status: approved` only after the user's explicit approval.
 
 ## Done when
 

@@ -5,7 +5,7 @@ description: Writes the architecture contract ARCHITECTURE.md from the option th
 
 # Architecture system
 
-Third step of `architecture`. Reads `architecture/brief.md` and the choice in `architecture/options.md`, and writes `ARCHITECTURE.md` at the project root plus ADRs in the ADR folder (`adr_dir`, default `docs/architecture/ADR/`). From then on the planner, the implementers, and the architecture reviewer follow the contract.
+Third step of `architecture`. Reads `architecture/brief.md` and the choice in `architecture/options.md`, and writes `docs/architecture/ARCHITECTURE.md` (never at the project root) plus ADRs in the ADR folder (`adr_dir`, default `docs/architecture/ADR/`). From then on the planner, the implementers, and the architecture reviewer follow the contract.
 
 ## 0. Precondition
 
@@ -13,11 +13,11 @@ Third step of `architecture`. Reads `architecture/brief.md` and the choice in `a
 
 ## 1. Existing ARCHITECTURE.md
 
-If `ARCHITECTURE.md` already exists, read it first. Propose the changes section by section (what stays, what changes, and why), and overwrite only after the user's explicit confirmation. Without confirmation, leave the file as it is.
+If `docs/architecture/ARCHITECTURE.md` already exists, read it first. An `ARCHITECTURE.md` left at the project root by an older version is the same contract: move it to `docs/architecture/ARCHITECTURE.md` (with the user's confirmation) before changing it; `validate_architecture.py` warns while it stays at the root. Propose the changes section by section (what stays, what changes, and why), and overwrite only after the user's explicit confirmation. Without confirmation, leave the file as it is.
 
 ## 2. Write the contract
 
-Write `ARCHITECTURE.md` from [references/architecture-template.md](references/architecture-template.md), following [../architecture/references/architecture-md-format.md](../architecture/references/architecture-md-format.md):
+Write `docs/architecture/ARCHITECTURE.md` from [references/architecture-template.md](references/architecture-template.md), following [../architecture/references/architecture-md-format.md](../architecture/references/architecture-md-format.md):
 
 - Front matter `status: draft`, `option` (the `choice` of `architecture/options.md`, uppercase), and `stage: 0`.
 - The ten sections, with these headings, in this order, nothing renamed.

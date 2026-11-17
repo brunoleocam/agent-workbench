@@ -1,6 +1,6 @@
 # ARCHITECTURE.md format
 
-`ARCHITECTURE.md` sits at the project root. It is the architecture contract: the planner reads it before specifying, the implementer reads it before building, and the architecture reviewer compares code and infrastructure against it. A database, cache, queue, external service, or deploy unit that the contract does not name is not added by a task; it goes through `change-request` first.
+`ARCHITECTURE.md` lives at `docs/architecture/ARCHITECTURE.md`, next to the ADRs, never at the project root. It is the architecture contract: the planner reads it before specifying, the implementer reads it before building, and the architecture reviewer compares code and infrastructure against it. A database, cache, queue, external service, or deploy unit that the contract does not name is not added by a task; it goes through `change-request` first.
 
 Front matter:
 

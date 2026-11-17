@@ -295,10 +295,21 @@ def test_design_lint_keeps_legitimate_ui_clean_of_p0() -> None:
 def test_design_lint_section_nine_does_not_allowlist_forbidden_colors() -> None:
     with tempfile.TemporaryDirectory() as raw:
         root = Path(raw)
-        write(root, "DESIGN.md", "---\nstatus: approved\n---\n## 2. Cor\n| `--color-accent` | `#0f766e` |\n## 9. Anti-padrões\n- Nunca use #6366f1 nem #7c3aed.\n")
+        write(root, "design/DESIGN.md", "---\nstatus: approved\n---\n## 2. Cor\n| `--color-accent` | `#0f766e` |\n## 9. Anti-padrões\n- Nunca use #6366f1 nem #7c3aed.\n")
         write(root, "src/B.tsx", 'export const B = () => <p style={{ color: "#6366f1" }} className="bg-indigo-500">Oi</p>;\n')
         code, report, _ = lint(root, "src")
         assert [item["rule"] for item in report["findings"] if item["severity"] == "P0"].count("P0-INDIGO") == 2 and code == 1, report
+
+
+def test_design_lint_reads_design_md_from_its_folder_and_legacy_root() -> None:
+    contract = "---\nstatus: approved\n---\n## 2. Cor\n| `--color-accent` | `#7c3aed` |\n"
+    for location in ("design/DESIGN.md", "DESIGN.md"):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            write(root, location, contract)
+            write(root, "src/B.tsx", 'export const B = () => <p style={{ color: "#7c3aed" }}>Oi</p>;\n')
+            code, report, _ = lint(root, "src")
+            assert "P0-INDIGO" not in rules(report) and code == 0, (location, report)
 
 
 def test_design_lint_allows_declared_brand_hex_and_gradient() -> None:

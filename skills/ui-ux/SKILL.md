@@ -8,7 +8,7 @@ description: Designs and builds a user interface for a defined task, including e
 Builds the interface already chosen. If alternatives are still open, use `ui-ux-experiment` or `brainstorm` first.
 
 1. Read the visual contract before building:
-   - If `DESIGN.md` exists at the root, read it, `design/tokens.css`, and `design/pages/<page>.md` when present; the page exception wins for that page. Use only the declared tokens for color, font, spacing, radius, shadow, and duration. No raw values in components.
+   - If `design/DESIGN.md` exists, read it, `design/tokens.css`, and `design/pages/<page>.md` when present; the page exception wins for that page. Use only the declared tokens for color, font, spacing, radius, shadow, and duration. No raw values in components.
    - If there is no `DESIGN.md` and the task creates a new visual interface (a new product, site, or screen with no visual system of its own), recommend running `/design` first and wait for the user's decision.
    - A small change in an interface that already has its own visual system goes ahead without that recommendation; follow the system that is there.
 2. Name the user's task and the success state.

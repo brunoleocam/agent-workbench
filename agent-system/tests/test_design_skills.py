@@ -167,7 +167,7 @@ def contrast(first: str, second: str) -> float:
 
 
 def test_design_sample_artifacts() -> None:
-    design = read(SAMPLE / "DESIGN.md")
+    design = read(SAMPLE / "design" / "DESIGN.md")
     assert "status: approved" in design
     assert headings_in_order(design) == SECTIONS
     # The first :root block holds the values; a later @media block only overrides them (reduced motion).
@@ -193,10 +193,10 @@ def test_design_sample_artifacts() -> None:
         assert not re.search(r"<script[^>]+src=[\"']https?:", html) and not re.search(r"<img[^>]+src=[\"']https?:", html), path.name
         if path.name != "index.html":
             assert html.lstrip().startswith("<!-- direction:"), path.name
-    findings = lint_design.lint_paths([SAMPLE], SAMPLE / "DESIGN.md", SAMPLE / "design" / "tokens.css")
+    findings = lint_design.lint_paths([SAMPLE], SAMPLE / "design" / "DESIGN.md", SAMPLE / "design" / "tokens.css")
     assert not [item for item in findings if item.severity == "P0"], findings
     # AC-016: the screen built from the contract uses only tokens.
-    screen = lint_design.lint_paths([SAMPLE / "src"], SAMPLE / "DESIGN.md", SAMPLE / "design" / "tokens.css")
+    screen = lint_design.lint_paths([SAMPLE / "src"], SAMPLE / "design" / "DESIGN.md", SAMPLE / "design" / "tokens.css")
     assert not [item for item in screen if item.rule in {"P1-RAW-COLOR", "P1-FONT-LITERAL"}], screen
     # AC-011: every token value DESIGN.md cites (`--name: value`) matches the tokens file.
     for name, value in re.findall(r"`(--[\w-]+): ([^`]+)`", design):

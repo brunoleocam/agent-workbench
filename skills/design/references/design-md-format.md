@@ -1,6 +1,6 @@
 # DESIGN.md format
 
-`DESIGN.md` sits at the project root. It is the visual contract: every screen reads it before it is built, and every value it names exists in `design/tokens.css` with the same value. `AGENTS.md` or `CLAUDE.md` says how to build the project; `DESIGN.md` says how it looks and feels.
+`DESIGN.md` lives at `design/DESIGN.md`, next to the tokens, never at the project root. It is the visual contract: every screen reads it before it is built, and every value it names exists in `design/tokens.css` with the same value. `AGENTS.md` or `CLAUDE.md` says how to build the project; `DESIGN.md` says how it looks and feels.
 
 Front matter:
 

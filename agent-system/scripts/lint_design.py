@@ -414,7 +414,7 @@ def render_text(findings: list[Finding]) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Anti-AI-slop design lint for UI source files.")
     parser.add_argument("paths", nargs="*", default=["."], help="files or folders (default: current folder)")
-    parser.add_argument("--design", help="DESIGN.md whose colors are allowed (default: ./DESIGN.md when present)")
+    parser.add_argument("--design", help="DESIGN.md whose colors are allowed (default: ./design/DESIGN.md, or a legacy ./DESIGN.md, when present)")
     parser.add_argument("--tokens", help="token stylesheet whose colors are allowed (default: ./design/tokens.css when present)")
     parser.add_argument("--format", choices=("text", "json"), default="text")
     args = parser.parse_args(argv)
@@ -427,7 +427,8 @@ def main(argv: list[str] | None = None) -> int:
     if missing:
         print(f"error: not found: {', '.join(missing)}", file=sys.stderr)
         return 2
-    design = Path(args.design) if args.design else Path("DESIGN.md")
+    # The contract lives in design/; a DESIGN.md left at the root by an older version is still read.
+    design = Path(args.design) if args.design else next((item for item in (Path("design/DESIGN.md"), Path("DESIGN.md")) if item.is_file()), Path("design/DESIGN.md"))
     tokens = Path(args.tokens) if args.tokens else Path("design/tokens.css")
     notes: list[str] = []
     findings = lint_paths(paths, design if design.is_file() else None, tokens if tokens.is_file() else None, notes)
