@@ -1,5 +1,7 @@
 # Current progress
 
+Version 0.7.0 is on branch `phase-1` (not merged): deterministic enforcement, the optional mutation proof, one orchestrator, and two merged skills. See [phase-1-report.md](phase-1-report.md). Next: the user's merge decision, then Phase 2 (benchmark harness).
+
 State of the repository at version 0.6.1. 0.6.0 shipped architecture phases 1 and 2 and moved the project state to `.agent-system/`; 0.6.1 keeps every contract in a folder (`docs/architecture/ARCHITECTURE.md`, `design/DESIGN.md`), never at the root. The audit-improvements front (PR #8), the design pipeline (PR #9), the workflow graph (PR #10), the 0.5.0 bump (PR #11), and the second design acceptance run (PR #12) are merged into `main`. The architecture front is in progress on `feat/architecture-pipeline`.
 
 ## Delivered (merged)
