@@ -1,6 +1,6 @@
 ---
 name: design-directions
-description: Generates three structurally different visual directions as self-contained HTML previews from an approved design brief, so a person with no design background chooses by reacting to what they see, then tunes the chosen one with variety, motion, and density dials. Use after design-discovery and before design-system (direções visuais, opções de visual, moodboard, escolher estilo, comparar layouts).
+description: Generates three structurally different visual directions as HTML previews from an approved design brief, so the user chooses by seeing them, then tunes the chosen one. Use after design-discovery (direções visuais, escolher estilo, comparar layouts).
 ---
 
 # Design directions

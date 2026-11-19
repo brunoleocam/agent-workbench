@@ -1,6 +1,6 @@
 ---
 name: apple-design
-description: Builds or reviews fluid, Apple-style interactive motion on the web — drag, swipe, sheets, carousels, spring animations, momentum, interruptible transitions, and reduced-motion fallbacks. Use when implementing or reviewing gesture-driven UI or spring animation (animação fluida, gesto, arrastar, swipe, sheet, drawer, spring, momentum, estilo Apple).
+description: Builds or reviews fluid, Apple-style web motion: drag, swipe, sheets, carousels, springs, momentum, interruptible transitions, and reduced-motion fallbacks. Use for gesture-driven UI or spring animation (animação fluida, gesto, arrastar, swipe).
 ---
 
 # Apple design: interactive motion on the web

@@ -1,6 +1,6 @@
 ---
 name: design-review
-description: Reviews a screen or a direction preview for design quality before it is handed over. Scores six axes from 1 to 5 and revises anything below 3, then runs the P0/P1/P2 checklist, the microcopy rules, and the anti-slop lint, and reports the outcome in plain prose. Use before showing or delivering UI work, or when asked whether an interface looks generic (revisão de design, design review, está com cara de IA, revisar a tela, checar o visual).
+description: Reviews a screen or direction preview for design quality: six scored axes, the P0/P1/P2 checklist, microcopy, and the anti-slop lint. Use before delivering UI work or when asked whether an interface looks generic (revisão de design, está com cara de IA).
 ---
 
 # Design review

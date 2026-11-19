@@ -1,6 +1,6 @@
 ---
 name: design-discovery
-description: Short design interview that turns a vague "I want it to look professional" into an approved design/brief.md with audience, task, tone, density, constraints, and decomposed references. Use at the start of a new product, site, or screen with no approved brief (entrevista de design, brief de design, referências visuais, começar o design, quero um visual profissional).
+description: Short design interview that turns "I want it to look professional" into an approved design/brief.md with audience, task, tone, density, constraints, and references. Use at the start of a new interface with no brief (entrevista de design, brief de design).
 ---
 
 # Design discovery

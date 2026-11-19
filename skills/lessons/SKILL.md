@@ -1,6 +1,6 @@
 ---
 name: lessons
-description: Proposes, lists, confirms, or rejects project lessons learned with lessons.py, loading only confirmed lessons relevant to the current activity. Use when a significant step reveals a reusable lesson, when the user says "registrar lição", "lições aprendidas", "confirmar lição", or before work in a category that has confirmed lessons.
+description: Proposes, lists, confirms, or rejects project lessons with lessons.py, loading only confirmed ones. Use when a significant step reveals a reusable lesson or the user says "registrar lição" or "lições aprendidas".
 ---
 
 # Lessons learned

@@ -252,7 +252,7 @@ Novo na 0.5.0: o workflow virou um grafo declarado (`workflow.json`) com um rote
 
 Desde a 0.4.0, os subagents `implementer`, `tester` e `debugger` usam `model: inherit` nos dois editores (antes usavam um modelo exclusivo do Cursor). Para fixar um modelo no Cursor, altere o `model:` no arquivo do agente.
 
-Comandos renomeados na 0.3.0: `investigacao-enxuta` agora é `/lean-investigation`, `resumo-de-contexto` agora é `/context-summary` e `tarefa-em-etapas` agora é `/staged-task`.
+Comandos renomeados na 0.3.0 (e unidos na 0.7.0): `investigacao-enxuta` (depois lean-investigation) hoje é parte de `/debug`, `resumo-de-contexto` agora é `/context-summary` e `tarefa-em-etapas` agora é `/staged-task`.
 
 ## Como usar o Agent Workbench
 
@@ -305,7 +305,7 @@ Bug:
 
 ```text
 # Acha a causa lendo o mínimo de código e log, uma hipótese por vez
-/lean-investigation
+/debug
 # (Opcional) Registra sintoma, mecanismo, evidência e o teste que faltou
 /root-cause
 # Correção mínima com teste de regressão, depois da causa confirmada
@@ -374,8 +374,7 @@ Planejamento:
 
 - `/brainstorm` — para ideia ainda crua. Faz uma pergunta por vez, propõe alternativas e termina com um design aprovado por você. Não escreve código nem plano.
 - `/new-project` — repositório novo: PRD, arquitetura, especificação, tarefas e progresso. Não cria `AGENTS.md`.
-- `/feature-development` — feature em sistema existente: análise de impacto, especificação, tarefas, implementação, testes e review.
-- `/feature` — atalho para `/feature-development`.
+- `/feature` — feature em sistema existente: análise de impacto, especificação, tarefas, implementação, testes e review.
 - `/investigation` — entende como uma parte do sistema funciona. Não implementa.
 - `/implementation-plan` — para design já aprovado. Gera um plano com caminhos reais, exemplos de código e comandos de verificação, escrito para quem não conhece o repositório.
 - `/change-request` — escopo novo descoberto no meio da tarefa. Atualiza a especificação ou cria uma dependência antes de continuar.
@@ -390,7 +389,6 @@ Implementação:
 
 Bugs:
 
-- `/lean-investigation` — acha a causa de um bug lendo o mínimo de código e log, uma hipótese por vez. Não corrige.
 - `/debug` — reproduz a falha e acha a causa com evidência. Não chuta patch.
 - `/root-cause` — registra sintoma, mecanismo, evidência e o teste que faltou. Só depois da causa confirmada.
 - `/bug-fix` — correção mínima depois da causa confirmada, com teste de regressão.

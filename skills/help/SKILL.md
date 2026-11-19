@@ -30,8 +30,7 @@ The flow itself is a graph in `.agent-system/workflow.json`. `validate_workflow.
 
 - `/brainstorm` — a raw idea. One question at a time, alternatives, a design approved by you. Writes no code and no plan.
 - `/new-project` — a new repository. PRD, architecture, spec, tasks, and progress. Does not create `AGENTS.md`.
-- `/feature` — the same flow as `/feature-development`.
-- `/feature-development` — a feature in an existing system: impact, spec, tasks, implementation, tests, and review.
+- `/feature` — a feature in an existing system: impact, spec, tasks, implementation, tests, and review.
 - `/init-agent-system` — installs the system in this project without deleting existing config and without creating empty docs.
 - `/create-agent` — creates a specialized subagent and registers the delegation in the orchestrator.
 - `/agent-status` — agents, skills, rules, hooks, and the workflow state.
@@ -68,7 +67,6 @@ The flow itself is a graph in `.agent-system/workflow.json`. `validate_workflow.
 - `/commit-push` — branch before editing; with green tests, a single approval from you for commit, push, PR, and merge. Without approval, nothing leaves your machine.
 - `/roadmap` — shows which phase and task you are in, what is left, and what is blocked. Also creates, updates, or renders the Canvas view (`/roadmap visual`). Only in a project with `/init-agent-system`.
 - `/context-summary` — a summary of up to 10 lines (goal, decisions, files, next steps) to paste into a new chat. Does not reread files or write anything.
-- `/lean-investigation` — finds a bug's cause reading the minimum, one hypothesis at a time. Does not fix.
 - `/staged-task` — splits a large request into 3 to 7 verifiable steps and executes one at a time. Does not create a PRD, ADR, or detailed plan.
 - `/create-skill` — creates a new skill in the plugin and adds the command to this guide. Does not create a skill inside the repository unless you ask.
 - `/help` — shows this guide.

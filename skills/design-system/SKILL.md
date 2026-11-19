@@ -1,6 +1,6 @@
 ---
 name: design-system
-description: Turns the chosen visual direction into the project's design contract, design/DESIGN.md plus design/tokens.css, with color roles and contrast pairs, a type scale of at most three families, a 4px spacing scale, component states, motion, voice, and anti-patterns. Use after a direction is chosen in design-directions, or to update an existing DESIGN.md (design system, DESIGN.md, tokens, sistema de design, paleta e tipografia do projeto).
+description: Turns the chosen direction into design/DESIGN.md and design/tokens.css: color roles with contrast pairs, type scale, spacing, component states, motion, and voice. Use after design-directions or to update DESIGN.md (design system, tokens, paleta e tipografia).
 ---
 
 # Design system

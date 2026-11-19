@@ -1,6 +1,6 @@
 ---
 name: architecture-review
-description: Reviews code and infrastructure against ARCHITECTURE.md and its ADRs, using a fixed checklist (components outside the contract, module dependency violations, async flows without idempotency, logs without structure or correlation id, secrets, ports, or permissions outside section 8, stage triggers reached without a recorded change) plus the infrastructure lint, and reports findings with severity and evidence without fixing them. Use after a change that touches infrastructure files or adds a database, cache, queue, external service, or deploy unit (revisão de arquitetura, conferir com o ARCHITECTURE.md, revisar infraestrutura, revisar Dockerfile, revisar docker-compose).
+description: Reviews code and infrastructure against ARCHITECTURE.md and its ADRs with a fixed checklist and the infrastructure lint, and reports findings without fixing them. Use after a change to infrastructure files or a new database, cache, queue, or service (revisão de arquitetura, revisar Dockerfile).
 ---
 
 # Architecture review

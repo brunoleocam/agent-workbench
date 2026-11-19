@@ -1,6 +1,6 @@
 ---
 name: architecture-options
-description: Turns an approved architecture brief into 2 or 3 structurally different candidate architectures, each with a Mermaid diagram and a trade-off table (cost range, operational complexity, single points of failure, what happens when load doubles, when it stops serving), recommends the simplest one that meets the brief, and stops for the user to choose. Use after architecture-discovery (opções de arquitetura, comparar arquiteturas, trade-offs, monólito ou microsserviços, qual arquitetura escolher).
+description: Turns an approved architecture brief into 2 or 3 candidate architectures with a diagram and a trade-off table, recommends the simplest that meets it, and stops for the user to choose. Use after architecture-discovery (opções de arquitetura, monólito ou microsserviços).
 ---
 
 # Architecture options

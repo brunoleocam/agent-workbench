@@ -252,7 +252,7 @@ New in 0.5.0: the workflow is a declared graph (`workflow.json`) with a router (
 
 Since 0.4.0, the `implementer`, `tester`, and `debugger` subagents use `model: inherit` in both editors (before, they used a Cursor-only model). To pin a model in Cursor, change `model:` in the agent file.
 
-Commands renamed in 0.3.0: `investigacao-enxuta` is now `/lean-investigation`, `resumo-de-contexto` is now `/context-summary`, and `tarefa-em-etapas` is now `/staged-task`.
+Commands renamed in 0.3.0 (and merged in 0.7.0): `investigacao-enxuta` (later lean-investigation) is now part of `/debug`, `resumo-de-contexto` is now `/context-summary`, and `tarefa-em-etapas` is now `/staged-task`.
 
 ## Using Agent Workbench
 
@@ -294,7 +294,7 @@ New repository:
 Bug:
 
 ```text
-/lean-investigation
+/debug
 /root-cause
 /bug-fix
 ```
@@ -351,8 +351,7 @@ Planning:
 
 - `/brainstorm` — for an idea that is still raw. Asks one question at a time, proposes alternatives, and ends with a design you approve. Writes no code and no plan.
 - `/new-project` — new repository: PRD, architecture, specification, tasks, and progress. Does not create `AGENTS.md`.
-- `/feature-development` — feature in an existing system: impact analysis, specification, tasks, implementation, tests, and review.
-- `/feature` — shortcut for `/feature-development`.
+- `/feature` — feature in an existing system: impact analysis, specification, tasks, implementation, tests, and review.
 - `/investigation` — understands how part of the system works. Does not implement.
 - `/implementation-plan` — for an approved design. Produces a plan with real paths, code examples, and verification commands, written for someone who does not know the repository.
 - `/change-request` — new scope discovered mid-task. Updates the specification or creates a dependency before continuing.
@@ -367,7 +366,6 @@ Implementation:
 
 Bugs:
 
-- `/lean-investigation` — finds the cause of a bug reading as little code and log as possible, one hypothesis at a time. Does not fix.
 - `/debug` — reproduces the failure and finds the cause with evidence. Does not guess patches.
 - `/root-cause` — records symptom, mechanism, evidence, and the missing test. Only after the cause is confirmed.
 - `/bug-fix` — minimal fix after the cause is confirmed, with a regression test.

@@ -1,6 +1,6 @@
 ---
 name: architecture-discovery
-description: Short architecture interview that turns "I want it to scale" into an approved architecture/brief.md with load, access pattern, consistency, latency, sensitive data, team, budget, infrastructure target, and a capacity estimate with the arithmetic shown. Use at the start of a new system or before a structural change with no approved brief (entrevista de arquitetura, requisitos não funcionais, como escalar, qual banco usar, começar a arquitetura, system design).
+description: Short architecture interview that turns "I want it to scale" into an approved architecture/brief.md with load, consistency, latency, budget, infrastructure target, and a capacity estimate. Use at the start of a system with no brief (entrevista de arquitetura, requisitos não funcionais).
 ---
 
 # Architecture discovery
