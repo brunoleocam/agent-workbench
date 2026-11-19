@@ -4,6 +4,7 @@ independent review done, blocking findings resolved, accepted risks justified, a
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -28,7 +29,7 @@ from artifacts import (  # noqa: E402
     truthy,
     workspace_fingerprint,
 )
-from lib import redact  # noqa: E402
+from lib import redact, system_dir  # noqa: E402
 
 REVIEW_STATUS = {"PASS", "PASS_WITH_WARNINGS", "FAIL"}
 BLOCKING = {"blocker", "critical", "high"}
@@ -83,6 +84,57 @@ def check_report_doc(doc: Document | None, label: str, kind: str, required: bool
     else:
         report.ok(f"{code}-fingerprint", f"{label} fingerprint matches the current workspace.")
     check_findings(doc, label, kind, report)
+
+
+def mutation_threshold(bundle: Bundle) -> tuple[float | None, str]:
+    """Minimum mutation score and where it came from: the spec front matter, then layout.json `mutation.min_score`."""
+    for value, source in ((bundle.spec.frontmatter.get("mutation_min_score"), "spec"),
+                          ((bundle.layout.get("mutation") or {}).get("min_score") if isinstance(bundle.layout.get("mutation"), dict) else None, "layout")):
+        if value in (None, ""):
+            continue
+        try:
+            score = float(value)
+        except (TypeError, ValueError):
+            return None, source
+        if 0 < score <= 1:
+            return score, source
+    return None, ""
+
+
+def check_mutation_scores(bundle: Bundle, tests: list, digest: str, report: Report) -> None:
+    threshold, source = mutation_threshold(bundle)
+    if threshold is None:
+        return
+    tasks = {task.id: task for task in bundle.task_blocks()}
+    declared = []
+    for test in tests:
+        if not truthy(test.get("required"), True):
+            continue
+        if test.get("mutate") or any(tasks.get(task_id) and tasks[task_id].get("mutate") for task_id in test.ids("task", "TASK")):
+            declared.append(test)
+    if not declared:
+        message = f"mutation_min_score {threshold} is set ({source}) but no required TEST declares Mutate."
+        (report.fail if source == "spec" else report.warn)("mutation-undeclared", message)
+        return
+    path = system_dir(bundle.root) / "proofs" / f"{bundle.slug}.mutation.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
+    except (OSError, json.JSONDecodeError):
+        data = None
+    recorded = data.get("tests") if isinstance(data, dict) and isinstance(data.get("tests"), dict) else None
+    if recorded is None:
+        report.fail("mutation-missing", f"No mutation score for {bundle.slug}. Run check_mutation.py --feature {bundle.slug}.")
+    elif data.get("status") != "MEASURED":
+        report.fail("mutation-not-measured", f"Mutation run is {data.get('status')}: {data.get('reason') or ''}".rstrip(": "))
+    elif data.get("fingerprint") != digest:
+        report.fail("mutation-stale", "Mutation score predates the current workspace; rerun check_mutation.py.")
+    elif any(recorded.get(test.id) != redact(test.get("command"), 300) for test in declared):
+        report.fail("mutation-command-changed", "A TEST with Mutate was added or its command changed after the mutation score was recorded.")
+    elif float(data.get("score") or 0) < threshold:
+        survivors = "; ".join(f"{name} {item}" for name, entry in (data.get("files") or {}).items() for item in (entry.get("survived") or [])[:2])
+        report.fail("mutation-score", f"Mutation score {data.get('score')} is below {threshold} ({data.get('killed')}/{data.get('mutants')} killed; survived: {survivors}).")
+    else:
+        report.ok("mutation", f"Mutation score {data.get('score')} meets {threshold} ({data.get('killed')}/{data.get('mutants')} killed).")
 
 
 def validate(bundle: Bundle, review: Document | None, security: Document | None, report: Report) -> None:
@@ -143,6 +195,7 @@ def validate(bundle: Bundle, review: Document | None, security: Document | None,
         proven += 1
     if proven:
         report.ok("proofs", f"{proven} required checks proven on the current workspace.")
+    check_mutation_scores(bundle, tests, current["digest"], report)
 
     for task in bundle.task_blocks():
         status = task_status(task.get("status"))

@@ -1,0 +1,40 @@
+{
+  "base": "complete-feature",
+  "description": "Mutation enabled: the TEST without assertions that passes the structural gate (weak-test-passes-gate) now fails it, because no mutant of src/coupon.py is killed.",
+  "steps": [
+    {
+      "script": "check_proofs.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 0
+    },
+    {
+      "script": "check_mutation.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 1,
+      "contains": [
+        "mutation score 0.0",
+        "survived: line"
+      ]
+    },
+    {
+      "stamp": "docs/reviews/feat.md"
+    },
+    {
+      "script": "validate_verification.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 1,
+      "contains": [
+        "Mutation score 0.0 is below 0.6"
+      ]
+    }
+  ]
+}

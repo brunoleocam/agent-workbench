@@ -52,6 +52,7 @@ COPY_SCRIPTS = [
     "classify_floor.py",
     "stop_gate.py",
     "ci_gate.py",
+    "check_mutation.py",
 ]
 RULES = [
     "00-core-engineering.mdc",

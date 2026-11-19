@@ -52,6 +52,7 @@ FIELD_ALIASES = {
     "stop_if": ("stop if", "pare se"),
     "priority": ("priority", "prioridade"),
     "type": ("type", "tipo"),
+    "mutate": ("mutate", "mutation", "mutar"),
 }
 ALIAS_TO_FIELD = {alias: name for name, aliases in FIELD_ALIASES.items() for alias in aliases}
 
