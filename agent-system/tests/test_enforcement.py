@@ -504,3 +504,30 @@ def test_skill_events_count_two_real_uses() -> None:
         hook({**common, "tool_input": {"skill": "agent-workbench:debug"}}, root)
         hook({**common, "tool_input": {"skill": "agent-workbench:debug"}}, root)
         assert [event["summary"] for event in events(root) if event["event"] == "SKILL_USED"] == ["debug", "debug"]
+
+
+# Third review (FIND-017, FIND-018).
+
+def test_stop_newer_dead_feature_does_not_shadow_an_older_one() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = failing_feature(Path(tmp) / "p")  # feat: M, gate failing
+        assert run("classify_floor.py", ["--root", str(root), "--feature", "ghost", "--declared", "M"]).returncode == 0  # no spec here
+        reasons = []
+        for index in range(6):
+            write(root, "src/progress.py", f"STEP = {index}\n")
+            reply = stop(root)
+            reasons.append(reply.get("reason", ""))
+        assert any("--feature feat" in reason for reason in reasons), reasons
+
+
+def test_stop_asks_again_when_the_change_outgrows_a_justified_downgrade() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = repo(Path(tmp) / "p")
+        opt_in(root)
+        for index in range(2):
+            write(root, f"src/a{index}.py", "x = 1\n")
+        assert run("classify_floor.py", ["--root", str(root), "--feature", "small", "--declared", "XS", "--justification", "two stubs"]).returncode == 0
+        for index in range(10):
+            write(root, f"src/grown_{index}.py", "x = 1\n")
+        reply = stop(root)
+        assert reply.get("decision") == "block" and "classify_floor.py" in reply["reason"], reply

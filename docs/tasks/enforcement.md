@@ -76,10 +76,10 @@ Spec: [enforcement](../specs/enforcement.md). Tests run through the plugin suite
 - Expected: exit 0
 
 ### TEST-003: stop gate
-- Acceptance: AC-006, AC-007, AC-008, AC-009, AC-010, AC-015, AC-016, AC-019, AC-020, AC-021
+- Acceptance: AC-006, AC-007, AC-008, AC-009, AC-010, AC-015, AC-016, AC-019, AC-020, AC-021, AC-024, AC-025
 - Task: TASK-003
 - Command: ["python", "agent-system/scripts/test_system.py", "test_stop_", "test_reclassifying_drops_a_waiver"]
-- Expected: exit 0; 12 passed
+- Expected: exit 0; 14 passed
 
 ### TEST-004: CI gate and installer
 - Acceptance: AC-011, AC-017, AC-022

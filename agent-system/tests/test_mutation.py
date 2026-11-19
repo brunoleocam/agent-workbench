@@ -271,3 +271,17 @@ def test_gate_refuses_a_partial_mutation_run() -> None:
         assert data["truncated"] is True and data["mutants"] == 1, data
         gate = run("validate_verification.py", ["--root", str(root), "--feature", "feat", "--no-record"])
         assert gate.returncode == 1 and "partial run" in gate.stdout, gate.stdout
+
+
+def test_mutation_restore_keeps_the_modification_time() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = project(tmp)
+        target = root / "src" / "coupon.py"
+        original = target.read_bytes()
+        mtime = 1_700_000_000 * 1_000_000_000
+        (root / ".agent-system" / "mutation").mkdir(parents=True)
+        (root / ".agent-system" / "mutation" / "backup.py").write_bytes(original)
+        write(root, ".agent-system/mutation/pending.json", json.dumps({"src/coupon.py": {"backup": "backup.py", "mtime_ns": mtime}}))
+        target.write_text("def apply(*args):\n    return None\n", encoding="utf-8")
+        assert check_mutation.restore_pending(root) == ["src/coupon.py"]
+        assert target.read_bytes() == original and target.stat().st_mtime_ns == mtime

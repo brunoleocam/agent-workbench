@@ -133,7 +133,9 @@ def check_mutation_scores(bundle: Bundle, tests: list, digest: str, report: Repo
         survivors = "; ".join(f"{name} {item}" for name, entry in (data.get("files") or {}).items() for item in (entry.get("survived") or [])[:2])
         report.fail("mutation-score", f"Mutation score {data.get('score')} is below {threshold} ({data.get('killed')}/{data.get('mutants')} killed; survived: {survivors}).")
     else:
-        report.ok("mutation", f"Mutation score {data.get('score')} meets {threshold} ({data.get('killed')}/{data.get('mutants')} killed).")
+        timeouts = sum(int((entry or {}).get("timeouts") or 0) for entry in (data.get("files") or {}).values())
+        note = f", {timeouts} by timeout" if timeouts else ""
+        report.ok("mutation", f"Mutation score {data.get('score')} meets {threshold} ({data.get('killed')}/{data.get('mutants')} killed{note}).")
 
 
 def validate(bundle: Bundle, review: Document | None, security: Document | None, report: Report) -> None:

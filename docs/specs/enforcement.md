@@ -184,6 +184,18 @@ Given two Skill tool calls for the same skill in a row
 When the hook runs
 Then the timeline has two `SKILL_USED` events.
 
+### AC-024: A dead newer feature does not shadow an older one
+- Requirements: REQ-005, REQ-007
+Given `feat` (M, gate failing) and a newer M classification `ghost` whose spec is not in this checkout
+When six stops arrive, each after a code change
+Then at least one blocks for `feat`.
+
+### AC-025: A justified downgrade covers only its own size
+- Requirements: REQ-006
+Given a justified XS downgrade measured at floor S
+When the change grows to 12 files and the session stops
+Then the stop is blocked with a request for `classify_floor.py`.
+
 ## Assumptions
 
 - The project is a git repository; without git the floor is `unknown`, the classification is recorded with a warning, and the stop gate only uses the recorded classification.

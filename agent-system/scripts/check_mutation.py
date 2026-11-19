@@ -136,6 +136,8 @@ def restore_pending(root: Path) -> list[str]:
     except (OSError, json.JSONDecodeError):
         pending = {}
     for relative, saved in (pending.items() if isinstance(pending, dict) else []):
+        mtime_ns = saved.get("mtime_ns") if isinstance(saved, dict) else None
+        saved = saved.get("backup") if isinstance(saved, dict) else saved
         source = folder / str(saved)
         try:
             target = inside(root, root / str(relative))
@@ -143,6 +145,8 @@ def restore_pending(root: Path) -> list[str]:
             continue
         if source.is_file() and source.parent == folder:
             shutil.copyfile(source, target)
+            if isinstance(mtime_ns, int):
+                os.utime(target, ns=(mtime_ns, mtime_ns))
             restored.append(str(relative))
     shutil.rmtree(folder, ignore_errors=True)
     return restored
@@ -187,7 +191,7 @@ def mutate_file(root: Path, relative: str, tests: list, bundle, options, allowed
     stat = path.stat()
     folder = backup_dir(root)
     shutil.copyfile(path, folder / "backup.py")
-    (folder / "pending.json").write_text(json.dumps({relative: "backup.py"}), encoding="utf-8")
+    (folder / "pending.json").write_text(json.dumps({relative: {"backup": "backup.py", "mtime_ns": stat.st_mtime_ns}}), encoding="utf-8")
     try:
         if limit and len(found) > limit:
             entry["truncated"] = True
@@ -269,9 +273,13 @@ def acquire(root: Path) -> list[str]:
             except (OSError, ValueError):
                 holder = 0
             if holder and process_alive(holder):
-                raise ConfigError(f"another check_mutation.py run (process {holder}) holds {lock.relative_to(root).as_posix()}; wait for it to finish")
+                raise ConfigError(f"another check_mutation.py run (process {holder}) holds {lock.relative_to(root).as_posix()}; wait for it to finish, "
+                                  "or delete the lock if no check_mutation.py is running (its process id was reused)")
             try:
-                lock.unlink()  # its owner is gone
+                # Rename, not delete: of two runs taking over the same dead lock, only one rename succeeds, and the
+                # other cannot remove the lock the winner creates next.
+                os.replace(lock, lock.with_name(f"{lock.name}.stale-{os.getpid()}"))
+                lock.with_name(f"{lock.name}.stale-{os.getpid()}").unlink(missing_ok=True)
             except FileNotFoundError:
                 pass
             continue

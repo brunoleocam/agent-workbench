@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import classify_floor  # noqa: E402
 import workflow  # noqa: E402
-from artifacts import load_layout, record, workspace_fingerprint  # noqa: E402
+from artifacts import load_layout, record, resolve_layout, workspace_fingerprint  # noqa: E402
 from lib import load_state, read_json, save_state, timeline_dir  # noqa: E402
 
 SCRIPTS = Path(__file__).resolve().parent
@@ -166,15 +166,36 @@ def escalate(root: Path, state: dict, gate: dict, feature: str, entry: dict, fin
     return {"systemMessage": text}
 
 
-def open_features(state: dict, gate: dict) -> list[tuple[str, dict]]:
-    """Classified M+ features that are not closed (gate passed) or waived, most recent first."""
+def has_artifacts(root: Path, feature: str) -> bool:
+    """The feature's spec and tasks exist in this checkout (a feature from another branch has none here)."""
+    try:
+        layout = resolve_layout(root)
+    except Exception:
+        return True
+    return (root / layout["specs_dir"] / f"{feature}.md").is_file() and (root / layout["tasks_dir"] / f"{feature}.md").is_file()
+
+
+def open_features(root: Path, state: dict, gate: dict) -> list[tuple[str, dict]]:
+    """Classified M+ features to gate on this stop, most recent first, at most MAX_OPEN.
+
+    Skipped: closed (gate passed), waived, already escalated at a limit, and features whose spec and tasks are not in
+    this checkout once they were asked about. So a dead or exhausted newer feature never shadows an older one.
+    """
     found = []
-    for feature, item in classify_floor.classifications(state).items():
+    for feature, item in reversed(list(classify_floor.classifications(state).items())):
         if not isinstance(item, dict) or item.get("closed") or feature in gate["waived"]:
             continue
-        if classify_floor.rank(str(item.get("effective") or ""), classify_floor.COMPLEXITY) >= classify_floor.rank("M", classify_floor.COMPLEXITY):
-            found.append((feature, item))
-    return list(reversed(found))[:MAX_OPEN]  # each gate run costs up to GATE_TIMEOUT inside the hook's 20 s
+        if classify_floor.rank(str(item.get("effective") or ""), classify_floor.COMPLEXITY) < classify_floor.rank("M", classify_floor.COMPLEXITY):
+            continue
+        entry = gate["features"].get(feature) or {}
+        if entry.get("escalated_reasons"):
+            continue
+        if not has_artifacts(root, feature) and entry.get("blocks"):
+            continue
+        found.append((feature, item))
+        if len(found) >= MAX_OPEN:
+            break
+    return found  # each gate run costs up to GATE_TIMEOUT inside the hook's 20 s
 
 
 def unclassified(root: Path, state: dict, gate: dict, fingerprint: str) -> dict:
@@ -187,7 +208,8 @@ def unclassified(root: Path, state: dict, gate: dict, fingerprint: str) -> dict:
     floor = classify_floor.rank(found["floor"], classify_floor.COMPLEXITY)
     for item in classify_floor.classifications(state).values():
         if isinstance(item, dict) and item.get("base") == found["base"] and (
-                classify_floor.rank(str(item.get("effective") or ""), classify_floor.COMPLEXITY) >= floor or item.get("downgraded")):
+                classify_floor.rank(str(item.get("effective") or ""), classify_floor.COMPLEXITY) >= floor
+                or (item.get("downgraded") and classify_floor.rank(str(item.get("floor") or ""), classify_floor.COMPLEXITY) >= floor)):
             return {}
     if gate.get("unclassified_fp") == fingerprint:
         return {}  # asked once for this workspace state
@@ -212,7 +234,7 @@ def decide(root: Path, payload: dict) -> dict:
     state = load_state(root)
     gate = gate_state(state)
     fingerprint = workspace_fingerprint(root)["digest"]
-    candidates = open_features(state, gate)
+    candidates = open_features(root, state, gate)
     if not candidates:
         return unclassified(root, state, gate, fingerprint)
 
