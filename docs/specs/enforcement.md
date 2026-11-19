@@ -39,7 +39,7 @@ THE SYSTEM SHALL stop blocking and escalate to the user (a message and a `STOP_G
 THE SYSTEM SHALL skip the stop gate when `AGENT_WORKBENCH_STOP_GATE=off` is set or the user waived the feature with a `STOP_GATE_WAIVED` event, record a waiver only with a reason, and drop the waiver when the feature is classified again.
 
 ### REQ-009: CI gate
-WHEN `ci_gate.py` runs on a pull request, THE SYSTEM SHALL find the features whose spec or tasks changed against the base or whose tasks list a changed file in `Files`, keep those that are M+ at the base or the head, fail a feature whose pull request lowers it below M (unless `--allow-downgrade`), run `check_proofs.py`, `check_mutation.py` when a minimum score is set, and `validate_verification.py` for each, and exit 1 when any of them fails; `init_project.py --with-ci` SHALL install a GitHub Actions workflow that runs it, without overwriting an existing file.
+WHEN `ci_gate.py` runs on a pull request, THE SYSTEM SHALL find the features whose spec or tasks changed against the base or whose tasks list a changed file in `Files`, keep those that are M+ at the base or the head, fail a feature whose pull request lowers it below M, deletes or renames its spec, or marks it superseded (unless `--allow-downgrade`), run `check_proofs.py`, `check_mutation.py` when a minimum score is set, and `validate_verification.py` for each, and exit 1 when any of them fails; `init_project.py --with-ci` SHALL install a GitHub Actions workflow that runs it, without overwriting an existing file.
 
 ### REQ-010: Metrics
 THE SYSTEM SHALL report in `metrics.py` the skill counts, the classifications with downgrades, and the stop gate blocks, escalations by reason, and waivers.
@@ -159,6 +159,30 @@ Then the timeline has `SKILL_USED` for `tdd` and `help` only.
 Given a waiver for `feat`
 When `feat` is classified again
 Then the stop gate blocks again.
+
+### AC-020: A grown change is asked about again
+- Requirements: REQ-006
+Given a feature classified XS early on the branch
+When 10 files are added and the session stops
+Then the stop is blocked with a request for `classify_floor.py`.
+
+### AC-021: Limit escalation is sent once
+- Requirements: REQ-007
+Given the stop gate reached its block limit for a feature
+When three more stops arrive, each after a code change
+Then only the first returns a message for the user.
+
+### AC-022: CI refuses a dropped spec and runs mutation
+- Requirements: REQ-009
+Given an M spec at the base that the pull request deletes or marks superseded, or an M feature with a mutation minimum and a weak TEST
+When `ci_gate.py` runs
+Then it exits 1 (0 with `--allow-downgrade` for the dropped spec), and the mutation score appears in its output.
+
+### AC-023: Two real uses count twice
+- Requirements: REQ-004
+Given two Skill tool calls for the same skill in a row
+When the hook runs
+Then the timeline has two `SKILL_USED` events.
 
 ## Assumptions
 

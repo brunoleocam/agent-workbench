@@ -70,19 +70,19 @@ Spec: [enforcement](../specs/enforcement.md). Tests run through the plugin suite
 - Expected: exit 0; 10 passed
 
 ### TEST-002: skill events hold names only
-- Acceptance: AC-005, AC-018
+- Acceptance: AC-005, AC-018, AC-023
 - Task: TASK-002
 - Command: ["python", "agent-system/scripts/test_system.py", "test_skill_events_"]
 - Expected: exit 0
 
 ### TEST-003: stop gate
-- Acceptance: AC-006, AC-007, AC-008, AC-009, AC-010, AC-015, AC-016, AC-019
+- Acceptance: AC-006, AC-007, AC-008, AC-009, AC-010, AC-015, AC-016, AC-019, AC-020, AC-021
 - Task: TASK-003
 - Command: ["python", "agent-system/scripts/test_system.py", "test_stop_", "test_reclassifying_drops_a_waiver"]
-- Expected: exit 0; 10 passed
+- Expected: exit 0; 12 passed
 
 ### TEST-004: CI gate and installer
-- Acceptance: AC-011, AC-017
+- Acceptance: AC-011, AC-017, AC-022
 - Task: TASK-004
 - Command: ["python", "agent-system/scripts/test_system.py", "test_ci_gate_", "test_init_with_ci_installs_workflow_once"]
 - Expected: exit 0

@@ -346,16 +346,25 @@ def re_failed(text: str) -> bool:
 
 
 def repeated_skill(root: Path, payload: dict, skill: str) -> bool:
-    """A typed slash command followed by the Skill tool for the same skill is one use, not two."""
+    """A typed slash command followed by the Skill tool for the same skill is one use, not two.
+
+    Only a slash command is remembered, and the Skill tool call that matches it consumes the memory, so two real uses
+    of the same skill both count.
+    """
     try:
         state = load_state(root)
-        last = state.get("last_skill") if isinstance(state.get("last_skill"), dict) else {}
-        now = time.time()
         session = str(payload.get("session_id") or "")
-        same = last.get("name") == skill and last.get("session") == session and now - float(last.get("at") or 0) < SKILL_REPEAT_S
-        state["last_skill"] = {"name": skill, "session": session, "at": now}
-        save_state(root, state)
-        return same
+        now = time.time()
+        if payload.get("source") == "slash":
+            state["last_skill"] = {"name": skill, "session": session, "at": now}
+            save_state(root, state)
+            return False
+        last = state.get("last_skill") if isinstance(state.get("last_skill"), dict) else {}
+        if last.get("name") == skill and last.get("session") == session and now - float(last.get("at") or 0) < SKILL_REPEAT_S:
+            state.pop("last_skill", None)
+            save_state(root, state)
+            return True
+        return False
     except (OSError, ValueError, TypeError):
         return False
 

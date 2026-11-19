@@ -18,13 +18,13 @@ Outcome: an optional, deterministic mutation proof. A TEST (or its task) lists t
 WHEN `check_mutation.py --feature <slug>` runs, THE SYSTEM SHALL mutate each Python file listed in a `Mutate` field of a TEST or of its task, one site at a time (comparison, arithmetic, boolean operator, `not`, `if`/`while` condition, boolean and integer constants, returned value), run the TESTs that list the file through the check_proofs.py policy, count a mutant as killed when any of them fails or times out, and record the score with the workspace fingerprint and the TEST commands.
 
 ### REQ-002: Safe in-place mutation
-THE SYSTEM SHALL restore every mutated file byte for byte (with its modification time) after each run, give each mutant a distinct modification time and run the TESTs with `PYTHONDONTWRITEBYTECODE=1` so no stale bytecode is imported, keep a backup in `.agent-system/mutation/` while it runs, restore a backup left by an interrupted run before starting (only to paths inside the project), refuse a second concurrent run, and make `check_proofs.py` and `validate_verification.py` refuse to prove while a backup is pending.
+THE SYSTEM SHALL restore every mutated file byte for byte (with its modification time) after each run, give each mutant a distinct modification time and run the TESTs with `PYTHONDONTWRITEBYTECODE=1` so no stale bytecode is imported, keep a backup in `.agent-system/mutation/` while it runs, restore a backup left by an interrupted run before starting (only to paths inside the project), refuse a second run while the process holding `.agent-system/mutation.lock` is alive (taking the lock before any restore), and make `check_proofs.py` and `validate_verification.py` refuse to prove while a backup is pending.
 
 ### REQ-003: Valid baseline
 IF a required TEST that declares `Mutate` does not pass unmutated, or a listed file is not an existing UTF-8 Python file, THEN THE SYSTEM SHALL record the run as FAIL or ERROR with the reason and exit 1; each mutant run SHALL be limited to five times the slowest unmutated run (at least 10 s), and the whole run to `--budget-seconds`, after which the score is marked truncated.
 
 ### REQ-004: Gate criterion
-WHEN a minimum mutation score is set, THE SYSTEM SHALL make `validate_verification.py` fail if the score is missing, not measured, recorded for another workspace state, other TESTs, other TEST commands, or other `Mutate` files, or below the minimum; a minimum in the spec with no TEST declaring `Mutate` SHALL fail, one in `layout.json` SHALL warn, and a minimum that is not a number above 0 and at most 1 SHALL fail the gate and stop `check_mutation.py` with exit 2.
+WHEN a minimum mutation score is set, THE SYSTEM SHALL make `validate_verification.py` fail if the score is missing, not measured, recorded for another workspace state, other TESTs, other TEST commands, or other `Mutate` files, partial (cut by the time budget or `--max-mutants`), or below the minimum; a minimum in the spec with no TEST declaring `Mutate` SHALL fail, one in `layout.json` SHALL warn, and a minimum that is not a number above 0 and at most 1 SHALL fail the gate and stop `check_mutation.py` with exit 2.
 
 ## Acceptance Criteria
 
@@ -87,6 +87,18 @@ Then the gate fails as targets changed or commands changed.
 Given a TEST failing unmutated, a minimum only in `layout.json` with no `Mutate`, or a non-UTF-8 source file
 When the scripts run
 Then the gate reports "Mutation run is FAIL", warns for the layout minimum, and the run is ERROR "not UTF-8".
+
+### AC-011: The lock protects a live run
+- Requirements: REQ-002
+Given a lock held by a live process and a pending backup, or a lock left by a finished process
+When `check_mutation.py` starts
+Then it exits 2 and leaves the live run's file and backup untouched, or it takes the lock over, restores the file, and removes the lock at the end.
+
+### AC-012: Partial runs do not pass
+- Requirements: REQ-004
+Given a run with `--max-mutants 1`
+When the gate runs
+Then the score is marked partial and the gate fails.
 
 ## Assumptions
 

@@ -43,7 +43,6 @@ from artifacts import (  # noqa: E402
 )
 from lib import redact, utc_now, write_json  # noqa: E402
 
-DEFAULT_MAX_MUTANTS = 40
 DEFAULT_BUDGET_S = 1800
 COMPARE_SWAP = {ast.Lt: ast.LtE, ast.LtE: ast.Lt, ast.Gt: ast.GtE, ast.GtE: ast.Gt, ast.Eq: ast.NotEq, ast.NotEq: ast.Eq,
                 ast.In: ast.NotIn, ast.NotIn: ast.In, ast.Is: ast.IsNot, ast.IsNot: ast.Is}
@@ -162,7 +161,7 @@ def targets_of(test, tasks_by_id: dict) -> list[str]:
 
 def mutate_file(root: Path, relative: str, tests: list, bundle, options, allowed, limit: int, deadline: float) -> dict:
     """Mutants of one file; a mutant is killed when any TEST that covers the file fails or times out."""
-    entry = {"mutants": 0, "killed": 0, "survived": [], "reason": "", "error": False, "truncated": False}
+    entry = {"mutants": 0, "killed": 0, "timeouts": 0, "survived": [], "reason": "", "error": False, "truncated": False}
     try:
         path = inside(root, root / relative)
     except ConfigError as exc:
@@ -190,7 +189,10 @@ def mutate_file(root: Path, relative: str, tests: list, bundle, options, allowed
     shutil.copyfile(path, folder / "backup.py")
     (folder / "pending.json").write_text(json.dumps({relative: "backup.py"}), encoding="utf-8")
     try:
-        for number, (target, description) in enumerate(found[:limit], start=1):
+        if limit and len(found) > limit:
+            entry["truncated"] = True
+            entry["reason"] = f"capped at {limit} of {len(found)} mutants"
+        for number, (target, description) in enumerate(found[:limit] if limit else found, start=1):
             if time.monotonic() > deadline:
                 entry["truncated"] = True
                 break
@@ -199,8 +201,11 @@ def mutate_file(root: Path, relative: str, tests: list, bundle, options, allowed
             # mutant of the same size written within the same second would otherwise import the stale .pyc.
             os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns + (number + 1) * 2_000_000_000))
             entry["mutants"] += 1
-            if any(check_proofs.execute(test, bundle, options, allowed)["status"] in {"FAIL", "TIMEOUT"} for test in tests):
+            outcomes = [check_proofs.execute(test, bundle, options, allowed)["status"] for test in tests]
+            if any(status in {"FAIL", "TIMEOUT"} for status in outcomes):
                 entry["killed"] += 1
+                if "FAIL" not in outcomes:
+                    entry["timeouts"] += 1
             else:
                 entry["survived"].append(description)
     finally:
@@ -211,16 +216,82 @@ def mutate_file(root: Path, relative: str, tests: list, bundle, options, allowed
     return entry
 
 
-def acquire(root: Path) -> list[str]:
-    """Restore an interrupted run, then take the run folder exclusively. Raises ConfigError if another run holds it."""
-    restored = restore_pending(root)
-    folder = backup_dir(root)
-    folder.parent.mkdir(parents=True, exist_ok=True)
+def lock_file(root: Path) -> Path:
+    return system_dir(root) / "mutation.lock"
+
+
+def process_alive(pid: int) -> bool:
+    """Whether a process with this id is running. Unknown is treated as alive, so a live run is never disturbed."""
+    if pid <= 0:
+        return False
+    if os.name == "nt":
+        try:
+            import ctypes
+
+            kernel32 = ctypes.windll.kernel32
+            handle = kernel32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+            if not handle:
+                return ctypes.GetLastError() == 5  # access denied: it exists
+            try:
+                code = ctypes.c_ulong()
+                if not kernel32.GetExitCodeProcess(handle, ctypes.byref(code)):
+                    return True
+                return code.value == 259  # STILL_ACTIVE
+            finally:
+                kernel32.CloseHandle(handle)
+        except (AttributeError, OSError):
+            return True
     try:
-        folder.mkdir()
-    except FileExistsError as exc:
-        raise ConfigError(f"another check_mutation.py run is using {folder.relative_to(root).as_posix()}; if none is running, delete that folder") from exc
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return True
+    return True
+
+
+def acquire(root: Path) -> list[str]:
+    """Take the run lock atomically, then restore what a dead run left behind. Raises ConfigError if a live run holds it.
+
+    The lock comes first: a backup belongs to whoever holds the lock, so a second run never mistakes a live run's
+    mutant for an interrupted one.
+    """
+    lock = lock_file(root)
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    for _ in range(2):
+        try:
+            handle = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            try:
+                holder = int(lock.read_text(encoding="utf-8").strip() or "0")
+            except (OSError, ValueError):
+                holder = 0
+            if holder and process_alive(holder):
+                raise ConfigError(f"another check_mutation.py run (process {holder}) holds {lock.relative_to(root).as_posix()}; wait for it to finish")
+            try:
+                lock.unlink()  # its owner is gone
+            except FileNotFoundError:
+                pass
+            continue
+        with os.fdopen(handle, "w", encoding="utf-8") as stream:
+            stream.write(str(os.getpid()))
+        break
+    else:
+        raise ConfigError(f"could not take {lock.relative_to(root).as_posix()}")
+    restored = restore_pending(root)  # only a dead run's backup can be here now
+    backup_dir(root).mkdir(parents=True, exist_ok=True)
     return restored
+
+
+def release(root: Path) -> None:
+    shutil.rmtree(backup_dir(root), ignore_errors=True)
+    try:
+        if lock_file(root).read_text(encoding="utf-8").strip() == str(os.getpid()):
+            lock_file(root).unlink()
+    except OSError:
+        pass
 
 
 def main() -> int:
@@ -229,7 +300,7 @@ def main() -> int:
     parser.add_argument("--tasks", help="tasks path relative to the root (overrides --feature)")
     parser.add_argument("--spec", help="spec path, for mutation_min_score")
     parser.add_argument("--tests", help="extra file with TEST definitions")
-    parser.add_argument("--max-mutants", type=int, default=DEFAULT_MAX_MUTANTS, help=f"per file (default {DEFAULT_MAX_MUTANTS})")
+    parser.add_argument("--max-mutants", type=int, default=0, help="per file, for a quick look (default 0: all); a capped run is partial and does not pass the gate")
     parser.add_argument("--timeout", type=int, default=check_proofs.DEFAULT_TIMEOUT, help="seconds per TEST run; each mutant gets at most 5x the unmutated run, minimum 10 s")
     parser.add_argument("--budget-seconds", type=int, default=DEFAULT_BUDGET_S, help=f"wall-clock limit for the whole run (default {DEFAULT_BUDGET_S}); the score is marked truncated")
     parser.add_argument("--allow", action="append", default=[], metavar="EXE")
@@ -273,7 +344,7 @@ def main() -> int:
                 for relative in targets_of(test, tasks_by_id):
                     by_file.setdefault(relative, []).append(test)
             for relative, covering in sorted(by_file.items()):
-                entry = mutate_file(bundle.root, relative, covering, bundle, options, allowed, max(1, args.max_mutants), deadline)
+                entry = mutate_file(bundle.root, relative, covering, bundle, options, allowed, max(0, args.max_mutants), deadline)
                 data["files"][relative] = entry
                 data["mutants"] += entry["mutants"]
                 data["killed"] += entry["killed"]
@@ -287,9 +358,9 @@ def main() -> int:
                 data["score"] = round(data["killed"] / data["mutants"], 3)
                 data["status"] = "MEASURED"
                 if data["truncated"]:
-                    data["reason"] = f"stopped at the {args.budget_seconds}s budget; score over the mutants that ran"
+                    data["reason"] = "partial run (time budget or --max-mutants); the gate needs a complete run"
     finally:
-        shutil.rmtree(backup_dir(bundle.root), ignore_errors=True)
+        release(bundle.root)
     target = mutation_file(bundle.root, bundle.slug)
     write_json(target, data)
     code = 0 if data["status"] == "MEASURED" and (threshold is None or data["score"] >= threshold) else 1

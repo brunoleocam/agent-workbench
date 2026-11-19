@@ -110,6 +110,29 @@ def complexity(root: Path, layout: dict, slug: str, base: str | None = None) -> 
     return value
 
 
+def merge_base(root: Path, base: str) -> str:
+    found = (git(root, ["merge-base", base, "HEAD"]) or "").strip()
+    return found or base
+
+
+def removed_large(root: Path, layout: dict, base: str, slugs: list[str]) -> list[str]:
+    """Features that were M+ at the merge base and whose spec this pull request deleted, renamed, or superseded."""
+    found = []
+    for slug in slugs:
+        relative = f"{layout.get('specs_dir', 'docs/specs')}/{slug}.md"
+        before = frontmatter_of(git(root, ["show", f"{base}:{relative}"]) or "")
+        if str(before.get("complexity", "")).upper() not in LARGE or str(before.get("status", "")).lower() == "superseded":
+            continue
+        path = root / relative
+        try:
+            status = str(load_document(path).frontmatter.get("status", "")).lower() if path.is_file() else "removed"
+        except (OSError, ValueError):
+            status = "removed"
+        if status in {"removed", "superseded"}:
+            found.append(f"{slug} ({status})")
+    return found
+
+
 def needs_mutation(root: Path, layout: dict, slug: str) -> bool:
     spec = root / layout.get("specs_dir", "docs/specs") / f"{slug}.md"
     try:
@@ -146,11 +169,17 @@ def main() -> int:
     if slugs is None:
         print(f"[ERROR] cannot diff against {args.base}; fetch the base with enough history (fetch-depth: 0)", file=sys.stderr)
         return 2
-    large = [slug for slug in slugs if complexity(root, layout, slug, None if args.all else args.base) in LARGE]
+    point = None if args.all else merge_base(root, args.base)
+    large = [slug for slug in slugs if complexity(root, layout, slug, point) in LARGE]
+    dropped = [] if args.all or args.allow_downgrade else removed_large(root, layout, point, slugs)
+    if dropped:
+        print(f"[FAIL] this pull request removes or supersedes the spec of M+ features: {', '.join(dropped)}. Pass --allow-downgrade if the repository owner agrees.")
+        if not large:
+            return 1
     if not large:
         print("[PASS] no M+ feature changed.")
         return 0
-    failed = []
+    failed = [item.split(" ", 1)[0] for item in dropped]
     if not args.all:
         for slug in large:
             head_value = complexity(root, layout, slug)

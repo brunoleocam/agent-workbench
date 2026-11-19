@@ -31,6 +31,7 @@ USAGE_FIELDS = {"input_tokens": "input", "output_tokens": "output", "cache_read_
 TRANSCRIPT_MAX_BYTES = 50 * 1024 * 1024
 GATE_TIMEOUT = 15
 SHOWN_FAILURES = 6
+MAX_OPEN = 1  # open features checked per stop (the most recent); one gate run fits the hook timeout
 
 
 def parse_time(value) -> datetime | None:
@@ -152,8 +153,11 @@ def gate_state(state: dict) -> dict:
 
 def escalate(root: Path, state: dict, gate: dict, feature: str, entry: dict, fingerprint: str, reason: str, text: str) -> dict:
     """Tell the user once per workspace state and let the session stop."""
-    first = entry.get("escalated_fp") != fingerprint
-    entry["escalated_fp"] = fingerprint
+    key = fingerprint if reason == "no_progress" else reason
+    first = entry.get("escalated") != key and not (reason != "no_progress" and reason in entry.get("escalated_reasons", []))
+    entry["escalated"] = key
+    if reason != "no_progress":
+        entry["escalated_reasons"] = sorted(set(entry.get("escalated_reasons", [])) | {reason})
     state["stop_gate"] = gate
     save_state(root, state)
     if not first:
@@ -170,18 +174,21 @@ def open_features(state: dict, gate: dict) -> list[tuple[str, dict]]:
             continue
         if classify_floor.rank(str(item.get("effective") or ""), classify_floor.COMPLEXITY) >= classify_floor.rank("M", classify_floor.COMPLEXITY):
             found.append((feature, item))
-    return list(reversed(found))
+    return list(reversed(found))[:MAX_OPEN]  # each gate run costs up to GATE_TIMEOUT inside the hook's 20 s
 
 
 def unclassified(root: Path, state: dict, gate: dict, fingerprint: str) -> dict:
-    """Ask once per workspace state for a classification when the work since its base has an M+ floor and no
-    classification (open, closed, or waived) was recorded for that base."""
+    """Ask once per workspace state for a classification when the work since its base has an M+ floor that no
+    classification recorded for that base (open, closed, or waived) reaches: an early XS does not cover a grown change."""
     base = classify_floor.default_base(root)
-    if base and any(isinstance(item, dict) and item.get("base") == base for item in classify_floor.classifications(state).values()):
-        return {}
     found = classify_floor.measure(root, base)
     if found["floor"] is None or classify_floor.rank(found["floor"], classify_floor.COMPLEXITY) < classify_floor.rank("M", classify_floor.COMPLEXITY):
         return {}
+    floor = classify_floor.rank(found["floor"], classify_floor.COMPLEXITY)
+    for item in classify_floor.classifications(state).values():
+        if isinstance(item, dict) and item.get("base") == found["base"] and (
+                classify_floor.rank(str(item.get("effective") or ""), classify_floor.COMPLEXITY) >= floor or item.get("downgraded")):
+            return {}
     if gate.get("unclassified_fp") == fingerprint:
         return {}  # asked once for this workspace state
     gate["unclassified_fp"] = fingerprint
@@ -239,7 +246,7 @@ def decide(root: Path, payload: dict) -> dict:
         return escalate(root, state, gate, feature, entry, fingerprint, "no_progress",
                         f"Agent Workbench: {feature} stopped again without passing the gate and without changing the code since the last reminder. "
                         f"Decide: continue, replan, or waive with {waive}.")
-    if entry.get("blocks", 0) >= config["max_blocks"]:
+    if entry.get("blocks", 0) >= config["max_blocks"] or "max_blocks" in entry.get("escalated_reasons", []):
         return escalate(root, state, gate, feature, entry, fingerprint, "max_blocks",
                         f"Agent Workbench: the stop gate held {feature} {entry['blocks']} times (limit {config['max_blocks']}) and the gate still fails. "
                         f"Decide: continue fixing, replan, or waive with {waive}.")

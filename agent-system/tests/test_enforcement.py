@@ -433,3 +433,74 @@ def test_ci_gate_keeps_the_base_complexity_and_follows_task_files() -> None:
         git(root, "commit", "-qam", "lower it")
         done = run("ci_gate.py", ["--root", str(root), "--base", base])
         assert done.returncode == 1 and "feat" in done.stdout, done.stdout  # lowering its own complexity does not skip it
+
+
+# Second review (docs/reviews/enforcement.md, FIND-012 to FIND-016).
+
+def test_stop_asks_again_when_the_change_outgrows_an_early_classification() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = repo(Path(tmp) / "p")
+        opt_in(root)
+        write(root, "README.txt", "tiny\n")
+        assert run("classify_floor.py", ["--root", str(root), "--feature", "early", "--declared", "XS"]).returncode == 0
+        for index in range(10):
+            write(root, f"src/grown_{index}.py", "x = 1\n")
+        reply = stop(root)
+        assert reply.get("decision") == "block" and "classify_floor.py" in reply["reason"], reply
+
+
+def test_stop_limit_escalates_once_per_feature() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = failing_feature(Path(tmp) / "p")
+        for index in range(3):
+            write(root, "src/progress.py", f"STEP = {index}\n")
+            assert stop(root).get("decision") == "block"
+        messages = []
+        for index in range(3):
+            write(root, "src/progress.py", f"STEP = {10 + index}\n")
+            messages.append(stop(root))
+        assert "systemMessage" in messages[0] and messages[1] == {} and messages[2] == {}, messages
+
+
+def test_ci_gate_fails_a_removed_or_superseded_large_spec() -> None:
+    for action in ("delete", "supersede"):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = repo(Path(tmp) / "p")
+            shutil.copytree(FIXTURE / "docs", root / "docs")
+            git(root, "add", "-A")
+            git(root, "commit", "-q", "-m", "feature")
+            base = git(root, "rev-parse", "HEAD")
+            spec = root / "docs" / "specs" / "feat.md"
+            if action == "delete":
+                spec.unlink()
+            else:
+                spec.write_text(spec.read_text(encoding="utf-8").replace("status: approved", "status: superseded"), encoding="utf-8")
+            git(root, "add", "-A")
+            git(root, "commit", "-q", "-m", action)
+            done = run("ci_gate.py", ["--root", str(root), "--base", base])
+            assert done.returncode == 1 and "feat" in done.stdout, (action, done.stdout)
+            assert run("ci_gate.py", ["--root", str(root), "--base", base, "--allow-downgrade"]).returncode == 0
+
+
+def test_ci_gate_runs_the_mutation_proof() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = repo(Path(tmp) / "p")
+        base = git(root, "rev-parse", "HEAD")
+        for source in (FIXTURE, SCRIPTS.parent / "evals" / "fixtures" / "mutation-catches-weak-test" / "project"):
+            shutil.copytree(source, root, dirs_exist_ok=True)
+        for path in (root / "docs").rglob("*.md"):
+            path.write_text(path.read_text(encoding="utf-8").replace("__PYTHON__", PYTHON.replace("\\", "/")), encoding="utf-8")
+        git(root, "add", "-A")
+        git(root, "commit", "-q", "-m", "feature")
+        done = run("ci_gate.py", ["--root", str(root), "--base", base])
+        assert done.returncode == 1 and "mutation score 0.0" in done.stdout, done.stdout
+
+
+def test_skill_events_count_two_real_uses() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp) / "p"
+        opt_in(root)
+        common = {"session_id": "s1", "cwd": str(root), "hook_event_name": "PostToolUse", "tool_name": "Skill", "tool_response": "ok"}
+        hook({**common, "tool_input": {"skill": "agent-workbench:debug"}}, root)
+        hook({**common, "tool_input": {"skill": "agent-workbench:debug"}}, root)
+        assert [event["summary"] for event in events(root) if event["event"] == "SKILL_USED"] == ["debug", "debug"]

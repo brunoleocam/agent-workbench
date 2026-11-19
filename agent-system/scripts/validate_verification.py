@@ -127,12 +127,13 @@ def check_mutation_scores(bundle: Bundle, tests: list, digest: str, report: Repo
         report.fail("mutation-command-changed", "The TESTs that declare Mutate, or their commands, changed after the mutation score was recorded.")
     elif any(sorted(targets.get(test_id) or []) != files for test_id, (_, files) in declared.items()):
         report.fail("mutation-targets-changed", "The Mutate files changed after the mutation score was recorded; rerun check_mutation.py.")
+    elif data.get("truncated"):
+        report.fail("mutation-partial", "The mutation score comes from a partial run (time budget or --max-mutants); run check_mutation.py to completion.")
     elif float(data.get("score") or 0) < threshold:
         survivors = "; ".join(f"{name} {item}" for name, entry in (data.get("files") or {}).items() for item in (entry.get("survived") or [])[:2])
         report.fail("mutation-score", f"Mutation score {data.get('score')} is below {threshold} ({data.get('killed')}/{data.get('mutants')} killed; survived: {survivors}).")
     else:
-        note = " (truncated by the time budget)" if data.get("truncated") else ""
-        report.ok("mutation", f"Mutation score {data.get('score')} meets {threshold} ({data.get('killed')}/{data.get('mutants')} killed){note}.")
+        report.ok("mutation", f"Mutation score {data.get('score')} meets {threshold} ({data.get('killed')}/{data.get('mutants')} killed).")
 
 
 def validate(bundle: Bundle, review: Document | None, security: Document | None, report: Report) -> None:

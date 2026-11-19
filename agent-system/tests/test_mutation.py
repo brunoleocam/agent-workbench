@@ -229,3 +229,45 @@ def test_mutation_refuses_non_utf8_source() -> None:
         target.write_bytes(target.read_bytes() + "# caf\xe9\n".encode("latin-1"))
         data = json.loads(run("check_mutation.py", ["--root", str(root), "--feature", "feat", "--no-record", "--json"]).stdout)
         assert data["status"] == "ERROR" and "not UTF-8" in data["reason"], data
+
+
+# Second review (docs/reviews/mutation-proof.md, FIND-008 to FIND-010).
+
+def test_mutation_lock_protects_a_live_run() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = project(tmp)
+        target = root / "src" / "coupon.py"
+        mutant = b"def apply(*args):\n    return None\n"
+        target.write_bytes(mutant)  # what a live run has in place right now
+        write(root, ".agent-system/mutation/pending.json", json.dumps({"src/coupon.py": "backup.py"}))
+        write(root, ".agent-system/mutation/backup.py", "original\n")
+        write(root, ".agent-system/mutation.lock", str(os.getpid()))  # this test process is alive
+        done = run("check_mutation.py", ["--root", str(root), "--feature", "feat", "--no-record"])
+        assert done.returncode == 2 and "holds" in (done.stdout + done.stderr), done.stdout + done.stderr
+        assert target.read_bytes() == mutant and (root / ".agent-system" / "mutation" / "backup.py").is_file()
+
+
+def test_mutation_lock_of_a_dead_run_is_taken_over() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = project(tmp)
+        target = root / "src" / "coupon.py"
+        original = target.read_bytes()
+        finished = subprocess.run([PYTHON, "-c", "import os; print(os.getpid())"], capture_output=True, text=True, check=True)
+        write(root, ".agent-system/mutation.lock", finished.stdout.strip())
+        (root / ".agent-system" / "mutation").mkdir(parents=True, exist_ok=True)
+        (root / ".agent-system" / "mutation" / "backup.py").write_bytes(original)
+        write(root, ".agent-system/mutation/pending.json", json.dumps({"src/coupon.py": "backup.py"}))
+        target.write_text("def apply(*args):\n    return None\n", encoding="utf-8")
+        done = run("check_mutation.py", ["--root", str(root), "--feature", "feat", "--no-record"])
+        assert done.returncode == 0 and "restored files left mutated" in done.stdout, done.stdout + done.stderr
+        assert target.read_bytes() == original and not (root / ".agent-system" / "mutation.lock").exists()
+
+
+def test_gate_refuses_a_partial_mutation_run() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = project(tmp)
+        assert run("check_proofs.py", ["--root", str(root), "--feature", "feat", "--no-record"]).returncode == 0
+        data = json.loads(run("check_mutation.py", ["--root", str(root), "--feature", "feat", "--no-record", "--json", "--max-mutants", "1"]).stdout)
+        assert data["truncated"] is True and data["mutants"] == 1, data
+        gate = run("validate_verification.py", ["--root", str(root), "--feature", "feat", "--no-record"])
+        assert gate.returncode == 1 and "partial run" in gate.stdout, gate.stdout

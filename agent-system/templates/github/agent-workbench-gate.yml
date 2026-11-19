@@ -1,5 +1,6 @@
 # Installed by init_project.py --with-ci. Runs the Agent Workbench gate for every M+ feature
-# whose spec or tasks changed in the pull request. Make it a required check in the branch protection rules.
+# whose spec or tasks changed in the pull request. Make it a required check in the branch protection rules, and
+# protect this file (CODEOWNERS or a ruleset): a pull request that edits it can change what the check runs.
 name: Agent Workbench gate
 
 on:
