@@ -239,7 +239,7 @@ Em projetos preparados com `--for-cloud`, as cópias de rules e subagents nunca 
 
 #### Diferenças no Claude Code
 
-- Rules: só as rules `00` a `08` chegam ao Claude Code, pelo `CLAUDE.md`. `economia-de-tokens`, `mcp-triagem-obrigatoria` e `uso-ferramentas-mcp` são exclusivas do Cursor.
+- Rules: só as rules `00` a `08` chegam ao Claude Code, pelo `CLAUDE.md`. `economia-de-tokens` é exclusiva do Cursor.
 - Hooks: o Claude Code roda `hooks/claude-hooks.json`, que alimenta a mesma timeline dos hooks do Cursor.
 - Estado: o projeto guarda o estado em `.agent-system/` e `.agent-system/timeline/` nos dois editores, então um projeto inicializado num editor continua no outro.
 - `--for-cloud` e `/roadmap visual` (Canvas) são exclusivos do Cursor.
