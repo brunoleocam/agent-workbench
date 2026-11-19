@@ -31,6 +31,7 @@ from artifacts import (  # noqa: E402
     inside,
     load_bundle,
     load_proofs,
+    mutation_pending,
     project_root,
     proofs_file,
     record,
@@ -578,6 +579,8 @@ def main() -> int:
             print(json.dumps(workspace_fingerprint(root, resolve_layout(root)), indent=2))
             return 0
         bundle = load_bundle(args, need=("tasks",))
+        if mutation_pending(bundle.root):
+            raise ConfigError("A check_mutation.py run is in progress or was interrupted, so a source file may still be mutated. Let it finish, or run check_mutation.py again to restore it.")
         tests = bundle.test_blocks()
         if args.only:
             tests = [test for test in tests if test.id in set(args.only)]

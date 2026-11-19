@@ -18,8 +18,11 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import math
+import os
 import shutil
 import sys
+import time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -32,13 +35,16 @@ from artifacts import (  # noqa: E402
     config_error,
     inside,
     load_bundle,
+    mutation_threshold,
     record,
     system_dir,
+    truthy,
     workspace_fingerprint,
 )
 from lib import redact, utc_now, write_json  # noqa: E402
 
 DEFAULT_MAX_MUTANTS = 40
+DEFAULT_BUDGET_S = 1800
 COMPARE_SWAP = {ast.Lt: ast.LtE, ast.LtE: ast.Lt, ast.Gt: ast.GtE, ast.GtE: ast.Gt, ast.Eq: ast.NotEq, ast.NotEq: ast.Eq,
                 ast.In: ast.NotIn, ast.NotIn: ast.In, ast.Is: ast.IsNot, ast.IsNot: ast.Is}
 BINOP_SWAP = {ast.Add: ast.Sub, ast.Sub: ast.Add, ast.Mult: ast.Div, ast.Div: ast.Mult, ast.FloorDiv: ast.Mult, ast.Mod: ast.Mult}
@@ -120,7 +126,7 @@ def _replace(tree: ast.AST, old: ast.AST, new: ast.AST) -> ast.AST:
 
 
 def restore_pending(root: Path) -> list[str]:
-    """Put back files a killed run left mutated. Returns the restored paths."""
+    """Put back files a killed run left mutated. Returns the restored paths; refuses paths outside the root."""
     folder = backup_dir(root)
     manifest = folder / "pending.json"
     if not manifest.is_file():
@@ -131,10 +137,14 @@ def restore_pending(root: Path) -> list[str]:
     except (OSError, json.JSONDecodeError):
         pending = {}
     for relative, saved in (pending.items() if isinstance(pending, dict) else []):
-        source = folder / saved
-        if source.is_file():
-            shutil.copyfile(source, root / relative)
-            restored.append(relative)
+        source = folder / str(saved)
+        try:
+            target = inside(root, root / str(relative))
+        except ConfigError:
+            continue
+        if source.is_file() and source.parent == folder:
+            shutil.copyfile(source, target)
+            restored.append(str(relative))
     shutil.rmtree(folder, ignore_errors=True)
     return restored
 
@@ -147,49 +157,47 @@ def targets_of(test, tasks_by_id: dict) -> list[str]:
             if task and task.get("mutate"):
                 raw = task.get("mutate")
                 break
-    return [item.strip().strip("`") for item in raw.split(",") if item.strip()] if raw else []
+    return sorted({item.strip().strip("`").replace("\\", "/") for item in raw.split(",") if item.strip()}) if raw else []
 
 
-def min_score(bundle) -> float | None:
-    value = (bundle.spec.frontmatter.get("mutation_min_score") if bundle.spec else None) or ""
-    if not value:
-        layout_value = (bundle.layout.get("mutation") or {}).get("min_score") if isinstance(bundle.layout.get("mutation"), dict) else None
-        value = "" if layout_value is None else str(layout_value)
-    try:
-        score = float(value)
-    except ValueError:
-        return None
-    return score if 0 < score <= 1 else None
-
-
-def mutate_file(root: Path, relative: str, tests: list, bundle, options, allowed, limit: int) -> dict:
+def mutate_file(root: Path, relative: str, tests: list, bundle, options, allowed, limit: int, deadline: float) -> dict:
     """Mutants of one file; a mutant is killed when any TEST that covers the file fails or times out."""
-    entry = {"mutants": 0, "killed": 0, "survived": [], "reason": ""}
+    entry = {"mutants": 0, "killed": 0, "survived": [], "reason": "", "error": False, "truncated": False}
     try:
         path = inside(root, root / relative)
     except ConfigError as exc:
-        entry["reason"] = str(exc)
+        entry["reason"], entry["error"] = str(exc), True
         return entry
     if path.suffix != ".py" or not path.is_file():
-        entry["reason"] = "only existing .py files can be mutated"
+        entry["reason"], entry["error"] = "only existing .py files can be mutated", True
         return entry
     raw = path.read_bytes()  # restored byte for byte, so the workspace fingerprint is unchanged
-    original = raw.decode("utf-8", errors="replace")
+    try:
+        original = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        entry["reason"], entry["error"] = "not UTF-8; cannot mutate it safely", True
+        return entry
     try:
         found = sites(ast.parse(original))
     except SyntaxError:
-        entry["reason"] = "does not parse"
+        entry["reason"], entry["error"] = "does not parse", True
         return entry
     if not found:
         entry["reason"] = "no mutation site"
         return entry
+    stat = path.stat()
     folder = backup_dir(root)
-    folder.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(path, folder / "backup.py")
     (folder / "pending.json").write_text(json.dumps({relative: "backup.py"}), encoding="utf-8")
     try:
-        for target, description in found[:limit]:
+        for number, (target, description) in enumerate(found[:limit], start=1):
+            if time.monotonic() > deadline:
+                entry["truncated"] = True
+                break
             path.write_text(mutate(original, target, description) + "\n", encoding="utf-8")
+            # A distinct mtime per mutant: Python validates cached bytecode by source size and whole-second mtime, and a
+            # mutant of the same size written within the same second would otherwise import the stale .pyc.
+            os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns + (number + 1) * 2_000_000_000))
             entry["mutants"] += 1
             if any(check_proofs.execute(test, bundle, options, allowed)["status"] in {"FAIL", "TIMEOUT"} for test in tests):
                 entry["killed"] += 1
@@ -197,8 +205,22 @@ def mutate_file(root: Path, relative: str, tests: list, bundle, options, allowed
                 entry["survived"].append(description)
     finally:
         path.write_bytes(raw)
-        shutil.rmtree(folder, ignore_errors=True)
+        os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns))
+        (folder / "pending.json").unlink(missing_ok=True)
+        (folder / "backup.py").unlink(missing_ok=True)
     return entry
+
+
+def acquire(root: Path) -> list[str]:
+    """Restore an interrupted run, then take the run folder exclusively. Raises ConfigError if another run holds it."""
+    restored = restore_pending(root)
+    folder = backup_dir(root)
+    folder.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        folder.mkdir()
+    except FileExistsError as exc:
+        raise ConfigError(f"another check_mutation.py run is using {folder.relative_to(root).as_posix()}; if none is running, delete that folder") from exc
+    return restored
 
 
 def main() -> int:
@@ -208,49 +230,66 @@ def main() -> int:
     parser.add_argument("--spec", help="spec path, for mutation_min_score")
     parser.add_argument("--tests", help="extra file with TEST definitions")
     parser.add_argument("--max-mutants", type=int, default=DEFAULT_MAX_MUTANTS, help=f"per file (default {DEFAULT_MAX_MUTANTS})")
-    parser.add_argument("--timeout", type=int, default=check_proofs.DEFAULT_TIMEOUT)
+    parser.add_argument("--timeout", type=int, default=check_proofs.DEFAULT_TIMEOUT, help="seconds per TEST run; each mutant gets at most 5x the unmutated run, minimum 10 s")
+    parser.add_argument("--budget-seconds", type=int, default=DEFAULT_BUDGET_S, help=f"wall-clock limit for the whole run (default {DEFAULT_BUDGET_S}); the score is marked truncated")
     parser.add_argument("--allow", action="append", default=[], metavar="EXE")
     parser.add_argument("--allow-shell", action="store_true")
     parser.add_argument("--allow-inline", action="store_true")
     args = parser.parse_args()
     try:
         bundle = load_bundle(args, need=("tasks",))
+        threshold, source, problem = mutation_threshold(bundle.spec.frontmatter if bundle.spec else {}, bundle.layout)
+        if problem:
+            raise ConfigError(problem)
+        tasks_by_id = {task.id: task for task in bundle.task_blocks()}
+        tests = [test for test in bundle.test_blocks() if truthy(test.get("required"), True) and targets_of(test, tasks_by_id)]
+        if not tests:
+            raise ConfigError("No required TEST declares Mutate (on the TEST or its task).")
+        restored = acquire(bundle.root)
     except ConfigError as exc:
         return config_error(str(exc), args.json)
-    restored = restore_pending(bundle.root)
-    tasks_by_id = {task.id: task for task in bundle.task_blocks()}
-    tests = [test for test in bundle.test_blocks() if targets_of(test, tasks_by_id)]
-    if not tests:
-        return config_error("No TEST declares Mutate (on the TEST or its task).", args.json)
+    os.environ["PYTHONDONTWRITEBYTECODE"] = "1"  # the TESTs this process starts never cache a mutant's bytecode
     layout_allow = bundle.layout.get("proof_allow") if isinstance(bundle.layout.get("proof_allow"), list) else []
     allowed = check_proofs.ALLOWED_EXECUTABLES | {check_proofs.exe_name(item) for item in [*args.allow, *layout_allow] if isinstance(item, str)}
     options = SimpleNamespace(allow_shell=args.allow_shell, allow_inline=args.allow_inline, dry_run=False, timeout=args.timeout)
-    threshold = min_score(bundle)
     before = workspace_fingerprint(bundle.root, bundle.layout)
-    data = {"version": 2, "feature": bundle.slug, "updated_at": utc_now(), "fingerprint": before["digest"], "min_score": threshold,
-            "tests": {test.id: redact(test.get("command"), 300) for test in tests}, "status": "ERROR", "reason": "",
-            "mutants": 0, "killed": 0, "score": None, "files": {}}
-    broken = [(test.id, proof) for test in tests for proof in [check_proofs.execute(test, bundle, options, allowed)] if proof["status"] != "PASS"]
-    if broken:
-        test_id, proof = broken[0]
-        data["status"] = "FAIL" if proof["status"] == "FAIL" else "ERROR"
-        data["reason"] = f"{test_id} does not pass unmutated ({proof['status']}: {proof.get('reason') or ''})"
-    else:
-        by_file: dict[str, list] = {}
-        for test in tests:
-            for relative in targets_of(test, tasks_by_id):
-                by_file.setdefault(relative.replace("\\", "/"), []).append(test)
-        for relative, covering in sorted(by_file.items()):
-            entry = mutate_file(bundle.root, relative, covering, bundle, options, allowed, max(1, args.max_mutants))
-            data["files"][relative] = entry
-            data["mutants"] += entry["mutants"]
-            data["killed"] += entry["killed"]
-        problems = [f"{name}: {entry['reason']}" for name, entry in data["files"].items() if entry["reason"]]
-        if problems:
-            data["reason"] = "; ".join(problems)
-        if data["mutants"]:
-            data["score"] = round(data["killed"] / data["mutants"], 3)
-            data["status"] = "MEASURED"
+    data = {"version": 3, "feature": bundle.slug, "updated_at": utc_now(), "fingerprint": before["digest"], "min_score": threshold,
+            "tests": {test.id: redact(test.get("command"), 300) for test in tests},
+            "targets": {test.id: targets_of(test, tasks_by_id) for test in tests},
+            "status": "ERROR", "reason": "", "mutants": 0, "killed": 0, "score": None, "truncated": False, "files": {}}
+    deadline = time.monotonic() + max(1, args.budget_seconds)
+    try:
+        baseline = [(test, check_proofs.execute(test, bundle, options, allowed)) for test in tests]
+        broken = [(test.id, proof) for test, proof in baseline if proof["status"] != "PASS"]
+        if broken:
+            test_id, proof = broken[0]
+            data["status"] = "FAIL" if proof["status"] == "FAIL" else "ERROR"
+            data["reason"] = f"{test_id} does not pass unmutated ({proof['status']}: {proof.get('reason') or ''})"
+        else:
+            slowest = max(float(proof.get("duration_s") or 0) for _, proof in baseline)
+            options.timeout = max(1, min(args.timeout, max(10, math.ceil(5 * slowest))))
+            by_file: dict[str, list] = {}
+            for test in tests:
+                for relative in targets_of(test, tasks_by_id):
+                    by_file.setdefault(relative, []).append(test)
+            for relative, covering in sorted(by_file.items()):
+                entry = mutate_file(bundle.root, relative, covering, bundle, options, allowed, max(1, args.max_mutants), deadline)
+                data["files"][relative] = entry
+                data["mutants"] += entry["mutants"]
+                data["killed"] += entry["killed"]
+                data["truncated"] = data["truncated"] or entry["truncated"]
+            errors = [f"{name}: {entry['reason']}" for name, entry in data["files"].items() if entry["error"]]
+            if errors:
+                data["reason"] = "; ".join(errors)
+            elif not data["mutants"]:
+                data["reason"] = "no mutation site in the listed files"
+            else:
+                data["score"] = round(data["killed"] / data["mutants"], 3)
+                data["status"] = "MEASURED"
+                if data["truncated"]:
+                    data["reason"] = f"stopped at the {args.budget_seconds}s budget; score over the mutants that ran"
+    finally:
+        shutil.rmtree(backup_dir(bundle.root), ignore_errors=True)
     target = mutation_file(bundle.root, bundle.slug)
     write_json(target, data)
     code = 0 if data["status"] == "MEASURED" and (threshold is None or data["score"] >= threshold) else 1
@@ -261,7 +300,8 @@ def main() -> int:
             print(f"[WARN] restored files left mutated by an interrupted run: {', '.join(restored)}")
         if data["status"] == "MEASURED":
             label = "FAIL" if code else "PASS"
-            print(f"[{label}] {bundle.slug}: mutation score {data['score']} ({data['killed']}/{data['mutants']} killed), minimum {threshold if threshold is not None else 'not set'}")
+            print(f"[{label}] {bundle.slug}: mutation score {data['score']} ({data['killed']}/{data['mutants']} killed), minimum {threshold if threshold is not None else 'not set'}"
+                  + (" (truncated by the time budget)" if data["truncated"] else ""))
             for name, entry in data["files"].items():
                 print(f"  {name}: {entry['killed']}/{entry['mutants']} killed" + (f" ({entry['reason']})" if entry["reason"] else ""))
                 for survivor in entry["survived"][:5]:

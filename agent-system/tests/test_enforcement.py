@@ -290,3 +290,146 @@ def test_metrics_report_skills_classifications_and_stop_gate() -> None:
         assert report["skills"] == {"debug": 1, "tdd": 2}
         assert [(item["feature"], item["downgraded"]) for item in report["classifications"]] == [("a", False), ("b", True)]
         assert report["stop_gate"] == {"blocked": 2, "escalated": {"max_blocks": 1}, "waived": 1}
+
+
+# Review findings (docs/reviews/enforcement.md): each test fails on the first 0.7.0 draft.
+
+def test_floor_counts_staged_renames() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = repo(Path(tmp) / "p")
+        for index in range(7):
+            write(root, f"f{index}.py", "x = 1\ny = 2\n")
+        git(root, "add", "-A")
+        git(root, "commit", "-q", "-m", "files")
+        (root / "src" / "auth").mkdir(parents=True)
+        for index in range(7):
+            git(root, "mv", f"f{index}.py", f"src/auth/g{index}.py")
+            with (root / "src" / "auth" / f"g{index}.py").open("a", encoding="utf-8") as handle:
+                handle.write("z = 3\n")
+        git(root, "add", "-A")
+        data = json.loads(run("classify_floor.py", ["--root", str(root), "--declared", "XS", "--json", "--no-record"]).stdout)
+        assert data["floor"] == "M" and "authentication" in data["measure"]["surfaces"], data
+
+
+def test_floor_thresholds_on_tracked_files() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = repo(Path(tmp) / "p")
+        for index in range(6):
+            write(root, f"m{index}.py", "a = 0\n")
+        git(root, "add", "-A")
+        git(root, "commit", "-q", "-m", "six")
+
+        def floor() -> dict:
+            return json.loads(run("classify_floor.py", ["--root", str(root), "--declared", "XS", "--json", "--no-record"]).stdout)
+
+        for index in range(5):
+            write(root, f"m{index}.py", "a = 1\n")
+        found = floor()
+        assert (found["floor"], len(found["measure"]["files"])) == ("S", 5), found
+        write(root, "m5.py", "a = 1\n")
+        assert floor()["floor"] == "M"
+        git(root, "checkout", "--", ".")
+        write(root, "m0.py", "".join(f"v{i} = {i}\n" for i in range(149)))  # 1 removed + 149 added = 150 lines
+        assert floor()["floor"] == "S"
+        write(root, "m0.py", "".join(f"v{i} = {i}\n" for i in range(299)))  # 1 removed + 299 added = 300 lines
+        assert floor()["floor"] == "M"
+
+
+def test_floor_measures_committed_work_against_the_default_branch() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = repo(Path(tmp) / "p")
+        git(root, "branch", "-M", "main")
+        git(root, "checkout", "-q", "-b", "feature")
+        seven_files(root)
+        git(root, "add", "-A")
+        git(root, "commit", "-q", "-m", "work")
+        data = json.loads(run("classify_floor.py", ["--root", str(root), "--declared", "S", "--json", "--no-record"]).stdout)
+        assert data["floor"] == "M" and len(data["measure"]["files"]) == 7, data
+
+
+def test_floor_word_matching_and_binary_files() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = repo(Path(tmp) / "p")
+        write(root, "AUTHORS", "someone\n")
+        write(root, "docs/secretary_notes.txt", "x\n")
+        (root / "logo.png").write_bytes(b"\x89PNG\0" + b"\n" * 500)
+        data = json.loads(run("classify_floor.py", ["--root", str(root), "--declared", "S", "--json", "--no-record"]).stdout)
+        assert data["measure"]["surfaces"] == {} and data["floor"] == "S", data
+        write(root, "src/AuthService.ts", "export {}\n")
+        data = json.loads(run("classify_floor.py", ["--root", str(root), "--declared", "S", "--json", "--no-record"]).stdout)
+        assert "authentication" in data["measure"]["surfaces"]
+
+
+def test_floor_requires_a_feature_for_m() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = repo(Path(tmp) / "p")
+        opt_in(root)
+        assert run("classify_floor.py", ["--root", str(root), "--declared", "M"]).returncode == 2
+
+
+def test_stop_blocks_once_per_state_across_turns() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = failing_feature(Path(tmp) / "p")
+        assert stop(root).get("decision") == "block"
+        second = stop(root)  # a new user turn, nothing changed: tell the user once, do not block
+        assert "decision" not in second and "systemMessage" in second
+        assert stop(root) == {}  # and stay quiet afterwards
+        assert state(root)["stop_gate"]["features"]["feat"]["blocks"] == 1
+
+
+def test_stop_keeps_an_older_failing_feature_after_a_new_classification() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = failing_feature(Path(tmp) / "p")
+        assert run("classify_floor.py", ["--root", str(root), "--feature", "other", "--declared", "S", "--justification", "docs only"]).returncode == 0
+        reply = stop(root)
+        assert reply.get("decision") == "block" and "--feature feat" in reply["reason"], reply
+
+
+def test_reclassifying_drops_a_waiver() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = failing_feature(Path(tmp) / "p")
+        assert run("record_event.py", ["--root", str(root), "--event", "STOP_GATE_WAIVED", "--feature", "feat", "--summary", "user: ship it"]).returncode == 0
+        assert stop(root) == {}
+        assert run("classify_floor.py", ["--root", str(root), "--feature", "feat", "--declared", "M"]).returncode == 0
+        assert stop(root).get("decision") == "block"
+
+
+def test_skill_events_skip_builtins_and_duplicates() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp) / "p"
+        opt_in(root)
+        common = {"session_id": "s1", "cwd": str(root)}
+        hook({**common, "hook_event_name": "UserPromptSubmit", "prompt": "/help"}, root)
+        hook({**common, "hook_event_name": "UserPromptSubmit", "prompt": "/security-review"}, root)
+        hook({**common, "hook_event_name": "UserPromptSubmit", "prompt": "/agent-workbench:tdd go"}, root)
+        hook({**common, "hook_event_name": "PostToolUse", "tool_name": "Skill", "tool_input": {"skill": "agent-workbench:tdd"}, "tool_response": "ok"}, root)
+        hook({**common, "hook_event_name": "UserPromptSubmit", "prompt": "/agent-workbench:help"}, root)
+        assert [event["summary"] for event in events(root) if event["event"] == "SKILL_USED"] == ["tdd", "help"]
+
+
+def test_ci_gate_keeps_the_base_complexity_and_follows_task_files() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = repo(Path(tmp) / "p")
+        shutil.copytree(FIXTURE / "docs", root / "docs")
+        shutil.copytree(FIXTURE / "checks", root / "checks")
+        shutil.copytree(FIXTURE / "src", root / "src")
+        for path in (root / "docs").rglob("*.md"):
+            path.write_text(path.read_text(encoding="utf-8").replace("__PYTHON__", PYTHON.replace("\\", "/")), encoding="utf-8")
+        tasks = root / "docs" / "tasks" / "feat.md"
+        text = tasks.read_text(encoding="utf-8")
+        heading = next(line for line in text.splitlines() if line.startswith("### TASK-001"))
+        tasks.write_text(text.replace(heading, heading + "\n- Files: src/coupon.py", 1), encoding="utf-8")
+        (root / "docs" / "reviews" / "feat.md").unlink()
+        git(root, "add", "-A")
+        git(root, "commit", "-q", "-m", "feature")
+        base = git(root, "rev-parse", "HEAD")
+        source = root / "src" / "coupon.py"
+        source.write_text(source.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+        git(root, "commit", "-qam", "code only")
+        done = run("ci_gate.py", ["--root", str(root), "--base", base])
+        assert done.returncode == 1 and "feat" in done.stdout, done.stdout  # code changed, spec did not
+        spec = root / "docs" / "specs" / "feat.md"
+        spec.write_text(spec.read_text(encoding="utf-8").replace("complexity: M", "complexity: S"), encoding="utf-8")
+        git(root, "commit", "-qam", "lower it")
+        done = run("ci_gate.py", ["--root", str(root), "--base", base])
+        assert done.returncode == 1 and "feat" in done.stdout, done.stdout  # lowering its own complexity does not skip it

@@ -23,6 +23,8 @@ from artifacts import (  # noqa: E402
     load_bundle,
     load_document,
     load_proofs,
+    mutation_pending,
+    mutation_threshold,
     proofs_file,
     record,
     task_status,
@@ -86,32 +88,24 @@ def check_report_doc(doc: Document | None, label: str, kind: str, required: bool
     check_findings(doc, label, kind, report)
 
 
-def mutation_threshold(bundle: Bundle) -> tuple[float | None, str]:
-    """Minimum mutation score and where it came from: the spec front matter, then layout.json `mutation.min_score`."""
-    for value, source in ((bundle.spec.frontmatter.get("mutation_min_score"), "spec"),
-                          ((bundle.layout.get("mutation") or {}).get("min_score") if isinstance(bundle.layout.get("mutation"), dict) else None, "layout")):
-        if value in (None, ""):
-            continue
-        try:
-            score = float(value)
-        except (TypeError, ValueError):
-            return None, source
-        if 0 < score <= 1:
-            return score, source
-    return None, ""
+def mutation_targets(test, tasks: dict) -> list[str]:
+    raw = test.get("mutate")
+    if not raw:
+        raw = next((tasks[task_id].get("mutate") for task_id in test.ids("task", "TASK") if tasks.get(task_id) and tasks[task_id].get("mutate")), "")
+    return sorted({item.strip().strip("`").replace("\\", "/") for item in raw.split(",") if item.strip()}) if raw else []
 
 
 def check_mutation_scores(bundle: Bundle, tests: list, digest: str, report: Report) -> None:
-    threshold, source = mutation_threshold(bundle)
+    if mutation_pending(bundle.root):
+        report.fail("mutation-pending", "A check_mutation.py run is in progress or was interrupted, so a source file may still be mutated. Let it finish, or run check_mutation.py again to restore it.")
+    threshold, source, problem = mutation_threshold(bundle.spec.frontmatter, bundle.layout)
+    if problem:
+        report.fail("mutation-min-invalid", problem)
+        return
     if threshold is None:
         return
     tasks = {task.id: task for task in bundle.task_blocks()}
-    declared = []
-    for test in tests:
-        if not truthy(test.get("required"), True):
-            continue
-        if test.get("mutate") or any(tasks.get(task_id) and tasks[task_id].get("mutate") for task_id in test.ids("task", "TASK")):
-            declared.append(test)
+    declared = {test.id: (test, mutation_targets(test, tasks)) for test in tests if truthy(test.get("required"), True) and mutation_targets(test, tasks)}
     if not declared:
         message = f"mutation_min_score {threshold} is set ({source}) but no required TEST declares Mutate."
         (report.fail if source == "spec" else report.warn)("mutation-undeclared", message)
@@ -122,19 +116,23 @@ def check_mutation_scores(bundle: Bundle, tests: list, digest: str, report: Repo
     except (OSError, json.JSONDecodeError):
         data = None
     recorded = data.get("tests") if isinstance(data, dict) and isinstance(data.get("tests"), dict) else None
+    targets = data.get("targets") if isinstance(data, dict) and isinstance(data.get("targets"), dict) else {}
     if recorded is None:
         report.fail("mutation-missing", f"No mutation score for {bundle.slug}. Run check_mutation.py --feature {bundle.slug}.")
     elif data.get("status") != "MEASURED":
         report.fail("mutation-not-measured", f"Mutation run is {data.get('status')}: {data.get('reason') or ''}".rstrip(": "))
     elif data.get("fingerprint") != digest:
         report.fail("mutation-stale", "Mutation score predates the current workspace; rerun check_mutation.py.")
-    elif any(recorded.get(test.id) != redact(test.get("command"), 300) for test in declared):
-        report.fail("mutation-command-changed", "A TEST with Mutate was added or its command changed after the mutation score was recorded.")
+    elif set(recorded) != set(declared) or any(recorded.get(test_id) != redact(test.get("command"), 300) for test_id, (test, _) in declared.items()):
+        report.fail("mutation-command-changed", "The TESTs that declare Mutate, or their commands, changed after the mutation score was recorded.")
+    elif any(sorted(targets.get(test_id) or []) != files for test_id, (_, files) in declared.items()):
+        report.fail("mutation-targets-changed", "The Mutate files changed after the mutation score was recorded; rerun check_mutation.py.")
     elif float(data.get("score") or 0) < threshold:
         survivors = "; ".join(f"{name} {item}" for name, entry in (data.get("files") or {}).items() for item in (entry.get("survived") or [])[:2])
         report.fail("mutation-score", f"Mutation score {data.get('score')} is below {threshold} ({data.get('killed')}/{data.get('mutants')} killed; survived: {survivors}).")
     else:
-        report.ok("mutation", f"Mutation score {data.get('score')} meets {threshold} ({data.get('killed')}/{data.get('mutants')} killed).")
+        note = " (truncated by the time budget)" if data.get("truncated") else ""
+        report.ok("mutation", f"Mutation score {data.get('score')} meets {threshold} ({data.get('killed')}/{data.get('mutants')} killed){note}.")
 
 
 def validate(bundle: Bundle, review: Document | None, security: Document | None, report: Report) -> None:

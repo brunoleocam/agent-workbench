@@ -15,31 +15,31 @@ Outcome: a deterministic classification floor computed from the diff, a Claude C
 ## Requirements
 
 ### REQ-001: Classification floor
-WHEN `classify_floor.py` runs with a declared complexity, THE SYSTEM SHALL measure the change against a git base (changed files, changed lines, files on an attack surface), compute a floor complexity, and fail with exit 1 when the declared complexity is below the floor.
+WHEN `classify_floor.py` runs with a declared complexity, THE SYSTEM SHALL measure the change against a git base (by default the base recorded for the feature, else the merge base with the default branch, else HEAD), counting renamed files as changed, binary files as one line, and attack surfaces by whole words of the path, compute a floor complexity, and fail with exit 1 when the declared complexity is below the floor.
 
 ### REQ-002: Recorded downgrade
 IF the declared complexity is below the floor AND a justification is given, THEN THE SYSTEM SHALL accept the classification with a warning, record a `CLASSIFICATION_DOWNGRADED` event with the justification, and keep the declared complexity as the effective one.
 
 ### REQ-003: Classification in state and timeline
-WHEN a classification is checked, THE SYSTEM SHALL record a `CLASSIFICATION_RECORDED` event and store the feature, declared, floor, effective complexity, security risk, git base, and time in `state.json`.
+WHEN a classification is checked, THE SYSTEM SHALL record a `CLASSIFICATION_RECORDED` event and store, per feature, the declared, floor, and effective complexity, security risk, git base, and time in `state.json`; an M+ classification SHALL require a feature slug.
 
 ### REQ-004: Skill usage events
-WHEN Claude Code invokes a skill through the Skill tool, or the user types a slash command that names a known plugin skill, THE SYSTEM SHALL record a `SKILL_USED` event with the skill name only, never the arguments or the prompt.
+WHEN Claude Code invokes a skill through the Skill tool, or the user types a slash command that names a known plugin skill, THE SYSTEM SHALL record a `SKILL_USED` event with the skill name only, never the arguments or the prompt, ignore a bare slash command that is also a Claude Code built-in (`/help`, `/security-review`), and count a slash command followed by the Skill tool for the same skill once.
 
 ### REQ-005: Stop gate
-WHEN the Claude Code main session stops, an opted-in project has an M+ effective classification, and `validate_verification.py` does not exit 0 for that feature, THE SYSTEM SHALL block the stop with a reason that lists the gate failures.
+WHEN the Claude Code main session stops, an opted-in project has an open M+ classification (any feature, not closed by a passing gate and not waived), and `validate_verification.py` does not exit 0 for it, THE SYSTEM SHALL block the stop with a reason that lists the gate failures; a gate that cannot run in time SHALL let the session stop.
 
 ### REQ-006: Unclassified large change
-WHEN the main session stops without a classification and the floor of the current diff is M or larger, THE SYSTEM SHALL block the stop once per workspace state and ask for `classify_floor.py`.
+WHEN the main session stops with no open classification, no classification recorded for the current base, and a floor of M or larger, THE SYSTEM SHALL block the stop once per workspace state and ask for `classify_floor.py`.
 
 ### REQ-007: Loop limits and escalation
-THE SYSTEM SHALL stop blocking and escalate to the user (a message and a `STOP_GATE_ESCALATED` event) when the stop gate has blocked `limits.max_revisions` times for the feature, when the feature's estimated cost passes its budget, or when the workspace did not change since the previous block of a continued stop (`stop_hook_active`).
+THE SYSTEM SHALL stop blocking and escalate to the user (a message and a `STOP_GATE_ESCALATED` event) when the stop gate has blocked `limits.max_revisions` times for the feature, when the feature's estimated cost passes its budget, or when a stop arrives with the workspace unchanged since the previous block (in the same turn or a later one); it SHALL block at most once per workspace state and send each escalation message once.
 
 ### REQ-008: Escape
-THE SYSTEM SHALL skip the stop gate when `AGENT_WORKBENCH_STOP_GATE=off` is set or the user waived the feature with a `STOP_GATE_WAIVED` event, and record a waiver only with a reason.
+THE SYSTEM SHALL skip the stop gate when `AGENT_WORKBENCH_STOP_GATE=off` is set or the user waived the feature with a `STOP_GATE_WAIVED` event, record a waiver only with a reason, and drop the waiver when the feature is classified again.
 
 ### REQ-009: CI gate
-WHEN `ci_gate.py` runs on a pull request, THE SYSTEM SHALL find the M+ features whose spec or tasks changed against the base, run `check_proofs.py` and `validate_verification.py` for each, and exit 1 when any of them fails; `init_project.py --with-ci` SHALL install a GitHub Actions workflow that runs it, without overwriting an existing file.
+WHEN `ci_gate.py` runs on a pull request, THE SYSTEM SHALL find the features whose spec or tasks changed against the base or whose tasks list a changed file in `Files`, keep those that are M+ at the base or the head, fail a feature whose pull request lowers it below M (unless `--allow-downgrade`), run `check_proofs.py`, `check_mutation.py` when a minimum score is set, and `validate_verification.py` for each, and exit 1 when any of them fails; `init_project.py --with-ci` SHALL install a GitHub Actions workflow that runs it, without overwriting an existing file.
 
 ### REQ-010: Metrics
 THE SYSTEM SHALL report in `metrics.py` the skill counts, the classifications with downgrades, and the stop gate blocks, escalations by reason, and waivers.
@@ -117,6 +117,48 @@ Then it exits 1 naming the feature; a repo where only an S spec changed exits 0;
 Given a timeline with skill, classification, and stop gate events
 When `metrics.py --json` runs
 Then the report has `skills`, `classifications`, and `stop_gate` with the right counts.
+
+### AC-013: Renames and committed work
+- Requirements: REQ-001
+Given 7 files moved with `git mv`, edited, and staged into `src/auth/`, or 7 files committed on a branch off `main`
+When `classify_floor.py --declared XS` (or `S`) runs
+Then the floor is M (with the `authentication` surface for the first case).
+
+### AC-014: Thresholds and word matching
+- Requirements: REQ-001
+Given tracked changes of 5 then 6 files, or of 150 then 300 lines, and untracked `AUTHORS`, `docs/secretary_notes.txt`, and a binary file
+When the floor is measured
+Then it is S, M, S, M respectively, no surface is reported for the untracked names, and `src/AuthService.ts` reports `authentication`.
+
+### AC-015: Once per workspace state
+- Requirements: REQ-007
+Given the project of AC-006 blocked once
+When two more stops arrive with nothing changed
+Then the second returns one message for the user without a block, the third returns nothing, and the block count stays 1.
+
+### AC-016: Older failing feature still holds
+- Requirements: REQ-003, REQ-005
+Given the project of AC-006 and a later classification of another feature
+When the hook receives `Stop`
+Then it still blocks for `feat`.
+
+### AC-017: CI follows code and refuses a self-downgrade
+- Requirements: REQ-009
+Given an M feature whose tasks list `src/coupon.py`
+When a pull request changes only `src/coupon.py`, and then also lowers the spec to S
+Then `ci_gate.py` checks the feature and exits 1 both times.
+
+### AC-018: Built-in commands and repeats
+- Requirements: REQ-004
+Given `/help`, `/security-review`, `/agent-workbench:tdd` followed by the Skill tool for `tdd`, and `/agent-workbench:help`
+When the hook runs
+Then the timeline has `SKILL_USED` for `tdd` and `help` only.
+
+### AC-019: Waiver ends with a new classification
+- Requirements: REQ-008
+Given a waiver for `feat`
+When `feat` is classified again
+Then the stop gate blocks again.
 
 ## Assumptions
 

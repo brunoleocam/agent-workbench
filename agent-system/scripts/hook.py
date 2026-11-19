@@ -13,6 +13,7 @@ import json
 import os
 import re
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -63,6 +64,9 @@ def read_input() -> dict:
 CLAUDE_FILE_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 PLUGIN_PREFIX = "agent-workbench:"
 SKILL_NAME = re.compile(r"[a-z0-9][a-z0-9-]{0,63}")
+# Claude Code's own commands that share a name with a plugin skill; only the prefixed form is the plugin's.
+CLAUDE_BUILTINS = {"help", "security-review", "init", "review", "status", "agents", "hooks", "memory", "config", "context"}
+SKILL_REPEAT_S = 60
 SLASH = re.compile(r"\s*/([A-Za-z0-9][A-Za-z0-9:_-]{0,80})(?:\s|$)")
 
 
@@ -155,7 +159,10 @@ def slash_skill(prompt) -> str:
     found = SLASH.match(str(prompt or ""))
     if not found:
         return ""
-    name = skill_name(found.group(1))
+    typed = found.group(1)
+    name = skill_name(typed)
+    if name in CLAUDE_BUILTINS and not typed.startswith(PLUGIN_PREFIX):
+        return ""  # a bare /help or /security-review runs Claude Code's own command, not the plugin skill
     return name if name in known_skills() else ""
 
 
@@ -338,6 +345,21 @@ def re_failed(text: str) -> bool:
     return bool(FAIL_LINE.search(text))
 
 
+def repeated_skill(root: Path, payload: dict, skill: str) -> bool:
+    """A typed slash command followed by the Skill tool for the same skill is one use, not two."""
+    try:
+        state = load_state(root)
+        last = state.get("last_skill") if isinstance(state.get("last_skill"), dict) else {}
+        now = time.time()
+        session = str(payload.get("session_id") or "")
+        same = last.get("name") == skill and last.get("session") == session and now - float(last.get("at") or 0) < SKILL_REPEAT_S
+        state["last_skill"] = {"name": skill, "session": session, "at": now}
+        save_state(root, state)
+        return same
+    except (OSError, ValueError, TypeError):
+        return False
+
+
 def stop_reply(root: Path, payload: dict) -> dict:
     """The stop gate's reply for one project; {} on any error, so a broken gate never traps the session."""
     try:
@@ -447,6 +469,8 @@ def handle(payload: dict) -> dict:
         skill = str(payload.get("skill") or "")
         if skill:
             for root in roots:
+                if repeated_skill(root, payload, skill):
+                    continue
                 log(root, payload, "SKILL_USED", skill, result=str(payload.get("source") or "tool"))
         return {}
 

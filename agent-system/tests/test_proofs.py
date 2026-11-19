@@ -387,3 +387,18 @@ def test_small_change_needs_no_review() -> None:
         done = run("validate_verification.py", args)
         assert done.returncode == 0, done.stdout
         assert "not required" in done.stdout
+
+
+def test_layout_proof_allow_reaches_check_proofs() -> None:
+    """layout.json proof_allow extends the executable allowlist (it was dropped by resolve_layout before 0.7.0)."""
+    import tempfile
+    from pathlib import Path
+
+    from support import run, write
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp) / "p"
+        write(root, ".agent-system/layout.json", '{"proof_allow": ["mytool"]}')
+        write(root, "docs/tasks/f.md", "# Tasks\n\n### TASK-001: x\n- Verification: TEST-001\n- Status: todo\n\n### TEST-001: x\n- Task: TASK-001\n- Command: mytool run\n")
+        done = run("check_proofs.py", ["--root", str(root), "--feature", "f", "--no-record"])
+        assert "not in the allowed list" not in done.stdout and "executable not found: mytool" in done.stdout, done.stdout

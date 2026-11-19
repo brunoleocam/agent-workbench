@@ -4,7 +4,7 @@ Spec: [enforcement](../specs/enforcement.md). Tests run through the plugin suite
 
 ### TASK-001: Classification floor
 - Requirements: REQ-001, REQ-002, REQ-003
-- Acceptance: AC-001, AC-002, AC-003, AC-004
+- Acceptance: AC-001, AC-002, AC-003, AC-004, AC-013, AC-014
 - Files: agent-system/scripts/classify_floor.py, agent-system/scripts/lib.py
 - Depends on: none
 - Verification: TEST-001, TEST-007
@@ -14,7 +14,7 @@ Spec: [enforcement](../specs/enforcement.md). Tests run through the plugin suite
 
 ### TASK-002: Skill events
 - Requirements: REQ-004
-- Acceptance: AC-005
+- Acceptance: AC-005, AC-018
 - Files: agent-system/scripts/hook.py, hooks/claude-hooks.json
 - Depends on: none
 - Verification: TEST-002
@@ -24,7 +24,7 @@ Spec: [enforcement](../specs/enforcement.md). Tests run through the plugin suite
 
 ### TASK-003: Stop gate goal loop
 - Requirements: REQ-005, REQ-006, REQ-007, REQ-008
-- Acceptance: AC-006, AC-007, AC-008, AC-009, AC-010
+- Acceptance: AC-006, AC-007, AC-008, AC-009, AC-010, AC-015, AC-016, AC-019
 - Files: agent-system/scripts/stop_gate.py, agent-system/scripts/hook.py, agent-system/scripts/record_event.py, agent-system/scripts/lib.py
 - Depends on: TASK-001
 - Verification: TEST-003, TEST-008
@@ -34,7 +34,7 @@ Spec: [enforcement](../specs/enforcement.md). Tests run through the plugin suite
 
 ### TASK-004: CI gate and installer flag
 - Requirements: REQ-009
-- Acceptance: AC-011
+- Acceptance: AC-011, AC-017
 - Files: agent-system/scripts/ci_gate.py, agent-system/scripts/init_project.py, agent-system/templates/github/agent-workbench-gate.yml
 - Depends on: none
 - Verification: TEST-004
@@ -64,27 +64,27 @@ Spec: [enforcement](../specs/enforcement.md). Tests run through the plugin suite
 ## Checks
 
 ### TEST-001: classification floor
-- Acceptance: AC-001, AC-002, AC-003, AC-004
+- Acceptance: AC-001, AC-002, AC-003, AC-004, AC-013, AC-014
 - Task: TASK-001
 - Command: ["python", "agent-system/scripts/test_system.py", "test_floor_"]
-- Expected: exit 0; 5 passed
+- Expected: exit 0; 10 passed
 
 ### TEST-002: skill events hold names only
-- Acceptance: AC-005
+- Acceptance: AC-005, AC-018
 - Task: TASK-002
-- Command: ["python", "agent-system/scripts/test_system.py", "test_skill_events_hold_names_only"]
+- Command: ["python", "agent-system/scripts/test_system.py", "test_skill_events_"]
 - Expected: exit 0
 
 ### TEST-003: stop gate
-- Acceptance: AC-006, AC-007, AC-008, AC-009, AC-010
+- Acceptance: AC-006, AC-007, AC-008, AC-009, AC-010, AC-015, AC-016, AC-019
 - Task: TASK-003
-- Command: ["python", "agent-system/scripts/test_system.py", "test_stop_"]
-- Expected: exit 0; 7 passed
+- Command: ["python", "agent-system/scripts/test_system.py", "test_stop_", "test_reclassifying_drops_a_waiver"]
+- Expected: exit 0; 10 passed
 
 ### TEST-004: CI gate and installer
-- Acceptance: AC-011
+- Acceptance: AC-011, AC-017
 - Task: TASK-004
-- Command: ["python", "agent-system/scripts/test_system.py", "test_ci_gate_checks_changed_large_features", "test_init_with_ci_installs_workflow_once"]
+- Command: ["python", "agent-system/scripts/test_system.py", "test_ci_gate_", "test_init_with_ci_installs_workflow_once"]
 - Expected: exit 0
 
 ### TEST-005: metrics

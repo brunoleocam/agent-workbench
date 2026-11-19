@@ -121,14 +121,15 @@ def cost_usd(tokens: dict, prices: dict) -> float:
     return sum(tokens.get(name, 0) * prices[name] for name in prices) / 1_000_000
 
 
-def run_gate(root: Path, feature: str) -> tuple[int, list[str]]:
+def run_gate(root: Path, feature: str) -> tuple[int | None, list[str]]:
+    """Exit code and FAIL messages of the gate; None when it could not run in time (the caller fails open)."""
     try:
         done = subprocess.run(
             [sys.executable, "-I", str(SCRIPTS / "validate_verification.py"), "--root", str(root), "--feature", feature, "--json", "--no-record"],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=GATE_TIMEOUT, check=False,
         )
     except (OSError, subprocess.SubprocessError):
-        return 0, []  # cannot judge: fail open
+        return None, []
     try:
         data = json.loads(done.stdout or "{}")
     except json.JSONDecodeError:
@@ -150,70 +151,99 @@ def gate_state(state: dict) -> dict:
 
 
 def escalate(root: Path, state: dict, gate: dict, feature: str, entry: dict, fingerprint: str, reason: str, text: str) -> dict:
+    """Tell the user once per workspace state and let the session stop."""
     first = entry.get("escalated_fp") != fingerprint
     entry["escalated_fp"] = fingerprint
     state["stop_gate"] = gate
     save_state(root, state)
-    if first:
-        record(root, "STOP_GATE_ESCALATED", f"stop gate escalated for {feature}", reason, feature, "orchestrator")
+    if not first:
+        return {}
+    record(root, "STOP_GATE_ESCALATED", f"stop gate escalated for {feature}", reason, feature, "orchestrator")
     return {"systemMessage": text}
 
 
+def open_features(state: dict, gate: dict) -> list[tuple[str, dict]]:
+    """Classified M+ features that are not closed (gate passed) or waived, most recent first."""
+    found = []
+    for feature, item in classify_floor.classifications(state).items():
+        if not isinstance(item, dict) or item.get("closed") or feature in gate["waived"]:
+            continue
+        if classify_floor.rank(str(item.get("effective") or ""), classify_floor.COMPLEXITY) >= classify_floor.rank("M", classify_floor.COMPLEXITY):
+            found.append((feature, item))
+    return list(reversed(found))
+
+
+def unclassified(root: Path, state: dict, gate: dict, fingerprint: str) -> dict:
+    """Ask once per workspace state for a classification when the work since its base has an M+ floor and no
+    classification (open, closed, or waived) was recorded for that base."""
+    base = classify_floor.default_base(root)
+    if base and any(isinstance(item, dict) and item.get("base") == base for item in classify_floor.classifications(state).values()):
+        return {}
+    found = classify_floor.measure(root, base)
+    if found["floor"] is None or classify_floor.rank(found["floor"], classify_floor.COMPLEXITY) < classify_floor.rank("M", classify_floor.COMPLEXITY):
+        return {}
+    if gate.get("unclassified_fp") == fingerprint:
+        return {}  # asked once for this workspace state
+    gate["unclassified_fp"] = fingerprint
+    state["stop_gate"] = gate
+    save_state(root, state)
+    record(root, "STOP_GATE_BLOCKED", "stop blocked: unclassified change", classify_floor.describe(found), None, "orchestrator")
+    return {"decision": "block", "reason": (
+        f"Agent Workbench: this change has a {classify_floor.describe(found)} and no open classification. "
+        "Run `python .agent-system/scripts/classify_floor.py --feature <slug> --declared <XS|S|M|L|XL>` before finishing. "
+        "If you are waiting for the user's decision, say so and stop."
+    )}
+
+
 def decide(root: Path, payload: dict) -> dict:
-    """Claude Code reply for a Stop event: {} to let it stop, a block, or a message for the user."""
+    """Claude Code reply for a Stop event: {} to let it stop, a block, or a message for the user.
+
+    It blocks at most once per workspace state: a second stop with nothing changed escalates (once) and stops.
+    """
     if os.environ.get(ENV_SWITCH, "").strip().lower() in {"off", "0", "false", "no"}:
         return {}
     state = load_state(root)
     gate = gate_state(state)
-    classification = state.get("classification") if isinstance(state.get("classification"), dict) else {}
     fingerprint = workspace_fingerprint(root)["digest"]
-    continued = bool(payload.get("stop_hook_active"))
-    effective = str(classification.get("effective") or "")
-    feature = str(classification.get("feature") or "")
+    candidates = open_features(state, gate)
+    if not candidates:
+        return unclassified(root, state, gate, fingerprint)
 
-    if not classification:
-        found = classify_floor.measure(root)
-        if found["floor"] is None or classify_floor.rank(found["floor"], classify_floor.COMPLEXITY) < classify_floor.rank("M", classify_floor.COMPLEXITY):
-            return {}
-        if gate.get("unclassified_fp") == fingerprint:
-            return {}  # asked once for this workspace state
-        gate["unclassified_fp"] = fingerprint
-        state["stop_gate"] = gate
-        save_state(root, state)
-        record(root, "STOP_GATE_BLOCKED", "stop blocked: unclassified change", f"{classify_floor.describe(found)}", None, "orchestrator")
-        return {"decision": "block", "reason": (
-            f"Agent Workbench: this change has a {classify_floor.describe(found)} and no recorded classification. "
-            "Run `python .agent-system/scripts/classify_floor.py --feature <slug> --declared <XS|S|M|L|XL>` before finishing. "
-            "If you are waiting for the user's decision, say so and stop."
-        )}
-
-    if classify_floor.rank(effective, classify_floor.COMPLEXITY) < classify_floor.rank("M", classify_floor.COMPLEXITY):
-        return {}
-    if not feature:
-        return {"decision": "block", "reason": "Agent Workbench: an M+ classification has no feature slug. Rerun classify_floor.py with --feature <slug>."} if not continued else {}
-    if feature in gate["waived"]:
-        return {}
-
-    code, fails = run_gate(root, feature)
-    entry = gate["features"].setdefault(feature, {"blocks": 0})
-    if code == 0:
-        if entry.get("blocks"):
-            entry["blocks"] = 0
+    failing = None
+    changed = False
+    for feature, item in candidates:
+        code, fails = run_gate(root, feature)
+        if code is None:
+            return {}  # the gate could not run in time: fail open, change nothing
+        if code == 0:
+            kept = classify_floor.classifications(state)
+            kept[feature] = {**item, "closed": True}
+            state["classifications"] = kept
+            gate["features"].pop(feature, None)
+            changed = True
+            continue
+        if failing is None:
+            failing = (feature, item, code, fails)
+    if failing is None:
+        if changed:
             state["stop_gate"] = gate
             save_state(root, state)
         return {}
 
+    feature, item, code, fails = failing
+    entry = gate["features"].setdefault(feature, {"blocks": 0})
     config = settings(root)
-    waive = f"`python .agent-system/scripts/record_event.py --event STOP_GATE_WAIVED --feature {feature} --summary \"<the user's reason>\"`"
-    if continued and entry.get("last_fp") == fingerprint:
+    waive = (f"`python .agent-system/scripts/record_event.py --event STOP_GATE_WAIVED --feature {feature} --summary \"<the user's words>\"`"
+             " (only when the user says so)")
+    if entry.get("last_fp") == fingerprint:
         return escalate(root, state, gate, feature, entry, fingerprint, "no_progress",
-                        f"Agent Workbench: {feature} stopped without passing the gate and without changing the code since the last reminder. "
-                        f"The gate still fails. Decide: continue, replan, or waive with {waive}.")
+                        f"Agent Workbench: {feature} stopped again without passing the gate and without changing the code since the last reminder. "
+                        f"Decide: continue, replan, or waive with {waive}.")
     if entry.get("blocks", 0) >= config["max_blocks"]:
         return escalate(root, state, gate, feature, entry, fingerprint, "max_blocks",
                         f"Agent Workbench: the stop gate held {feature} {entry['blocks']} times (limit {config['max_blocks']}) and the gate still fails. "
                         f"Decide: continue fixing, replan, or waive with {waive}.")
-    since = parse_time(classification.get("at"))
+    since = parse_time(item.get("at"))
     tokens = transcript_usage(str(payload.get("transcript_path") or ""), since)
     for name, value in subagent_usage(root, since).items():
         tokens[name] += value
@@ -229,8 +259,9 @@ def decide(root: Path, payload: dict) -> dict:
     save_state(root, state)
     record(root, "STOP_GATE_BLOCKED", f"stop blocked for {feature}", f"block {entry['blocks']}/{config['max_blocks']}, US$ {spent:.2f}", feature, "orchestrator")
     shown = "; ".join(fails[:SHOWN_FAILURES]) + (f"; and {len(fails) - SHOWN_FAILURES} more" if len(fails) > SHOWN_FAILURES else "")
+    what = "has no valid spec or tasks for the gate" if code == 2 else "does not pass the gate"
     return {"decision": "block", "reason": (
-        f"Agent Workbench: {feature} is {effective} and `python .agent-system/scripts/validate_verification.py --feature {feature}` "
-        f"does not exit 0 ({shown or 'see its output'}). Keep working until it passes "
+        f"Agent Workbench: {feature} is {item.get('effective')} and {what}: `python .agent-system/scripts/validate_verification.py --feature {feature}` "
+        f"({shown or 'see its output'}). Keep working until it exits 0 "
         f"(attempt {entry['blocks']} of {config['max_blocks']}). If you are waiting for the user's decision (spec, ADR, or risk approval), say so and stop."
     )}

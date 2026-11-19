@@ -1,7 +1,9 @@
 """Pull request check: every M+ feature whose spec or tasks changed against the base must pass its gate.
 
-For each such feature it runs check_proofs.py (fresh proofs on this machine; proofs are never versioned) and then
-validate_verification.py. Exit codes: 0 all pass or no M+ feature changed, 1 a feature fails, 2 bad argument or git error.
+A feature counts as changed when its spec or tasks changed, or when its tasks list a changed file in `Files`. Its
+complexity is the larger of the base and the head, so a pull request cannot lower its own gate. For each such feature
+it runs check_proofs.py (fresh proofs on this machine; proofs are never versioned), check_mutation.py when a minimum
+mutation score is set, and then validate_verification.py. Exit codes: 0 all pass or no M+ feature changed, 1 a feature fails, 2 bad argument or git error.
 """
 
 from __future__ import annotations
@@ -13,10 +15,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from artifacts import ConfigError, load_document, resolve_layout  # noqa: E402
+from artifacts import ConfigError, load_document, mutation_threshold, resolve_layout  # noqa: E402
 
 SCRIPTS = Path(__file__).resolve().parent
 LARGE = {"M", "L", "XL"}
+ORDER = ("XS", "S", "M", "L", "XL")
 
 
 def git(root: Path, args: list[str]) -> str | None:
@@ -27,17 +30,46 @@ def git(root: Path, args: list[str]) -> str | None:
     return done.stdout.decode("utf-8", errors="replace") if done.returncode == 0 else None
 
 
+def changed_paths(root: Path, base: str) -> list[str] | None:
+    names = git(root, ["diff", "--name-only", "--no-renames", "-z", f"{base}...HEAD", "--", "."])
+    if names is None:
+        names = git(root, ["diff", "--name-only", "--no-renames", "-z", base, "--", "."])
+    return None if names is None else [item for item in names.replace("\\", "/").split("\0") if item]
+
+
+def task_files(root: Path, layout: dict, slug: str) -> set[str]:
+    """Paths and folders named in the `Files` field of a feature's tasks."""
+    path = root / layout.get("tasks_dir", "docs/tasks") / f"{slug}.md"
+    try:
+        tasks = load_document(path) if path.is_file() else None
+    except (OSError, ValueError):
+        return set()
+    found = set()
+    for block in tasks.of_kind("TASK") if tasks else []:
+        for item in block.get("files").split(","):
+            item = item.strip().strip("`").replace("\\", "/")
+            if item:
+                found.add(item)
+    return found
+
+
+def touches(paths: list[str], files: set[str]) -> bool:
+    return any(path == item or (item.endswith("/") and path.startswith(item)) or path.startswith(item.rstrip("/") + "/") for path in paths for item in files)
+
+
 def changed_features(root: Path, base: str, layout: dict) -> list[str] | None:
-    names = git(root, ["diff", "--name-only", "-z", f"{base}...HEAD", "--", "."])
-    if names is None:
-        names = git(root, ["diff", "--name-only", "-z", base, "--", "."])
-    if names is None:
+    """Features whose spec or tasks changed, plus features whose tasks list a changed file in `Files`."""
+    paths = changed_paths(root, base)
+    if paths is None:
         return None
     dirs = [layout[key].rstrip("/") + "/" for key in ("specs_dir", "tasks_dir") if layout.get(key)]
     slugs = set()
-    for relative in filter(None, names.replace("\\", "/").split("\0")):
+    for relative in paths:
         if relative.endswith(".md") and any(relative.startswith(prefix) and "/" not in relative[len(prefix):] for prefix in dirs):
             slugs.add(Path(relative).stem)
+    for slug in all_features(root, layout):
+        if slug not in slugs and touches(paths, task_files(root, layout, slug)):
+            slugs.add(slug)
     return sorted(slugs)
 
 
@@ -46,8 +78,22 @@ def all_features(root: Path, layout: dict) -> list[str]:
     return sorted(path.stem for path in folder.glob("*.md")) if folder.is_dir() else []
 
 
-def complexity(root: Path, layout: dict, slug: str) -> str:
-    path = root / layout.get("specs_dir", "docs/specs") / f"{slug}.md"
+def frontmatter_of(text: str) -> dict:
+    lines = text.splitlines()
+    meta = {}
+    if lines and lines[0].strip() == "---":
+        for line in lines[1:]:
+            if line.strip() == "---":
+                break
+            key, _, value = line.partition(":")
+            meta[key.strip()] = value.split("#", 1)[0].strip()
+    return meta
+
+
+def complexity(root: Path, layout: dict, slug: str, base: str | None = None) -> str:
+    """The spec's complexity; with a base, the larger of the base and the head, so a PR cannot lower its own gate."""
+    relative = f"{layout.get('specs_dir', 'docs/specs')}/{slug}.md"
+    path = root / relative
     if not path.is_file():
         return ""
     try:
@@ -56,7 +102,22 @@ def complexity(root: Path, layout: dict, slug: str) -> str:
         return ""
     if str(meta.get("status", "")).lower() == "superseded":
         return ""
-    return str(meta.get("complexity", "")).upper()
+    value = str(meta.get("complexity", "")).upper()
+    if base:
+        before = str(frontmatter_of(git(root, ["show", f"{base}:{relative}"]) or "").get("complexity", "")).upper()
+        if before in ORDER and (value not in ORDER or ORDER.index(before) > ORDER.index(value)):
+            return before
+    return value
+
+
+def needs_mutation(root: Path, layout: dict, slug: str) -> bool:
+    spec = root / layout.get("specs_dir", "docs/specs") / f"{slug}.md"
+    try:
+        meta = load_document(spec).frontmatter if spec.is_file() else {}
+    except (OSError, ValueError):
+        meta = {}
+    threshold, _, problem = mutation_threshold(meta, layout)
+    return threshold is not None and not problem
 
 
 def run(script: str, root: Path, slug: str, extra: list[str]) -> int:
@@ -69,6 +130,7 @@ def main() -> int:
     parser.add_argument("--root", default=".")
     parser.add_argument("--base", help="base ref of the pull request (for example origin/main)")
     parser.add_argument("--all", action="store_true", help="check every M+ feature, not only the changed ones")
+    parser.add_argument("--allow-downgrade", action="store_true", help="accept a spec whose complexity this pull request lowered below M")
     parser.add_argument("--allow-shell", action="store_true", help="passed to check_proofs.py; only when the repository owner allows it")
     args = parser.parse_args()
     root = Path(args.root).resolve()
@@ -84,16 +146,26 @@ def main() -> int:
     if slugs is None:
         print(f"[ERROR] cannot diff against {args.base}; fetch the base with enough history (fetch-depth: 0)", file=sys.stderr)
         return 2
-    large = [slug for slug in slugs if complexity(root, layout, slug) in LARGE]
+    large = [slug for slug in slugs if complexity(root, layout, slug, None if args.all else args.base) in LARGE]
     if not large:
         print("[PASS] no M+ feature changed.")
         return 0
     failed = []
+    if not args.all:
+        for slug in large:
+            head_value = complexity(root, layout, slug)
+            if head_value not in LARGE and not args.allow_downgrade:
+                print(f"[FAIL] {slug}: this pull request lowers its complexity to {head_value or 'none'}, which would skip the M+ gate. Pass --allow-downgrade if the repository owner agrees.")
+                failed.append(slug)
     for slug in large:
+        if slug in failed:
+            continue
         print(f"== {slug}")
-        proofs = run("check_proofs.py", root, slug, ["--allow-shell"] if args.allow_shell else [])
+        shell = ["--allow-shell"] if args.allow_shell else []
+        proofs = run("check_proofs.py", root, slug, shell)
+        mutation = run("check_mutation.py", root, slug, shell) if needs_mutation(root, layout, slug) else 0
         gate = run("validate_verification.py", root, slug, [])
-        if gate != 0 or proofs == 2:
+        if gate != 0 or proofs == 2 or mutation == 2:
             failed.append(slug)
     if failed:
         print(f"[FAIL] gate failed for: {', '.join(failed)}")
