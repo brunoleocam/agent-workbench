@@ -10,15 +10,15 @@ Condensed version of rules `00` to `08` of the agent-workbench plugin for Claude
 - No evidence, no done. A failing test blocks completion. Uncertainty about a business rule: ask or record it, do not invent.
 - A high-impact decision (architecture, business rule, security, new infrastructure, removing behavior) goes to the user before it becomes final.
 - Smallest sufficient change: before writing code, ask in order whether it needs to exist, whether the codebase already has it, whether the standard library or platform covers it, and whether an installed dependency does; only then write the minimum new code. Never trim validation at trust boundaries, error handling that prevents data loss, security, accessibility, required tests, or anything the user asked for. Adapted from ponytail (MIT).
-- You are the orchestrator. For M, L, and XL, delegate to `planner`, `implementer`, `tester`, `reviewer`, and `debugger` only the slice that justifies its own context. XS and S: do it directly, with no PRD, ADR, CR, checkpoint, or subagents; S still requires the test that proves the change.
-- For M or larger in an initialized project, the gates are scripts: `validate_spec.py`, `validate_tasks.py`, `check_proofs.py`, and `validate_verification.py` in `.agent-system/scripts/`. A feature is only done when `validate_verification.py` exits 0.
+- You, the main session, are the orchestrator; never delegate to the `orchestrator` subagent, and specialists do not delegate further. For M, L, and XL, delegate to `planner`, `implementer`, `tester`, `reviewer`, and `debugger` only the slice that justifies its own context. XS and S: do it directly, with no PRD, ADR, CR, checkpoint, or subagents; S still requires the test that proves the change.
+- For M or larger in an initialized project, the gates are scripts: `validate_spec.py`, `validate_tasks.py`, `check_proofs.py`, and `validate_verification.py` in `.agent-system/scripts/`. A feature is only done when `validate_verification.py` exits 0. The `Stop` hook enforces it: while an M+ feature's gate fails, it sends you back to work, up to `max_revisions` times or the feature's cost budget, then escalates to the user. If you are waiting for the user's decision, say so and stop.
 - For M or larger, the flow is the graph in `.agent-system/workflow.json`. Before each handoff run `next_step.py --from <node> --result pass|fail|escalate` with `--class`, `--complexity`, `--security`, `--interface new|existing|none` (and `--feature` after a failed gate). A missing argument that an edge needs exits 2, so a new UI is never routed past design by omission. On `status: needs_decision` stop and ask the user the returned `question`; at the revision limit the router escalates to the user instead of looping.
 - When an M or larger task is done, update `docs/progress/CURRENT.md` and suggest continuing in a new chat from it.
 - If `.agent-system/layout.json` exists, new ADRs, PRDs, and specs go to those paths. Do not move what the init found.
 
 ### 01 · Request classification
 
-Before editing code, state the class, complexity, and risk in one line. E.g. `FEATURE · M · security HIGH (authentication, personal_data)`.
+Before editing code, state the class, complexity, and risk in one line. E.g. `FEATURE · M · security HIGH (authentication, personal_data)`. In an initialized git project, check it once the change takes shape and before you say done: `python .agent-system/scripts/classify_floor.py --feature <slug> --declared <C> [--security <R>]`. It measures the diff (files, lines, attack surfaces); below its floor it exits 1. Reclassify, or pass `--justification` when the user agrees the change is smaller than it looks; the downgrade is recorded.
 
 - Class → skill: greenfield `new-project`; feature or behavior change `feature`; defect `bug-fix`; refactoring `refactoring`; investigation without implementing `investigation`; new scope mid-task `change-request`; an already specified step `implementation`; review `code-review`; create a skill `create-skill`.
 - In the cycle: `brainstorm` before an approved design, `implementation-plan` once the design is ready, `tdd` and `test-hygiene` while implementing, `debug` and `root-cause` on failure, `ui-ux` for interfaces, `update-docs` for specs and ADRs.
@@ -39,6 +39,7 @@ Before editing code, state the class, complexity, and risk in one line. E.g. `FE
 - Define the verification before or alongside the implementation. Preferred TDD: failing test → minimum to pass → refactor.
 - Evidence is a real exit code: `check_proofs.py --feature <slug>` records output, exit code, and the workspace fingerprint. A result inferred from shell text is not proof; a proof from a different state of the code is stale.
 - A TEST `Command` calls the project's runner or test file, not inline code. `--allow-inline` and `--allow-shell` only with the user's authorization.
+- Mutation (optional, Python): a TEST or task lists the files it covers in `Mutate:`; `check_mutation.py --feature <slug>` records the share of mutants the tests kill. With `mutation_min_score` in the spec front matter, the gate requires a fresh score at or above it.
 
 ### 04 · Change during implementation
 
@@ -60,6 +61,13 @@ An idea, bug, requirement, or dependency discovered mid-task does not change the
 ### 07 · Artifacts
 
 A tree in the repository, created on demand, never with an empty file: `docs/product/PRD.md`, `docs/architecture/ARCHITECTURE.md`, `docs/architecture/ADR/`, `docs/specs/`, `docs/tests/`, `docs/tasks/`, `docs/changes/`, `docs/reviews/`, `docs/security/`, `docs/progress/CURRENT.md`, and `ROADMAP.md`; the visual contract is `design/DESIGN.md`. Nothing the workflow produces goes at the repository root: every document and contract lives in a folder. Same feature, same slug in every folder. Proofs live in `.agent-system/proofs/`. If the repository already has a canonical place for specs or ADRs, use the existing one.
+
+### Context economy
+
+- Search before reading, then read only the section you need. Do not reread an unchanged file.
+- Filter and cut terminal output (quiet test reporters, `grep`/`head`, `Select-String`); never paste a whole log.
+- Show only what changed, not unchanged code or a recap of what was already said.
+- A long conversation or a change of subject: offer a summary for a new chat (`context-summary` skill).
 
 ### 08 · Security
 

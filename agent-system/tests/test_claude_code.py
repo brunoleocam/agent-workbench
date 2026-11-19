@@ -246,3 +246,15 @@ def test_init_migrates_legacy_state() -> None:
         assert report["migrated"][0].startswith("kept .cursor/agent-system")
         assert (root / ".cursor/agent-system/state.json").exists()
         assert json.loads((root / ".agent-system/state.json").read_text(encoding="utf-8"))["next_step"] == "new"
+
+
+def test_single_orchestrator_model() -> None:
+    """In Claude Code the main session orchestrates: the orchestrator agent is never auto-delegated as a subagent."""
+    base = Path(__file__).resolve().parents[2]
+    agent = (base / "agents" / "orchestrator.md").read_text(encoding="utf-8")
+    description = next(line for line in agent.splitlines() if line.startswith("description:"))
+    assert "proactively" not in description.lower() and "never delegate to this agent as a subagent" in description
+    assert "Nested delegation" not in agent and "do not delegate" in agent
+    block = (base / "agent-system" / "templates" / "CLAUDE.md").read_text(encoding="utf-8")
+    assert "never delegate to the `orchestrator` subagent" in block
+    assert "classify_floor.py" in block and "check_mutation.py" in block and "### Context economy" in block
