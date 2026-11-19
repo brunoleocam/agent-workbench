@@ -93,6 +93,12 @@ SEMANTIC_EVENTS = {
     "LESSON_PROPOSED",
     "LESSON_CONFIRMED",
     "LESSON_REJECTED",
+    "CLASSIFICATION_RECORDED",
+    "CLASSIFICATION_DOWNGRADED",
+    "SKILL_USED",
+    "STOP_GATE_BLOCKED",
+    "STOP_GATE_ESCALATED",
+    "STOP_GATE_WAIVED",
 }
 VERIFICATION_STEPS = {
     "SPEC_VALIDATION_COMPLETED": "spec",
@@ -462,6 +468,13 @@ def apply_semantic_state(state: dict, event: dict) -> dict:
         state["active_agent"] = event.get("agent") or state.get("active_agent")
     elif kind == "SUBAGENT_STOPPED":
         state["active_agent"] = "orchestrator"
+    elif kind == "STOP_GATE_WAIVED" and event.get("feature"):
+        gate = state.get("stop_gate") if isinstance(state.get("stop_gate"), dict) else {}
+        waived = gate.get("waived") if isinstance(gate.get("waived"), list) else []
+        if event["feature"] not in waived:
+            waived.append(event["feature"])
+        gate["waived"] = waived[-50:]
+        state["stop_gate"] = gate
     step = VERIFICATION_STEPS.get(kind)
     feature = event.get("feature")
     if step and feature:

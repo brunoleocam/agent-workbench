@@ -123,7 +123,39 @@ def compute(events: list[dict], feature: str | None = None, since: datetime | No
             item["gates_failed"] += 1
             if not item["passed"]:
                 item["revisions_to_pass"] += 1
-    return {"agents": report_agents, "features": dict(sorted(features.items())), "tokens": "available" if any_tokens else "unavailable"}
+    skills: dict[str, int] = {}
+    classifications = []
+    stop_gate = {"blocked": 0, "escalated": {}, "waived": 0}
+    for event in events:
+        kind = event["event"]
+        if kind == "SKILL_USED" and event.get("summary"):
+            name = str(event["summary"])
+            skills[name] = skills.get(name, 0) + 1
+        elif kind in {"CLASSIFICATION_RECORDED", "CLASSIFICATION_DOWNGRADED"}:
+            data = event.get("classification") if isinstance(event.get("classification"), dict) else {}
+            classifications.append({
+                "feature": event.get("feature"),
+                "declared": data.get("declared"),
+                "floor": data.get("floor"),
+                "effective": data.get("effective"),
+                "downgraded": kind == "CLASSIFICATION_DOWNGRADED",
+                "timestamp": event["timestamp"],
+            })
+        elif kind == "STOP_GATE_BLOCKED":
+            stop_gate["blocked"] += 1
+        elif kind == "STOP_GATE_ESCALATED":
+            reason = str(event.get("result") or "unknown")
+            stop_gate["escalated"][reason] = stop_gate["escalated"].get(reason, 0) + 1
+        elif kind == "STOP_GATE_WAIVED":
+            stop_gate["waived"] += 1
+    return {
+        "agents": report_agents,
+        "features": dict(sorted(features.items())),
+        "skills": dict(sorted(skills.items())),
+        "classifications": classifications,
+        "stop_gate": stop_gate,
+        "tokens": "available" if any_tokens else "unavailable",
+    }
 
 
 def main() -> int:
@@ -141,7 +173,8 @@ def main() -> int:
             return 2
     path = timeline_dir(Path(args.root).resolve()) / "events.jsonl"
     if not path.is_file():
-        print(json.dumps({"agents": {}, "features": {}, "tokens": "unavailable", "skipped": 0}) if args.json else "No timeline yet.")
+        empty = {"agents": {}, "features": {}, "skills": {}, "classifications": [], "stop_gate": {"blocked": 0, "escalated": {}, "waived": 0}, "tokens": "unavailable", "skipped": 0}
+        print(json.dumps(empty) if args.json else "No timeline yet.")
         return 0
     events, skipped = read_events(path)
     report = compute(events, args.feature, since)
@@ -163,6 +196,16 @@ def main() -> int:
         print(f"- {redact(slug, 80)}: gates {item['gates']}, failed {item['gates_failed']}, revisions to pass {item['revisions_to_pass']} ({state})")
     if not report["features"]:
         print("- none")
+    print("Skills: " + (", ".join(f"{redact(name, 40)} {count}" for name, count in report["skills"].items()) or "none recorded"))
+    print("Classifications:")
+    for item in report["classifications"]:
+        note = " (downgraded, justified)" if item["downgraded"] else ""
+        print(f"- {redact(str(item['feature'] or '-'), 80)}: declared {item['declared']}, floor {item['floor']}, effective {item['effective']}{note}")
+    if not report["classifications"]:
+        print("- none")
+    gate = report["stop_gate"]
+    escalated = ", ".join(f"{reason} {count}" for reason, count in gate["escalated"].items()) or "0"
+    print(f"Stop gate: blocked {gate['blocked']}, escalated {escalated}, waived {gate['waived']}")
     if report["tokens"] == "unavailable":
         print("tokens: unavailable (the host sent no usage numbers; Cursor never does, Claude Code does for subagents)")
     if skipped:

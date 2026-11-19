@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -16,7 +17,7 @@ from pathlib import Path
 SCRIPTS = Path(__file__).resolve().parent
 FIXTURES = SCRIPTS.parent / "evals" / "fixtures"
 PYTHON_TOKEN = "__PYTHON__"
-SCRIPTS_ALLOWED = {"validate_spec.py", "validate_tasks.py", "check_proofs.py", "validate_verification.py", "lessons.py", "init_project.py", "next_step.py", "validate_workflow.py", "validate_architecture.py"}
+SCRIPTS_ALLOWED = {"validate_spec.py", "validate_tasks.py", "check_proofs.py", "validate_verification.py", "lessons.py", "init_project.py", "next_step.py", "validate_workflow.py", "validate_architecture.py", "classify_floor.py", "hook.py", "record_event.py", "ci_gate.py"}
 
 
 class FixtureError(Exception):
@@ -57,6 +58,15 @@ def stamp(root: Path, relative: str) -> list[str]:
     return []
 
 
+def git_commit(root: Path) -> None:
+    """Make the fixture copy a git repository with one commit, for checks that measure a diff."""
+    for args in (["init", "-q"], ["config", "user.email", "eval@example.invalid"], ["config", "user.name", "eval"],
+                 ["config", "core.autocrlf", "false"], ["add", "-A"], ["commit", "-q", "-m", "fixture"]):
+        done = subprocess.run(["git", "-C", str(root), *args], capture_output=True, timeout=60, check=False)
+        if done.returncode != 0:
+            raise FixtureError(f"git {' '.join(args)} failed in the fixture copy")
+
+
 def run_step(step: dict, root: Path) -> list[str]:
     if "write" in step:
         target = (root / step["write"]).resolve()
@@ -70,10 +80,16 @@ def run_step(step: dict, root: Path) -> list[str]:
     script = step.get("script")
     if script not in SCRIPTS_ALLOWED:
         raise FixtureError(f"unknown script {script!r}")
-    done = subprocess.run(
-        [sys.executable, str(SCRIPTS / script), "--root", str(root), *step.get("args", [])],
-        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300, check=False,
-    )
+    env = {key: value for key, value in os.environ.items() if key not in {"CLAUDE_PROJECT_DIR", "AGENT_WORKBENCH_STOP_GATE"}}
+    if script == "hook.py":
+        # A hook reads its payload from stdin and the project from CLAUDE_PROJECT_DIR; __ROOT__ is the fixture copy.
+        argv = [sys.executable, str(SCRIPTS / script)]
+        stdin = json.dumps(step.get("stdin", {})).replace("__ROOT__", json.dumps(str(root))[1:-1])
+        env["CLAUDE_PROJECT_DIR"] = str(root)
+    else:
+        argv = [sys.executable, str(SCRIPTS / script), "--root", str(root), *step.get("args", [])]
+        stdin = None
+    done = subprocess.run(argv, input=stdin, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300, check=False, env=env)
     output = done.stdout + done.stderr
     problems = []
     if "exit_code" in step and done.returncode != step["exit_code"]:
@@ -99,6 +115,8 @@ def run_fixture(folder: Path) -> dict:
     with tempfile.TemporaryDirectory() as raw:
         root = Path(raw)
         prepare(folder, root, expect.get("base"))
+        if expect.get("git"):
+            git_commit(root)
         problems = []
         for step in steps:
             problems += run_step(step, root)

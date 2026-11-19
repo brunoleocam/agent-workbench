@@ -61,6 +61,9 @@ def read_input() -> dict:
 
 
 CLAUDE_FILE_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
+PLUGIN_PREFIX = "agent-workbench:"
+SKILL_NAME = re.compile(r"[a-z0-9][a-z0-9-]{0,63}")
+SLASH = re.compile(r"\s*/([A-Za-z0-9][A-Za-z0-9:_-]{0,80})(?:\s|$)")
 
 
 def _text(value) -> str:
@@ -111,16 +114,55 @@ def from_claude(payload: dict) -> dict:
         out["hook_event_name"] = "postToolUseFailure"
         out["tool_name"] = payload.get("tool_name") or "tool"
         out["failure_type"] = "error"
+    elif name == "PostToolUse" and payload.get("tool_name") == "Skill":
+        out["hook_event_name"] = "skillUsed"
+        out["skill"] = skill_name(tool_input.get("skill"))
+    elif name == "UserPromptSubmit":
+        out["hook_event_name"] = "skillUsed"
+        out["skill"] = slash_skill(payload.get("prompt"))
+        out["source"] = "slash"
     elif name == "Stop":
         out["hook_event_name"] = "afterAgentResponse"
         out["text"] = _text(payload.get("last_assistant_message"))
+        out["stop"] = True
+        out["stop_hook_active"] = bool(payload.get("stop_hook_active"))
+        out["transcript_path"] = str(payload.get("transcript_path") or "")
     else:
         out["hook_event_name"] = ""
     return out
 
 
+def skill_name(value) -> str:
+    """Bare skill name ("agent-workbench:tdd" -> "tdd"); empty when it does not look like a skill name."""
+    name = str(value or "").strip().lstrip("/")
+    name = name.split(":", 1)[1] if name.startswith(PLUGIN_PREFIX) else name
+    return name if SKILL_NAME.fullmatch(name) else ""
+
+
+def known_skills() -> set[str]:
+    folders = [Path(__file__).resolve().parents[2] / "skills"]
+    if os.environ.get("CLAUDE_PLUGIN_ROOT"):
+        folders.append(Path(os.environ["CLAUDE_PLUGIN_ROOT"]) / "skills")
+    names: set[str] = set()
+    for folder in folders:
+        if folder.is_dir():
+            names.update(path.parent.name for path in folder.glob("*/SKILL.md"))
+    return names
+
+
+def slash_skill(prompt) -> str:
+    """The plugin skill a typed slash command names, or empty. Only the name leaves this function, never the prompt."""
+    found = SLASH.match(str(prompt or ""))
+    if not found:
+        return ""
+    name = skill_name(found.group(1))
+    return name if name in known_skills() else ""
+
+
 def to_claude(event: str, reply: dict) -> dict:
-    """Claude Code reply for a Cursor-shaped result. Only SessionStart carries data back."""
+    """Claude Code reply for a Cursor-shaped result: SessionStart context, PostToolUse lint, and the Stop gate."""
+    if event == "Stop":
+        return reply.get("stop_gate") or {}
     context = reply.get("additional_context")
     if event == "SessionStart" and context:
         return {"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": context}}
@@ -296,6 +338,16 @@ def re_failed(text: str) -> bool:
     return bool(FAIL_LINE.search(text))
 
 
+def stop_reply(root: Path, payload: dict) -> dict:
+    """The stop gate's reply for one project; {} on any error, so a broken gate never traps the session."""
+    try:
+        import stop_gate
+
+        return stop_gate.decide(root, payload)
+    except Exception:
+        return {}
+
+
 def handle(payload: dict) -> dict:
     name = str(payload.get("hook_event_name") or "")
     roots = targets(payload)
@@ -391,10 +443,22 @@ def handle(payload: dict) -> dict:
                 log(root, payload, kind, redact(command, 120), result=result, inferred=True)
         return {}
 
+    if name == "skillUsed":
+        skill = str(payload.get("skill") or "")
+        if skill:
+            for root in roots:
+                log(root, payload, "SKILL_USED", skill, result=str(payload.get("source") or "tool"))
+        return {}
+
     if name == "afterAgentResponse":
         text = str(payload.get("text") or "")
         for root in roots:
             log(root, payload, "AGENT_RESPONSE", f"Agent response ({len(text)} chars)")
+        if payload.get("stop") and payload.get("host") == "claude":
+            for root in roots:
+                reply = stop_reply(root, payload)
+                if reply:
+                    return {"stop_gate": reply}
         return {}
 
     if name == "stop":
