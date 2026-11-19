@@ -13,6 +13,10 @@ Deterministic fixtures for the gates, with no external API or paid service. Mode
 | `stale-proof` | code changed after the proof; harness docs do not invalidate it |
 | `security-blocking` | HIGH risk requires a review; an open HIGH finding and accepted risk without justification block |
 | `criterion-without-test` | an AC without a TEST fails the gate |
-| `weak-test-passes-gate` | known limit: a test without an assertion passes the gate; only the Verification Audit catches it |
+| `weak-test-passes-gate` | known limit without mutation: a test without an assertion passes the structural gate |
+| `mutation-catches-weak-test` | the same weak test fails the gate once `mutation_min_score` is set and `Mutate` is declared (score 0.0) |
+| `mutation-strong-tests` | tests that assert the result kill every mutant and pass the gate (score 1.0) |
+| `downgrade-refused` | a 7-file change declared S is refused by the classification floor; a justification records the downgrade |
+| `stop-gate-loop` | the Claude Code Stop hook blocks an M feature while its gate fails and lets it stop once it passes |
 
 `test_system.py` also runs `run_evals.py`.

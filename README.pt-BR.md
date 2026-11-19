@@ -1,5 +1,5 @@
 <div align="right">
-  <img src="https://img.shields.io/badge/version-0.6.1-green?style=flat-square" alt="Versão 0.6.1" />
+  <img src="https://img.shields.io/badge/version-0.7.0-green?style=flat-square" alt="Versão 0.7.0" />
   <a href="README.md">
     <img src="https://img.shields.io/badge/README-EN-blue?style=flat-square" alt="English 🇺🇸" />
   </a>
@@ -99,13 +99,20 @@ O harness tem quatro ferramentas principais de validação:
 
 As provas ficam presas ao estado do workspace, o que ajuda a detectar quando o código muda depois que os testes rodaram.
 
+Desde a 0.7.0 o gate é imposto, não só recomendado:
+
+- `classify_floor.py` mede o diff do git (arquivos, linhas, superfícies de ataque) e recusa uma complexidade declarada abaixo do piso, a menos que uma justificativa fique registrada. Chamar uma mudança M de S não desliga mais os gates em silêncio.
+- No Claude Code, o hook `Stop` mantém uma feature M+ trabalhando até `validate_verification.py` sair com 0. Ele para de bloquear e pergunta a você depois de `max_revisions` tentativas, ao atingir o orçamento de custo da feature (US$ 25 por padrão, `overrides.stop_gate` no `layout.json`) ou quando a sessão para de novo sem mudar nada. Saídas: `AGENT_WORKBENCH_STOP_GATE=off`, ou um `STOP_GATE_WAIVED` registrado com o seu motivo.
+- `ci_gate.py` roda as provas e o gate de cada feature M+ alterada num pull request; `init_project.py --with-ci` instala um workflow do GitHub Actions para isso.
+- `check_mutation.py` (opcional, arquivos Python) quebra o código que um TEST lista em `Mutate:`, uma mudança por vez, e grava a fração de mutantes que os testes matam; com `mutation_min_score` na spec, o gate exige esse valor. Um TEST sem asserção não passa mais.
+
 ### Grafo do workflow
 
 O workflow também está declarado como dado, em `agent-system/workflow.json`: nós de agente, de script e de decisão humana, arestas condicionais por classe, complexidade, risco e interface, um grupo de revisão em paralelo que se junta no gate e um limite de revisões. Três scripts trabalham com ele:
 
 - `validate_workflow.py` — valida a estrutura do grafo e o imprime como diagrama Mermaid.
 - `next_step.py` — roteador determinístico: dado o nó atual e o resultado, diz qual nó vem depois. Num nó humano, para com a pergunta a fazer a você, e depois de `max_revisions` gates reprovados (3 por padrão) escala para você em vez de repetir o ciclo.
-- `metrics.py` — execuções, tempo, tamanho das respostas e tokens por agente, além de gates e revisões por feature, lidos da timeline. Os tokens vêm dos transcripts de subagente do Claude Code (só os números); o Cursor não envia.
+- `metrics.py` — execuções, tempo, tamanho das respostas e tokens por agente, além de gates e revisões por feature, lidos da timeline. Os tokens vêm dos transcripts de subagente do Claude Code (só os números); o Cursor não envia; desde a 0.7.0 também as skills usadas, as classificações com rebaixamentos e os bloqueios e escalonamentos do Stop gate.
 
 Cada veredito dos validadores também deixa um rastro de decisão (nó do grafo, caminhos dos artefatos lidos e fingerprint do workspace), mostrado por `timeline_view.py --feature <slug>`.
 
@@ -243,6 +250,8 @@ Em projetos preparados com `--for-cloud`, as cópias de rules e subagents nunca 
 - Hooks: o Claude Code roda `hooks/claude-hooks.json`, que alimenta a mesma timeline dos hooks do Cursor.
 - Estado: o projeto guarda o estado em `.agent-system/` e `.agent-system/timeline/` nos dois editores, então um projeto inicializado num editor continua no outro.
 - `--for-cloud` e `/roadmap visual` (Canvas) são exclusivos do Cursor.
+
+Novo na 0.7.0: o gate passa a ser imposto (piso de classificação, o loop de objetivo do hook `Stop` no Claude Code, o check de pull request e a prova de mutação opcional; veja Verificação e evidências). No Claude Code a sessão principal é o único orquestrador. `feature-development` foi unida a `/feature` e `lean-investigation` a `/debug`; as rules de MCP exclusivas do Cursor foram removidas. Rode `/init-agent-system` de novo em cada projeto para receber os scripts novos.
 
 Novo na 0.6.1: nada que o fluxo produz fica na raiz do repositório. O contrato de arquitetura é `docs/architecture/ARCHITECTURE.md` e o de design é `design/DESIGN.md`. Um contrato que uma versão anterior deixou na raiz continua sendo lido (o `validate_architecture.py` avisa) até você movê-lo.
 

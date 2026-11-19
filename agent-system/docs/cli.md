@@ -73,13 +73,42 @@ Detects plan drift: files that a pending task will touch and that changed after 
 
 A changed file is *expected* (INFO) when another task of the same plan that is done or in progress lists it in `Files:`; otherwise it is drift (WARN, FAIL with `--strict`, exit 1). A file added to `Files:` after the stamp is also a WARN. A task without a Baseline is INFO. The check reads files only and never writes a timeline event. Idea adapted from [shadcn/improve](https://github.com/shadcn/improve) (MIT).
 
+## classify_floor.py
+
+```powershell
+python .agent-system/scripts/classify_floor.py --feature reset-password --declared S [--security LOW] [--base main] [--justification "..."] [--json]
+```
+
+Measures the change against a git base (default: the base recorded for this feature, else `HEAD`), plus untracked files, without the harness doc folders, `.agent-system/`, and caches. Floor `M` with at least 6 files, at least 300 changed lines, or any file on an attack surface (authentication, upload, payments, cryptography, multi-tenant, secrets, API routes, migrations or SQL, infrastructure, plus the files `layout.json` `signals.attack_surfaces` lists); `S` with 2 files or 20 lines; otherwise `XS`. Thresholds: `layout.json` `overrides.classification_floor` (`m_files`, `m_lines`, `s_files`, `s_lines`). Exit `1` when the declared complexity is below the floor; `--justification` accepts it as `CLASSIFICATION_DOWNGRADED` (exit 0, WARN). Without git the floor is `unknown` (exit 0, WARN). It writes `classification` (feature, declared, floor, effective, security, base, time) to `state.json` and a `CLASSIFICATION_RECORDED` event, unless `--no-record`. A security risk below MEDIUM on an attack surface adds a warning.
+
+## Stop gate (Claude Code hook)
+
+No command: `hooks/claude-hooks.json` runs it on `Stop` in the main session of an opted-in project. With an effective classification of M or larger, it runs `validate_verification.py --feature <slug> --no-record` (15 s limit) and, while it does not exit 0, returns `decision: block` with up to six failures as the reason (`STOP_GATE_BLOCKED`). With no classification and a diff whose floor is M or larger, it blocks once per workspace state and asks for `classify_floor.py`. It escalates instead of blocking (`STOP_GATE_ESCALATED`, a message for the user, result `max_blocks`, `budget`, or `no_progress`) after `limits.max_revisions` blocks for the feature, when the feature's estimated cost passes `overrides.stop_gate.max_usd_per_feature` (default 25; rates per million tokens in `overrides.stop_gate.prices`, defaults for Claude Opus 5.5; tokens from the session transcript and the subagent events since the classification), or when a continued stop (`stop_hook_active`) arrives with the workspace unchanged since the last block. Off with `AGENT_WORKBENCH_STOP_GATE=off`, or per feature with `record_event.py --event STOP_GATE_WAIVED --feature <slug> --summary "<the user's reason>"` (both fields required). Any error lets the session stop.
+
+## ci_gate.py
+
+```powershell
+python .agent-system/scripts/ci_gate.py --base origin/main [--allow-shell]
+python .agent-system/scripts/ci_gate.py --all
+```
+
+Finds the features whose spec or tasks changed against the base (`base...HEAD`), keeps those with an M, L, or XL spec that is not superseded, and runs `check_proofs.py` and `validate_verification.py` for each (both `--no-record`). Exit `0` when all pass or none changed, `1` when one fails, `2` without `--base`/`--all` or when the base cannot be diffed (use `fetch-depth: 0`). `init_project.py --with-ci` writes `.github/workflows/agent-workbench-gate.yml`, which runs it on pull requests, and keeps an existing file.
+
+## check_mutation.py
+
+```powershell
+python .agent-system/scripts/check_mutation.py --feature reset-password [--max-mutants 40] [--timeout 600]
+```
+
+For the TESTs that list Python files in `Mutate:` (or whose task does), it checks that each TEST passes unmutated, then changes one site at a time (comparison, arithmetic, `and`/`or`, `not`, `if`/`while` condition, boolean and integer constants, `return` value), runs the TESTs that list the file through the `check_proofs.py` policy, and counts a mutant as killed when any of them fails or times out. Files are restored byte for byte; a backup in `.agent-system/mutation/` is restored first if a run was interrupted. It writes `.agent-system/proofs/<slug>.mutation.json` (score, killed, mutants, survivors per file, fingerprint, TEST commands) and `MUTATION_COMPLETED`. Exit `0` at or above the minimum (or with no minimum), `1` below it, when a TEST fails unmutated, or when a listed file is not Python, `2` when no TEST declares `Mutate`. Minimum: `mutation_min_score` in the spec front matter, else `layout.json` `mutation.min_score`.
+
 ## validate_verification.py
 
 ```powershell
 python .agent-system/scripts/validate_verification.py --feature reset-password
 ```
 
-Includes the structural failures of `validate_spec` and `validate_tasks`. FAIL: required AC without a TEST, required TEST without a proof, a proof other than PASS, a proof from another fingerprint, TEST command changed after the proof, a task that is neither `done` nor `cancelled`, missing review at M+ or one with status FAIL, missing security review with HIGH/CRITICAL risk or one with status FAIL, a required review or security review without a `fingerprint` or with a fingerprint different from the current workspace (exact comparison), open blocking finding, accepted risk without justification.
+Includes the structural failures of `validate_spec` and `validate_tasks`. FAIL: required AC without a TEST, required TEST without a proof, a proof other than PASS, a proof from another fingerprint, TEST command changed after the proof, a task that is neither `done` nor `cancelled`, missing review at M+ or one with status FAIL, missing security review with HIGH/CRITICAL risk or one with status FAIL, a required review or security review without a `fingerprint` or with a fingerprint different from the current workspace (exact comparison), open blocking finding, accepted risk without justification, and, when a minimum mutation score is set, a mutation score that is missing, not measured, stale, recorded for other TEST commands, or below the minimum (a minimum in the spec with no TEST declaring `Mutate` also fails; one in `layout.json` warns).
 WARN: a non-required review or security review with a fingerprint from another state, open `major`/`MEDIUM` finding, AC covered only by an optional TEST.
 
 ## validate_workflow.py
@@ -111,6 +140,8 @@ python .agent-system/scripts/metrics.py [--feature reset-password] [--since 2026
 
 Reads `.agent-system/timeline/events.jsonl` and prints, per agent (the `agent-workbench:` prefix is dropped): runs (`SUBAGENT_STOPPED`), total and median duration (each stop paired with the oldest open start of the same session and agent), response characters (`AGENT_RESPONSE`), and tokens; per feature: gates, failed gates, revisions until the first passing gate, and whether it passed. `--feature` keeps only that feature and limits the agents to the span between its first and last event, because subagent events carry no slug. `--since` drops older events (invalid value: exit 2). Malformed lines are skipped and counted in `skipped`. It never writes anything.
 
+Since 0.7.0 it also reports `skills` (`SKILL_USED` counts: the Skill tool and typed slash commands that name a plugin skill, names only), `classifications` (declared, floor, effective, downgraded), and `stop_gate` (blocks, escalations by reason, waivers).
+
 Tokens: in Claude Code, the `SubagentStop` hook reads the subagent's own transcript (`agent_transcript_path`, only inside a `subagents/` folder, up to 50 MB) and records only the numbers (`input`, `output`, `cache_read`, `cache_creation`; the last usage of each message id) on `SUBAGENT_STOPPED`. The transcript format is not a documented contract, so any surprise leaves the event without tokens. Cursor sends no usage. An agent without token data shows `unavailable`, never zero.
 
 ## lessons.py
@@ -137,7 +168,9 @@ Runs the fixtures in `agent-system/evals/fixtures/` and compares the exit code a
 
 ## Others
 
-`status_cmd.py`, `timeline_view.py --write-md`, and `init_project.py --root . [--for-cloud] [--claude]` keep the previous contract.
+`status_cmd.py`, `timeline_view.py --write-md`, and `init_project.py --root . [--for-cloud] [--claude] [--with-ci]` keep the previous contract.
+
+`run_evals.py` fixtures may set `"git": true` (the copy becomes a git repository with one commit) and use `hook.py` steps with a `stdin` payload, where `__ROOT__` is the fixture copy.
 
 ## Decision trace
 

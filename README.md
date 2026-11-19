@@ -1,5 +1,5 @@
 <div align="right">
-  <img src="https://img.shields.io/badge/version-0.6.1-green?style=flat-square" alt="Version 0.6.1" />
+  <img src="https://img.shields.io/badge/version-0.7.0-green?style=flat-square" alt="Version 0.7.0" />
   <a href="README.pt-BR.md">
     <img src="https://img.shields.io/badge/README-PT--BR-blue?style=flat-square" alt="Português 🇧🇷" />
   </a>
@@ -99,13 +99,20 @@ The harness includes four main validation tools:
 
 Proofs are tied to the workspace state, helping detect when code changes after tests have been executed.
 
+Since 0.7.0 the gate is enforced, not only advised:
+
+- `classify_floor.py` measures the git diff (files, lines, attack surfaces) and refuses a declared complexity below the floor unless a justification is recorded, so calling an M change S no longer turns the gates off silently.
+- In Claude Code, the `Stop` hook keeps an M+ feature working until `validate_verification.py` exits 0. It stops blocking and asks you after `max_revisions` attempts, at the feature's cost budget (US$ 25 by default, `layout.json` `overrides.stop_gate`), or when the session stops again without changing anything. Escapes: `AGENT_WORKBENCH_STOP_GATE=off`, or a recorded `STOP_GATE_WAIVED` with your reason.
+- `ci_gate.py` runs the proofs and the gate for every M+ feature changed in a pull request; `init_project.py --with-ci` installs a GitHub Actions workflow for it.
+- `check_mutation.py` (optional, Python files) breaks the code a TEST lists in `Mutate:` one change at a time and records the share of mutants the tests kill; with `mutation_min_score` in the spec, the gate requires it. A TEST with no assertion no longer passes.
+
 ### Workflow graph
 
 The workflow is also declared as data, in `agent-system/workflow.json`: agent, script, and human-decision nodes, conditional edges by class, complexity, risk, and interface, a parallel review group that joins at the gate, and a revision limit. Three scripts work on it:
 
 - `validate_workflow.py` — validates the graph's structure and prints it as a Mermaid diagram.
 - `next_step.py` — a deterministic router: given the current node and result, it says which node comes next. On a human node it stops with the question to ask you, and after `max_revisions` failed gates (3 by default) it escalates to you instead of looping.
-- `metrics.py` — runs, time, response size, and tokens per agent, plus gates and revisions per feature, read from the timeline. Tokens come from Claude Code subagent transcripts (numbers only); Cursor sends none.
+- `metrics.py` — runs, time, response size, and tokens per agent, plus gates and revisions per feature, read from the timeline. Tokens come from Claude Code subagent transcripts (numbers only); Cursor sends none; since 0.7.0 also skills used, classifications with downgrades, and stop gate blocks and escalations.
 
 Each validator verdict also leaves a decision trace (graph node, artifact paths read, workspace fingerprint), shown by `timeline_view.py --feature <slug>`.
 
@@ -243,6 +250,8 @@ For projects prepared with `--for-cloud`, existing rule and subagent copies are 
 - Hooks: Claude Code runs `hooks/claude-hooks.json`, which feeds the same timeline as the Cursor hooks.
 - State: projects keep their state in `.agent-system/` and `.agent-system/timeline/` in both editors, so a project initialized in one editor continues in the other.
 - `--for-cloud` and `/roadmap visual` (Canvas) are Cursor-only.
+
+New in 0.7.0: the gate is enforced (classification floor, the Claude Code `Stop` goal loop, the pull request check, the optional mutation proof; see Verification and evidence). In Claude Code the main session is the only orchestrator. `feature-development` merged into `/feature` and `lean-investigation` into `/debug`; the Cursor-only MCP rules were removed. Run `/init-agent-system` again in each project to get the new scripts.
 
 New in 0.6.1: nothing the workflow produces goes at the repository root. The architecture contract is `docs/architecture/ARCHITECTURE.md` and the design contract is `design/DESIGN.md`. A contract an older version left at the root is still read (`validate_architecture.py` warns) until you move it.
 

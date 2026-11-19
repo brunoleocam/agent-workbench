@@ -22,9 +22,9 @@ Every UI file goes through `lint_design.py`, an anti-slop lint that blocks the c
 
 A trivial change needs no command. An old repository is not migrated wholesale.
 
-For M or larger with `/init-agent-system`, the gates are scripts in `.agent-system/scripts/`: `validate_spec.py`, `validate_tasks.py`, `check_proofs.py` (runs the tests and records the real exit code), and `validate_verification.py` (exits 0 only with tested criteria, proofs of the current code, a review, and blocking findings resolved). Contracts in the plugin's `agent-system/docs/cli.md`.
+For M or larger with `/init-agent-system`, the gates are scripts in `.agent-system/scripts/`: `validate_spec.py`, `validate_tasks.py`, `check_proofs.py` (runs the tests and records the real exit code), and `validate_verification.py` (exits 0 only with tested criteria, proofs of the current code, a review, and blocking findings resolved). `classify_floor.py --feature <slug> --declared <C>` checks the declared complexity against the diff and refuses one below its floor without a justification. In Claude Code the `Stop` hook keeps an M+ feature working until `validate_verification.py` exits 0, then asks you at the attempt or cost limit (off: `AGENT_WORKBENCH_STOP_GATE=off`). `check_mutation.py` adds an optional mutation score; `ci_gate.py` runs the gate on pull requests (`init_project.py --with-ci`). Contracts in the plugin's `agent-system/docs/cli.md`.
 
-The flow itself is a graph in `.agent-system/workflow.json`. `validate_workflow.py` checks it (`--mermaid` draws it), `next_step.py` says which node comes next and stops on your decisions, escalating to you after 3 failed gates, `metrics.py` shows time, tokens, and revisions per agent and feature, and `timeline_view.py --feature <slug>` shows what each verdict was based on.
+The flow itself is a graph in `.agent-system/workflow.json`. `validate_workflow.py` checks it (`--mermaid` draws it), `next_step.py` says which node comes next and stops on your decisions, escalating to you after 3 failed gates, `metrics.py` shows time, tokens, revisions, skills used, classifications, and stop gate blocks, and `timeline_view.py --feature <slug>` shows what each verdict was based on.
 
 ## Commands
 
