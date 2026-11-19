@@ -22,6 +22,10 @@ Versions before 0.7.0 are summarized under "New in" in the README.
 - `feature-development` merged into `feature`; `lean-investigation` merged into `debug` (section "Reading little"). There are now 42 skills.
 - Fourteen skill descriptions shortened, from about 12,400 to about 9,100 characters of listing text.
 
+### Fixed
+
+- `layout.json` `proof_allow` was dropped by `resolve_layout` and never reached `check_proofs.py`.
+
 ### Removed
 
 - The Cursor-only rules `mcp-triagem-obrigatoria` and `uso-ferramentas-mcp`. Projects initialized before keep a copy in `.cursor/rules/` until it is deleted by hand.
