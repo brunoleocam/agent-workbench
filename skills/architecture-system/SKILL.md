@@ -1,6 +1,6 @@
 ---
 name: architecture-system
-description: Writes the architecture contract ARCHITECTURE.md from the option the user chose, with the ten fixed sections, scaling stages with measurable triggers, and an ADR for every choice between real alternatives; also updates the contract when a stage trigger is reached. Use after architecture-options, or to record an architecture decision or move to the next scaling stage (gerar ARCHITECTURE.md, contrato de arquitetura, registrar decisão de arquitetura, ADR, avançar estágio de escala).
+description: Writes ARCHITECTURE.md from the chosen option, with ten fixed sections, scaling stages with measurable triggers, and ADRs; also moves to the next stage when a trigger is reached. Use after architecture-options or to record an architecture decision (contrato de arquitetura, ADR).
 ---
 
 # Architecture system

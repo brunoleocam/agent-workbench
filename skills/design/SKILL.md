@@ -1,6 +1,6 @@
 ---
 name: design
-description: Runs the full design pipeline for a new product, site, or screen, interview, three rendered directions, DESIGN.md with tokens, and review, so the front end has a consistent, non-generic visual identity before any screen is built. Skips stages already approved and stops wherever the user must answer or choose. Use for a new visual interface without an approved DESIGN.md (design, criar o design, identidade visual, design profissional, sem cara de IA, design system do projeto).
+description: Runs the design pipeline for a new product, site, or screen: interview, three rendered directions, DESIGN.md with tokens, and review, before any screen is built. Use for a new visual interface without an approved DESIGN.md (design, identidade visual, sem cara de IA).
 ---
 
 # Design

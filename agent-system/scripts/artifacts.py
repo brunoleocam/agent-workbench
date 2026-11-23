@@ -52,6 +52,7 @@ FIELD_ALIASES = {
     "stop_if": ("stop if", "pare se"),
     "priority": ("priority", "prioridade"),
     "type": ("type", "tipo"),
+    "mutate": ("mutate", "mutation", "mutar"),
 }
 ALIAS_TO_FIELD = {alias: name for name, aliases in FIELD_ALIASES.items() for alias in aliases}
 
@@ -278,6 +279,11 @@ def resolve_layout(root: Path, layout: dict | None = None) -> dict:
         inside(root, root / resolved[key])
     extra = [item for item in adr_dirs if isinstance(item, str)]
     resolved["adr_dirs"] = list(dict.fromkeys([resolved["adr_dir"], *extra]))
+    # Settings that are not directories pass through unchanged (proof_allow, mutation), so the scripts that read the
+    # resolved layout see them too.
+    for key in ("proof_allow", "mutation"):
+        if key in layout:
+            resolved[key] = layout[key]
     return resolved
 
 
@@ -505,6 +511,30 @@ def load_bundle(args, need: tuple[str, ...]) -> Bundle:
     if docs["tasks"] and docs["tests"] and docs["tasks"].path == docs["tests"].path:
         tests = []
     return Bundle(root=root, layout=layout, slug=slug, spec=docs["spec"], tasks=docs["tasks"], tests=tests)
+
+
+def mutation_threshold(frontmatter: dict, layout: dict) -> tuple[float | None, str, str]:
+    """(minimum, source, problem): the spec's `mutation_min_score`, else layout.json `mutation.min_score`.
+
+    An invalid value is a problem, never a silent "no minimum": the gate must not switch itself off by a typo.
+    """
+    layout_value = (layout.get("mutation") or {}).get("min_score") if isinstance(layout.get("mutation"), dict) else None
+    for value, source in ((frontmatter.get("mutation_min_score"), "spec"), (layout_value, "layout")):
+        if value is None or (isinstance(value, str) and not value.strip()):
+            continue
+        try:
+            score = float(value)
+        except (TypeError, ValueError):
+            return None, source, f"mutation_min_score in the {source} is not a number: {str(value)[:40]!r}"
+        if isinstance(value, bool) or not 0 < score <= 1:
+            return None, source, f"mutation_min_score in the {source} must be above 0 and at most 1 (a share, e.g. 0.6), got {value!r}"
+        return score, source, ""
+    return None, "", ""
+
+
+def mutation_pending(root: Path) -> bool:
+    """True while check_mutation.py may have left a file mutated (a run in progress or killed)."""
+    return (system_dir(root) / "mutation" / "pending.json").is_file()
 
 
 def proofs_file(root: Path, slug: str) -> Path:

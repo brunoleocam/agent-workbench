@@ -22,16 +22,15 @@ Every UI file goes through `lint_design.py`, an anti-slop lint that blocks the c
 
 A trivial change needs no command. An old repository is not migrated wholesale.
 
-For M or larger with `/init-agent-system`, the gates are scripts in `.agent-system/scripts/`: `validate_spec.py`, `validate_tasks.py`, `check_proofs.py` (runs the tests and records the real exit code), and `validate_verification.py` (exits 0 only with tested criteria, proofs of the current code, a review, and blocking findings resolved). Contracts in the plugin's `agent-system/docs/cli.md`.
+For M or larger with `/init-agent-system`, the gates are scripts in `.agent-system/scripts/`: `validate_spec.py`, `validate_tasks.py`, `check_proofs.py` (runs the tests and records the real exit code), and `validate_verification.py` (exits 0 only with tested criteria, proofs of the current code, a review, and blocking findings resolved). `classify_floor.py --feature <slug> --declared <C>` checks the declared complexity against the diff and refuses one below its floor without a justification. In Claude Code the `Stop` hook keeps an M+ feature working until `validate_verification.py` exits 0, then asks you at the attempt or cost limit (off: `AGENT_WORKBENCH_STOP_GATE=off`). `check_mutation.py` adds an optional mutation score; `ci_gate.py` runs the gate on pull requests (`init_project.py --with-ci`). Contracts in the plugin's `agent-system/docs/cli.md`.
 
-The flow itself is a graph in `.agent-system/workflow.json`. `validate_workflow.py` checks it (`--mermaid` draws it), `next_step.py` says which node comes next and stops on your decisions, escalating to you after 3 failed gates, `metrics.py` shows time, tokens, and revisions per agent and feature, and `timeline_view.py --feature <slug>` shows what each verdict was based on.
+The flow itself is a graph in `.agent-system/workflow.json`. `validate_workflow.py` checks it (`--mermaid` draws it), `next_step.py` says which node comes next and stops on your decisions, escalating to you after 3 failed gates, `metrics.py` shows time, tokens, revisions, skills used, classifications, and stop gate blocks, and `timeline_view.py --feature <slug>` shows what each verdict was based on.
 
 ## Commands
 
 - `/brainstorm` — a raw idea. One question at a time, alternatives, a design approved by you. Writes no code and no plan.
 - `/new-project` — a new repository. PRD, architecture, spec, tasks, and progress. Does not create `AGENTS.md`.
-- `/feature` — the same flow as `/feature-development`.
-- `/feature-development` — a feature in an existing system: impact, spec, tasks, implementation, tests, and review.
+- `/feature` — a feature in an existing system: impact, spec, tasks, implementation, tests, and review.
 - `/init-agent-system` — installs the system in this project without deleting existing config and without creating empty docs.
 - `/create-agent` — creates a specialized subagent and registers the delegation in the orchestrator.
 - `/agent-status` — agents, skills, rules, hooks, and the workflow state.
@@ -68,7 +67,6 @@ The flow itself is a graph in `.agent-system/workflow.json`. `validate_workflow.
 - `/commit-push` — branch before editing; with green tests, a single approval from you for commit, push, PR, and merge. Without approval, nothing leaves your machine.
 - `/roadmap` — shows which phase and task you are in, what is left, and what is blocked. Also creates, updates, or renders the Canvas view (`/roadmap visual`). Only in a project with `/init-agent-system`.
 - `/context-summary` — a summary of up to 10 lines (goal, decisions, files, next steps) to paste into a new chat. Does not reread files or write anything.
-- `/lean-investigation` — finds a bug's cause reading the minimum, one hypothesis at a time. Does not fix.
 - `/staged-task` — splits a large request into 3 to 7 verifiable steps and executes one at a time. Does not create a PRD, ADR, or detailed plan.
 - `/create-skill` — creates a new skill in the plugin and adds the command to this guide. Does not create a skill inside the repository unless you ask.
 - `/help` — shows this guide.

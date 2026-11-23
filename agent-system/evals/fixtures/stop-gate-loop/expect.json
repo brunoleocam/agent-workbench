@@ -1,0 +1,87 @@
+{
+  "base": "complete-feature",
+  "git": true,
+  "description": "Goal loop: an M feature cannot stop while validate_verification.py fails; after proofs and a review for the current code, it stops.",
+  "steps": [
+    {
+      "write": "src/module_0.py",
+      "content": "VALUE = 0\n"
+    },
+    {
+      "write": "src/module_1.py",
+      "content": "VALUE = 1\n"
+    },
+    {
+      "write": "src/module_2.py",
+      "content": "VALUE = 2\n"
+    },
+    {
+      "write": "src/module_3.py",
+      "content": "VALUE = 3\n"
+    },
+    {
+      "write": "src/module_4.py",
+      "content": "VALUE = 4\n"
+    },
+    {
+      "write": "src/module_5.py",
+      "content": "VALUE = 5\n"
+    },
+    {
+      "write": "src/module_6.py",
+      "content": "VALUE = 6\n"
+    },
+    {
+      "script": "classify_floor.py",
+      "args": [
+        "--feature",
+        "feat",
+        "--declared",
+        "M"
+      ],
+      "exit_code": 0
+    },
+    {
+      "script": "hook.py",
+      "stdin": {
+        "hook_event_name": "Stop",
+        "session_id": "e1",
+        "cwd": "__ROOT__",
+        "stop_hook_active": false,
+        "transcript_path": "",
+        "last_assistant_message": "done"
+      },
+      "exit_code": 0,
+      "contains": [
+        "\"decision\": \"block\"",
+        "validate_verification.py --feature feat"
+      ]
+    },
+    {
+      "script": "check_proofs.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 0
+    },
+    {
+      "stamp": "docs/reviews/feat.md"
+    },
+    {
+      "script": "hook.py",
+      "stdin": {
+        "hook_event_name": "Stop",
+        "session_id": "e1",
+        "cwd": "__ROOT__",
+        "stop_hook_active": false,
+        "transcript_path": "",
+        "last_assistant_message": "done"
+      },
+      "exit_code": 0,
+      "not_contains": [
+        "decision"
+      ]
+    }
+  ]
+}

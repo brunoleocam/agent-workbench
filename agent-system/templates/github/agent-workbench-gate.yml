@@ -1,0 +1,24 @@
+# Installed by init_project.py --with-ci. Runs the Agent Workbench gate for every M+ feature
+# whose spec or tasks changed in the pull request. Make it a required check in the branch protection rules, and
+# protect this file (CODEOWNERS or a ruleset): a pull request that edits it can change what the check runs.
+name: Agent Workbench gate
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Install what the project's TEST commands need here (for example: pip install -r requirements.txt).
+      - name: Gate M+ features
+        run: python -I .agent-system/scripts/ci_gate.py --base "origin/${{ github.base_ref }}"

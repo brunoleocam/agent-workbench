@@ -1,6 +1,6 @@
 ---
 name: security-best-practices
-description: Applies stack-specific secure coding guidance while implementing or maintaining code, loading only the reference for the detected language and framework. Use when writing or changing code that touches input, auth, data access, files, secrets, or external calls (segurança, secure coding, boas práticas de segurança, vulnerabilidade, hardening).
+description: Applies stack-specific secure coding guidance, loading only the reference for the detected stack. Use when writing code that touches input, auth, data access, files, secrets, or external calls (segurança, secure coding, hardening).
 ---
 
 # Secure coding during implementation

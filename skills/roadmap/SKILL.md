@@ -1,6 +1,6 @@
 ---
 name: roadmap
-description: Creates, shows, and updates the project roadmap in docs/progress/ROADMAP.md, with phases, tasks, status, and the current position; optionally renders a Canvas view. Use when the user wants to know which stage they are in, what is done and what is left, or when planning large work in a project with /init-agent-system (roadmap, em que etapa estou, o que falta, progresso do plano).
+description: Creates, shows, and updates docs/progress/ROADMAP.md with phases, tasks, status, and the current position. Use when the user asks which stage they are in, what is done and what is left (roadmap, em que etapa estou, o que falta).
 ---
 
 # Roadmap

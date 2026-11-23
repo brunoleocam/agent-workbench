@@ -13,5 +13,5 @@ Everything that enters the chat is resent on every following step.
 - Short answers: do not repeat unchanged code (show only the changed part), no unrequested explanation, no recap of what was already said.
 - Minimal, focused edits; the simplest solution that works. No refactoring, file, or abstraction outside the request. Do not skip a test or verification required by another rule.
 - Large task: split into small steps and validate each before the next (`staged-task` skill).
-- Bug without an obvious cause: find the cause reading the minimum (`lean-investigation` skill).
+- Bug without an obvious cause: find the cause reading the minimum (`debug` skill, section Reading little).
 - Long conversation (many exchanges or many files read) or a change of subject: say so in one line and offer a summary for a new chat (`context-summary` skill).

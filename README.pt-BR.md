@@ -1,5 +1,5 @@
 <div align="right">
-  <img src="https://img.shields.io/badge/version-0.6.1-green?style=flat-square" alt="Versão 0.6.1" />
+  <img src="https://img.shields.io/badge/version-0.7.0-green?style=flat-square" alt="Versão 0.7.0" />
   <a href="README.md">
     <img src="https://img.shields.io/badge/README-EN-blue?style=flat-square" alt="English 🇺🇸" />
   </a>
@@ -99,13 +99,20 @@ O harness tem quatro ferramentas principais de validação:
 
 As provas ficam presas ao estado do workspace, o que ajuda a detectar quando o código muda depois que os testes rodaram.
 
+Desde a 0.7.0 o gate é imposto, não só recomendado:
+
+- `classify_floor.py` mede o diff do git (arquivos, linhas, superfícies de ataque) e recusa uma complexidade declarada abaixo do piso, a menos que uma justificativa fique registrada. Chamar uma mudança M de S não desliga mais os gates em silêncio.
+- No Claude Code, o hook `Stop` mantém uma feature M+ trabalhando até `validate_verification.py` sair com 0. Ele para de bloquear e pergunta a você depois de `max_revisions` tentativas, ao atingir o orçamento de custo da feature (US$ 25 por padrão, `overrides.stop_gate` no `layout.json`) ou quando a sessão para de novo sem mudar nada. Saídas: `AGENT_WORKBENCH_STOP_GATE=off`, ou um `STOP_GATE_WAIVED` registrado com o seu motivo.
+- `ci_gate.py` roda as provas e o gate de cada feature M+ alterada num pull request; `init_project.py --with-ci` instala um workflow do GitHub Actions para isso.
+- `check_mutation.py` (opcional, arquivos Python) quebra o código que um TEST lista em `Mutate:`, uma mudança por vez, e grava a fração de mutantes que os testes matam; com `mutation_min_score` na spec, o gate exige esse valor. Um TEST sem asserção não passa mais.
+
 ### Grafo do workflow
 
 O workflow também está declarado como dado, em `agent-system/workflow.json`: nós de agente, de script e de decisão humana, arestas condicionais por classe, complexidade, risco e interface, um grupo de revisão em paralelo que se junta no gate e um limite de revisões. Três scripts trabalham com ele:
 
 - `validate_workflow.py` — valida a estrutura do grafo e o imprime como diagrama Mermaid.
 - `next_step.py` — roteador determinístico: dado o nó atual e o resultado, diz qual nó vem depois. Num nó humano, para com a pergunta a fazer a você, e depois de `max_revisions` gates reprovados (3 por padrão) escala para você em vez de repetir o ciclo.
-- `metrics.py` — execuções, tempo, tamanho das respostas e tokens por agente, além de gates e revisões por feature, lidos da timeline. Os tokens vêm dos transcripts de subagente do Claude Code (só os números); o Cursor não envia.
+- `metrics.py` — execuções, tempo, tamanho das respostas e tokens por agente, além de gates e revisões por feature, lidos da timeline. Os tokens vêm dos transcripts de subagente do Claude Code (só os números); o Cursor não envia; desde a 0.7.0 também as skills usadas, as classificações com rebaixamentos e os bloqueios e escalonamentos do Stop gate.
 
 Cada veredito dos validadores também deixa um rastro de decisão (nó do grafo, caminhos dos artefatos lidos e fingerprint do workspace), mostrado por `timeline_view.py --feature <slug>`.
 
@@ -239,10 +246,12 @@ Em projetos preparados com `--for-cloud`, as cópias de rules e subagents nunca 
 
 #### Diferenças no Claude Code
 
-- Rules: só as rules `00` a `08` chegam ao Claude Code, pelo `CLAUDE.md`. `economia-de-tokens`, `mcp-triagem-obrigatoria` e `uso-ferramentas-mcp` são exclusivas do Cursor.
+- Rules: só as rules `00` a `08` chegam ao Claude Code, pelo `CLAUDE.md`. `economia-de-tokens` é exclusiva do Cursor.
 - Hooks: o Claude Code roda `hooks/claude-hooks.json`, que alimenta a mesma timeline dos hooks do Cursor.
 - Estado: o projeto guarda o estado em `.agent-system/` e `.agent-system/timeline/` nos dois editores, então um projeto inicializado num editor continua no outro.
 - `--for-cloud` e `/roadmap visual` (Canvas) são exclusivos do Cursor.
+
+Novo na 0.7.0: o gate passa a ser imposto (piso de classificação, o loop de objetivo do hook `Stop` no Claude Code, o check de pull request e a prova de mutação opcional; veja Verificação e evidências). No Claude Code a sessão principal é o único orquestrador. `feature-development` foi unida a `/feature` e `lean-investigation` a `/debug`; as rules de MCP exclusivas do Cursor foram removidas. Rode `/init-agent-system` de novo em cada projeto para receber os scripts novos.
 
 Novo na 0.6.1: nada que o fluxo produz fica na raiz do repositório. O contrato de arquitetura é `docs/architecture/ARCHITECTURE.md` e o de design é `design/DESIGN.md`. Um contrato que uma versão anterior deixou na raiz continua sendo lido (o `validate_architecture.py` avisa) até você movê-lo.
 
@@ -252,7 +261,7 @@ Novo na 0.5.0: o workflow virou um grafo declarado (`workflow.json`) com um rote
 
 Desde a 0.4.0, os subagents `implementer`, `tester` e `debugger` usam `model: inherit` nos dois editores (antes usavam um modelo exclusivo do Cursor). Para fixar um modelo no Cursor, altere o `model:` no arquivo do agente.
 
-Comandos renomeados na 0.3.0: `investigacao-enxuta` agora é `/lean-investigation`, `resumo-de-contexto` agora é `/context-summary` e `tarefa-em-etapas` agora é `/staged-task`.
+Comandos renomeados na 0.3.0 (e unidos na 0.7.0): `investigacao-enxuta` (depois lean-investigation) hoje é parte de `/debug`, `resumo-de-contexto` agora é `/context-summary` e `tarefa-em-etapas` agora é `/staged-task`.
 
 ## Como usar o Agent Workbench
 
@@ -305,7 +314,7 @@ Bug:
 
 ```text
 # Acha a causa lendo o mínimo de código e log, uma hipótese por vez
-/lean-investigation
+/debug
 # (Opcional) Registra sintoma, mecanismo, evidência e o teste que faltou
 /root-cause
 # Correção mínima com teste de regressão, depois da causa confirmada
@@ -374,8 +383,7 @@ Planejamento:
 
 - `/brainstorm` — para ideia ainda crua. Faz uma pergunta por vez, propõe alternativas e termina com um design aprovado por você. Não escreve código nem plano.
 - `/new-project` — repositório novo: PRD, arquitetura, especificação, tarefas e progresso. Não cria `AGENTS.md`.
-- `/feature-development` — feature em sistema existente: análise de impacto, especificação, tarefas, implementação, testes e review.
-- `/feature` — atalho para `/feature-development`.
+- `/feature` — feature em sistema existente: análise de impacto, especificação, tarefas, implementação, testes e review.
 - `/investigation` — entende como uma parte do sistema funciona. Não implementa.
 - `/implementation-plan` — para design já aprovado. Gera um plano com caminhos reais, exemplos de código e comandos de verificação, escrito para quem não conhece o repositório.
 - `/change-request` — escopo novo descoberto no meio da tarefa. Atualiza a especificação ou cria uma dependência antes de continuar.
@@ -390,7 +398,6 @@ Implementação:
 
 Bugs:
 
-- `/lean-investigation` — acha a causa de um bug lendo o mínimo de código e log, uma hipótese por vez. Não corrige.
 - `/debug` — reproduz a falha e acha a causa com evidência. Não chuta patch.
 - `/root-cause` — registra sintoma, mecanismo, evidência e o teste que faltou. Só depois da causa confirmada.
 - `/bug-fix` — correção mínima depois da causa confirmada, com teste de regressão.

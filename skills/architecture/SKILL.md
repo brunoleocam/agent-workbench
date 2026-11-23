@@ -1,6 +1,6 @@
 ---
 name: architecture
-description: Runs the full architecture pipeline for a new system or a structural change, interview with a capacity estimate, two or three candidate architectures with trade-offs, ARCHITECTURE.md with scaling stages and ADRs, and review against the contract, so database, cache, queues, deploy, observability, and permissions are decided once and grow only when a measured trigger says so. Skips stages already approved and stops wherever the user must answer or choose. Use for a new back-end system or before adding a database, cache, queue, or deploy unit without an approved ARCHITECTURE.md (arquitetura, system design, como escalar, decisões de arquitetura, DevOps, banco de dados, cache, load balancer, Docker, Kubernetes, observabilidade).
+description: Runs the architecture pipeline for a new system or a structural change: interview with a capacity estimate, two or three options, ARCHITECTURE.md with scaling stages and ADRs, and review. Use before adding a database, cache, queue, or deploy unit without an approved contract (arquitetura, system design, como escalar).
 ---
 
 # Architecture

@@ -1,0 +1,76 @@
+{
+  "git": true,
+  "description": "A change of 7 files declared S is refused (floor M); the same declaration passes only with a recorded justification.",
+  "steps": [
+    {
+      "write": "src/module_0.py",
+      "content": "VALUE = 0\n"
+    },
+    {
+      "write": "src/module_1.py",
+      "content": "VALUE = 1\n"
+    },
+    {
+      "write": "src/module_2.py",
+      "content": "VALUE = 2\n"
+    },
+    {
+      "write": "src/module_3.py",
+      "content": "VALUE = 3\n"
+    },
+    {
+      "write": "src/module_4.py",
+      "content": "VALUE = 4\n"
+    },
+    {
+      "write": "src/module_5.py",
+      "content": "VALUE = 5\n"
+    },
+    {
+      "write": "src/module_6.py",
+      "content": "VALUE = 6\n"
+    },
+    {
+      "script": "classify_floor.py",
+      "args": [
+        "--feature",
+        "f",
+        "--declared",
+        "S"
+      ],
+      "exit_code": 1,
+      "contains": [
+        "floor M (7 files"
+      ]
+    },
+    {
+      "script": "classify_floor.py",
+      "args": [
+        "--feature",
+        "f",
+        "--declared",
+        "S",
+        "--justification",
+        "generated stubs"
+      ],
+      "exit_code": 0,
+      "contains": [
+        "[WARN]",
+        "generated stubs"
+      ]
+    },
+    {
+      "script": "classify_floor.py",
+      "args": [
+        "--feature",
+        "f",
+        "--declared",
+        "M"
+      ],
+      "exit_code": 0,
+      "contains": [
+        "[PASS]"
+      ]
+    }
+  ]
+}

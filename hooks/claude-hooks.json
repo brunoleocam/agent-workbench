@@ -1,5 +1,5 @@
 {
-  "description": "Agent Workbench timeline and session context for Claude Code. hooks.json in this folder is the Cursor equivalent. python -I -S starts faster and ignores user site-packages and PYTHON* variables.",
+  "description": "Agent Workbench timeline, session context, skill events, and the Stop gate (goal loop for M+ features) for Claude Code. hooks.json in this folder is the Cursor equivalent. python -I -S starts faster and ignores user site-packages and PYTHON* variables.",
   "hooks": {
     "SessionStart": [
       { "hooks": [{ "type": "command", "command": "python -I -S \"${CLAUDE_PLUGIN_ROOT}/agent-system/scripts/hook.py\"", "timeout": 20 }] }
@@ -15,9 +15,12 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash",
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash|Skill",
         "hooks": [{ "type": "command", "command": "python -I -S \"${CLAUDE_PLUGIN_ROOT}/agent-system/scripts/hook.py\"", "timeout": 20 }]
       }
+    ],
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "python -I -S \"${CLAUDE_PLUGIN_ROOT}/agent-system/scripts/hook.py\"", "timeout": 20 }] }
     ],
     "PostToolUseFailure": [
       { "hooks": [{ "type": "command", "command": "python -I -S \"${CLAUDE_PLUGIN_ROOT}/agent-system/scripts/hook.py\"", "timeout": 20 }] }

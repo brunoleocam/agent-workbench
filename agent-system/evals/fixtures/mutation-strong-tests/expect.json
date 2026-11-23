@@ -1,0 +1,40 @@
+{
+  "base": "complete-feature",
+  "description": "Mutation enabled with tests that assert the result: every mutant of src/coupon.py is killed and the gate passes.",
+  "steps": [
+    {
+      "script": "check_proofs.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 0
+    },
+    {
+      "script": "check_mutation.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 0,
+      "contains": [
+        "[PASS] feat: mutation score 1.0"
+      ]
+    },
+    {
+      "stamp": "docs/reviews/feat.md"
+    },
+    {
+      "script": "validate_verification.py",
+      "args": [
+        "--feature",
+        "feat"
+      ],
+      "exit_code": 0,
+      "contains": [
+        "Mutation score 1.0 meets 0.6",
+        "Verification gate passed."
+      ]
+    }
+  ]
+}

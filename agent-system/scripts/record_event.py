@@ -32,6 +32,9 @@ def main() -> int:
         print(f"Unknown event {args.event}", file=sys.stderr)
         return 2
 
+    if args.event == "STOP_GATE_WAIVED" and (not args.feature or not args.summary.strip()):
+        print("STOP_GATE_WAIVED needs --feature and a --summary with the user's reason", file=sys.stderr)
+        return 2
     if args.inputs and not args.node:
         print("--inputs needs --node (the workflow node that made the decision)", file=sys.stderr)
         return 2

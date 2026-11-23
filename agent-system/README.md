@@ -10,7 +10,7 @@ Intent → Requirement → Specification → Decision → Task → Implementatio
 
 | Layer | Where | Responsibility |
 | --- | --- | --- |
-| Rules | `rules/` | Permanent principles and limits. `00`, `01`, `economia-de-tokens`, and `mcp-triagem-obrigatoria` always; `02`–`08` per phase. In Claude Code, `00`–`08` arrive through the project `CLAUDE.md` |
+| Rules | `rules/` | Permanent principles and limits. `00`, `01`, and `economia-de-tokens` always; `02`–`08` per phase. In Claude Code, `00`–`08` arrive through the project `CLAUDE.md` |
 | Skills | `skills/` | Procedures (`/feature`, `/code-review`, `/security-review`...) |
 | Agents | `agents/` | Roles with an input and output contract ([`docs/contracts.md`](docs/contracts.md)) |
 | Workflows | adaptive table in `agents/orchestrator.md` | Sequence by class, complexity, and risk |
