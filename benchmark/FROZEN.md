@@ -1,0 +1,14 @@
+# Frozen inputs (approved by the user)
+
+Commit: dc1c034e4d18927e13ff559b03c5f69cec3e290d. Any change to these files after the first paid run invalidates the comparison.
+
+```
+a3c2b5cd8b18b85d0acb4a2f7efc80f2f2e36d80622a362a6b2f220aa4b75365 *specs/medium.md
+e56e1f9e4fd1b0c47c7d58b21017f3e72d6d350a78a10aa194a2ba29ea92e251 *specs/simple.md
+e28337af69784f2375c613ece0b1439db7c5bdbaa1fa6051f236b457f0bf7878 *prompt.txt
+c24ca461206921b74304f686fc01ce5b822196b4f8b183737c7ab79a6bb5dcd4 *policy.json
+f792938900c772b3b948a20ed669176a479ce5e3c936fda179495cfcce809bca *hidden/common.py
+92ae59a8dab2618a59f2668b88bf93a2bd0a426114591dd777568464a0abfb1d *hidden/medium/test_acceptance.py
+dff84d643d30dc25941f64c859b9f18954141c37fb2950fdf9b0deff0022e18c *hidden/simple/test_acceptance.py
+d33d2120add735763b680d4ca1777683db23e32f0dce3b50d32cb2d140fd73ac *runner/mutation.py
+```
