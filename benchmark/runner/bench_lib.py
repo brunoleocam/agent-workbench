@@ -48,9 +48,11 @@ def arm_proof(init, arm, expected_plugin_path=None):
     ok, reason = True, "ok"
     if arm == "baseline" and loaded:
         ok, reason = False, "baseline loaded the plugin: %s" % (wb_plugin or wb_skills[:3] or wb_agents[:3])
-    if arm == "workbench":
+    if arm == "lean" and (wb_skills or sorted(wb_agents) != [PLUGIN_NAME + ":reviewer"]):
+        ok, reason = False, "lean arm must have no plugin skills and only the reviewer agent: %s %s" % (wb_skills[:3], wb_agents)
+    if ok and arm in ("workbench", "lean"):
         if not wb_plugin:
-            ok, reason = False, "workbench arm did not load the plugin"
+            ok, reason = False, "%s arm did not load the plugin" % arm
         elif expected_plugin_path:
             paths = [str(p.get("path", "")) for p in init.get("plugins", []) if isinstance(p, dict)]
             if paths and not any(expected_plugin_path in p for p in paths):

@@ -14,6 +14,10 @@ Status: harness built and tested with a stub (no paid run yet). Specs are frozen
 
 Proof of arm, per run (`arm_proof.json`): the `init` message of the first stream. A baseline run that lists the plugin, any `agent-workbench:` skill or agent, is marked INVALID and excluded from the report. A workbench run that does not list the plugin from `/opt/plugin` is INVALID too.
 
+## Arm D, `lean` (medium round only)
+
+Same project init as `workbench`, but the plugin copy has only: rules 00 to 08 (no token-economy rule), the verification and gate scripts, the `reviewer` agent, and the `Stop` hook. No skills, no other agents, no other hooks. The arm proof requires zero plugin skills and exactly the reviewer agent. Limit: the rules text still mentions skills that do not exist in this arm.
+
 ## Projects (frozen)
 
 - `specs/simple.md`: warehouse stock API (CRUD, in/out movements, no negative balance under concurrency, low-stock report). 

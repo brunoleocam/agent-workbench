@@ -38,15 +38,19 @@ def ignore(_d, names):
     return [n for n in names if n in STRIP or n.endswith(".db") or n.endswith(".pyc")]
 
 
-def pack(project, rnd):
+def tag_of(project, rnd, arm):
+    return f"{project}-r{rnd}" + ("" if arm == "workbench" else f"-{arm}")
+
+
+def pack(project, rnd, arm="workbench"):
     key_path = RUNS / "blind_key.json"
     key = json.loads(key_path.read_text()) if key_path.exists() else {}
-    tag = f"{project}-r{rnd}"
-    srcs = {arm: RUNS / f"{project}-{arm}-r{rnd}" / "ws" for arm in ("baseline", "workbench")}
+    tag = tag_of(project, rnd, arm)
+    srcs = {x: RUNS / f"{project}-{x}-r{rnd}" / "ws" for x in ("baseline", arm)}
     for s in srcs.values():
         if not s.exists():
             raise SystemExit(f"missing {s}")
-    order = ["baseline", "workbench"]
+    order = ["baseline", arm]
     random.shuffle(order)
     dest = RUNS / "blind" / tag
     if dest.exists():
@@ -59,8 +63,8 @@ def pack(project, rnd):
     print("packed", dest)
 
 
-def review(project, rnd, claude_bin):
-    dest = RUNS / "blind" / f"{project}-r{rnd}"
+def review(project, rnd, claude_bin, arm="workbench"):
+    dest = RUNS / "blind" / tag_of(project, rnd, arm)
     p = subprocess.run([claude_bin, "-p", RUBRIC, "--output-format", "json", "--model", "claude-sonnet-5-5",
                         "--setting-sources", "", "--allowedTools", "Read,Grep,Glob", "--max-budget-usd", "3"],
                        cwd=dest, capture_output=True, text=True)
@@ -95,6 +99,7 @@ if __name__ == "__main__":
     ap.add_argument("--project")
     ap.add_argument("--round", type=int)
     ap.add_argument("--claude-bin", default="claude")
+    ap.add_argument("--arm", default="workbench", choices=["workbench", "lean"], help="the arm compared with baseline")
     a = ap.parse_args()
-    {"pack": lambda: pack(a.project, a.round), "review": lambda: review(a.project, a.round, a.claude_bin),
+    {"pack": lambda: pack(a.project, a.round, a.arm), "review": lambda: review(a.project, a.round, a.claude_bin, a.arm),
      "unseal": unseal}[a.cmd]()

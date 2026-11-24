@@ -30,6 +30,21 @@ class Lib(unittest.TestCase):
         self.assertFalse(B.arm_proof(init, "workbench", "/home/x/.claude/plugins")["ok"])
         self.assertFalse(B.arm_proof({"plugins": [], "skills": [], "agents": []}, "workbench")["ok"])
 
+    def test_lean_proof_and_copy(self):
+        init = {"plugins": [{"name": "agent-workbench", "path": "/opt/plugin"}], "skills": ["x"], "agents": ["agent-workbench:reviewer"]}
+        self.assertTrue(B.arm_proof(init, "lean", "/opt/plugin")["ok"])
+        full = dict(init, skills=["agent-workbench:tdd"], agents=["agent-workbench:reviewer", "agent-workbench:tester"])
+        self.assertFalse(B.arm_proof(full, "lean")["ok"])
+        sys.path.insert(0, str(HERE))
+        import run
+        with tempfile.TemporaryDirectory() as t:
+            plug = Path(t) / "p"
+            run.make_plugin_copy(plug, lean=True)
+            self.assertFalse((plug / "skills").exists())
+            self.assertEqual([p.name for p in (plug / "agents").iterdir()], ["reviewer.md"])
+            self.assertEqual(list(json.loads((plug / "hooks" / "claude-hooks.json").read_text())["hooks"]), ["Stop"])
+            self.assertEqual(sorted(p.name[:2] for p in (plug / "rules").iterdir()), [f"0{i}" for i in range(9)])
+
     def test_needs_reply_and_policy(self):
         self.assertTrue(B.needs_reply("Summary.\n\nDo you approve the spec?"))
         self.assertFalse(B.needs_reply("All done.\n\nWhat a day?\n\nTests pass."))

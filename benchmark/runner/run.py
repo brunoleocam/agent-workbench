@@ -35,12 +35,26 @@ def git(ws, *a):
     return sh(["git", "-C", str(ws), "-c", "user.name=bench", "-c", "user.email=bench@example.com", *a])
 
 
-def make_plugin_copy(dest):
-    """Plugin without benchmark/, .git, docs: nothing of the hidden material can travel with it."""
+def make_plugin_copy(dest, lean=False):
+    """Plugin without benchmark/, .git, docs: nothing of the hidden material can travel with it.
+
+    lean (arm D): rules 00-08, the verification scripts, the reviewer agent and the Stop hook only.
+    No skills, no other agents, no other hooks, no token-economy rule."""
+    ignore = shutil.ignore_patterns("__pycache__", "*.pyc")
     for part in PLUGIN_PARTS:
         src = ROOT / part
-        if src.is_dir():
-            shutil.copytree(src, dest / part, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        if not src.is_dir() or (lean and part in ("skills", "agents")):
+            continue
+        shutil.copytree(src, dest / part, ignore=ignore)
+    if lean:
+        (dest / "agents").mkdir()
+        shutil.copy(ROOT / "agents" / "reviewer.md", dest / "agents" / "reviewer.md")
+        economy = dest / "rules" / "economia-de-tokens.mdc"
+        if economy.exists():
+            economy.unlink()
+        hooks = json.loads((ROOT / "hooks" / "claude-hooks.json").read_text(encoding="utf-8"))
+        hooks["hooks"] = {"Stop": hooks["hooks"]["Stop"]}
+        (dest / "hooks" / "claude-hooks.json").write_text(json.dumps(hooks, indent=2), encoding="utf-8")
     head = git(ROOT, "rev-parse", "HEAD").stdout.strip()
     dirty = bool(git(ROOT, "status", "--porcelain", "--", *PLUGIN_PARTS).stdout.strip())
     return {"commit": head, "dirty": dirty}
@@ -50,7 +64,7 @@ def prepare_workspace(project, arm, ws, plugin_dir):
     ws.mkdir(parents=True)
     shutil.copy(BENCH / "specs" / f"{project}.md", ws / "SPEC.md")
     git(ws, "init", "-q", "-b", "main")
-    if arm == "workbench":
+    if arm in ("workbench", "lean"):
         r = sh([sys.executable, str(plugin_dir / "agent-system" / "scripts" / "init_project.py"),
                 "--root", str(ws), "--claude"])
         if r.returncode != 0:
@@ -125,7 +139,7 @@ def claude_argv(claude_bin, arm, prompt, budget, session_id):
     a = [claude_bin, "-p", prompt, "--output-format", "stream-json", "--verbose",
          "--model", FIXED["model"], "--dangerously-skip-permissions",
          "--setting-sources", "project,local", "--max-budget-usd", f"{budget:.2f}"]
-    if arm == "workbench":
+    if arm in ("workbench", "lean"):
         a += ["--plugin-dir", "/opt/plugin" if claude_bin == "claude" else str(PLUGIN_LOCAL[0])]
     if session_id:
         a += ["--resume", session_id]
@@ -138,7 +152,7 @@ PLUGIN_LOCAL = [None]
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--project", choices=sorted(LIMITS), required=True)
-    ap.add_argument("--arm", choices=["baseline", "workbench"], required=True)
+    ap.add_argument("--arm", choices=["baseline", "workbench", "lean"], required=True)
     ap.add_argument("--round", type=int, required=True)
     ap.add_argument("--backend", choices=["docker", "local"], default="docker")
     ap.add_argument("--claude-bin", default="claude")
@@ -160,12 +174,12 @@ def main():
     prompt = (BENCH / "prompt.txt").read_text(encoding="utf-8").strip()
 
     plugin_dir = rd / "plugin"
-    plugin_info = make_plugin_copy(plugin_dir) if a.arm == "workbench" else None
+    plugin_info = make_plugin_copy(plugin_dir, lean=a.arm == "lean") if a.arm != "baseline" else None
     ws = rd / "ws"
     prepare_workspace(a.project, a.arm, ws, plugin_dir)
     PLUGIN_LOCAL[0] = plugin_dir
     be = Docker(f"bench-{run_id}") if a.backend == "docker" else Local(ws)
-    be.start(ws, plugin_dir if a.arm == "workbench" else None)
+    be.start(ws, plugin_dir if a.arm != "baseline" else None)
 
     t0 = time.time()
     spent, session, interventions, all_results, all_events = 0.0, None, [], [], []
