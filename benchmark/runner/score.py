@@ -122,7 +122,7 @@ def main():
         score["hidden"] = counts
         (rd / "hidden.log").write_text((r.stdout or "")[-6000:] + (r.stderr or "")[-2000:], encoding="utf-8")
 
-        rf = env.run([py, "-m", "ruff", "check", "--output-format", "json", "--exit-zero", "."], 120)
+        rf = env.run([py, "-m", "ruff", "check", "--output-format", "json", "--exit-zero", "--exclude", ".agent-system,.git,.claude,.cursor", "."], 120)
         try:
             score["ruff_issues"] = len(json.loads(rf.stdout or "[]"))
         except ValueError:
