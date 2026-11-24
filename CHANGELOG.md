@@ -2,6 +2,16 @@
 
 Versions before 0.7.0 are summarized under "New in" in the README.
 
+## Unreleased
+
+### Fixed
+
+- The Stop gate no longer escalates `no_progress` while the agent is writing the spec, tasks, review, or proofs after a block. Its progress check now includes those documents, which the workspace fingerprint leaves out on purpose. Found in the benchmark's simple round (3 of 3 runs).
+
+### Added
+
+- `validate_verification.py` warns `spec-after-code` when the Stop gate had to ask for the classification before the feature was classified (the spec followed the code). It is a warning for the reviewer and fails only with `--strict`.
+
 ## 0.7.0 (2026-11-19)
 
 ### Added

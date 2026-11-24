@@ -187,6 +187,41 @@ def test_stop_escalates_without_progress() -> None:
         assert last["event"] == "STOP_GATE_ESCALATED" and last["result"] == "no_progress"
 
 
+def test_stop_counts_gate_documents_as_progress() -> None:
+    """Writing the spec, tasks, or review after a block is progress even when no code file changed."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = failing_feature(Path(tmp) / "p")
+        assert stop(root).get("decision") == "block"
+        tasks = root / "docs" / "tasks" / "feat.md"
+        tasks.write_text(tasks.read_text(encoding="utf-8") + "\nNote: progress on the tasks document.\n", encoding="utf-8")
+        reply = stop(root, active=True)
+        assert reply.get("decision") == "block", reply
+        assert [event["event"] for event in events(root) if event["event"] == "STOP_GATE_ESCALATED"] == []
+        reply = stop(root, active=True)  # nothing changed since the second block
+        assert "decision" not in reply and events(root)[-1]["result"] == "no_progress"
+
+
+def verification_codes(root: Path) -> list[str]:
+    done = run("validate_verification.py", ["--root", str(root), "--feature", "feat", "--json", "--no-record"])
+    return [item.get("code") for item in json.loads(done.stdout)["results"]]
+
+
+def test_verification_warns_when_the_gate_forced_the_classification() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        late = Path(tmp) / "late"
+        shutil.copytree(FIXTURE, late)
+        for path in late.rglob("*.md"):
+            path.write_text(path.read_text(encoding="utf-8").replace("__PYTHON__", PYTHON.replace("\\", "/")), encoding="utf-8")
+        repo(late)
+        opt_in(late)
+        seven_files(late)
+        assert stop(late).get("decision") == "block"  # unclassified change: code came first
+        assert run("classify_floor.py", ["--root", str(late), "--feature", "feat", "--declared", "M"]).returncode == 0
+        assert "spec-after-code" in verification_codes(late)
+        early = failing_feature(Path(tmp) / "early")  # classified before the gate ever asked
+        assert "spec-after-code" not in verification_codes(early)
+
+
 def test_stop_escalates_at_block_limit() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = failing_feature(Path(tmp) / "p")

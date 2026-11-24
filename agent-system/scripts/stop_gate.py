@@ -2,12 +2,13 @@
 
 Called by hook.py on the Claude Code `Stop` event. It blocks with the gate failures as the reason, and stops
 blocking (escalating to the user) at `limits.max_revisions` blocks, at the feature's cost budget, or when a continued
-stop arrives with no workspace change since the previous block. `AGENT_WORKBENCH_STOP_GATE=off` or a
+stop arrives with no change to the code or to the gate's documents (spec, tasks, review, proofs) since the previous block. `AGENT_WORKBENCH_STOP_GATE=off` or a
 `STOP_GATE_WAIVED` event turns it off. Any error lets the session stop: the hook fails open.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import subprocess
@@ -19,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import classify_floor  # noqa: E402
 import workflow  # noqa: E402
-from artifacts import load_layout, record, resolve_layout, workspace_fingerprint  # noqa: E402
+from artifacts import load_layout, proofs_file, record, resolve_layout, workspace_fingerprint  # noqa: E402
 from lib import load_state, read_json, save_state, timeline_dir  # noqa: E402
 
 SCRIPTS = Path(__file__).resolve().parent
@@ -140,6 +141,27 @@ def run_gate(root: Path, feature: str) -> tuple[int | None, list[str]]:
     items = data.get("results") if isinstance(data.get("results"), list) else []
     fails = [str(item.get("message")) for item in items if isinstance(item, dict) and item.get("level") == "FAIL"]
     return done.returncode, fails
+
+
+def artifact_digest(root: Path, feature: str) -> str:
+    """Digest of the documents the gate reads for a feature: spec, tasks, review, security assessment, and proofs.
+
+    The workspace fingerprint leaves these out on purpose (a review must not invalidate itself), so on its own it
+    cannot tell that the agent is writing them. Without this, an agent that is producing the spec, tasks or review
+    after the code is reported as making no progress."""
+    digest = hashlib.sha256()
+    try:
+        layout = resolve_layout(root)
+        paths = [root / layout[key] / f"{feature}.md" for key in ("specs_dir", "tasks_dir", "reviews_dir", "security_dir") if layout.get(key)]
+        paths.append(proofs_file(root, feature))
+    except Exception:
+        return ""
+    for path in paths:
+        try:
+            digest.update(path.name.encode() + b"\x00" + path.read_bytes() if path.is_file() else b"-")
+        except OSError:
+            digest.update(b"?")
+    return digest.hexdigest()
 
 
 def gate_state(state: dict) -> dict:
@@ -264,12 +286,13 @@ def decide(root: Path, payload: dict) -> dict:
     config = settings(root)
     waive = (f"`python .agent-system/scripts/record_event.py --event STOP_GATE_WAIVED --feature {feature} --summary \"<the user's words>\"`"
              " (only when the user says so)")
-    if entry.get("last_fp") == fingerprint:
-        return escalate(root, state, gate, feature, entry, fingerprint, "no_progress",
+    progress = f"{fingerprint}:{artifact_digest(root, feature)}"
+    if entry.get("last_fp") == progress:
+        return escalate(root, state, gate, feature, entry, progress, "no_progress",
                         f"Agent Workbench: {feature} stopped again without passing the gate and without changing the code since the last reminder. "
                         f"Decide: continue, replan, or waive with {waive}.")
     if entry.get("blocks", 0) >= config["max_blocks"] or "max_blocks" in entry.get("escalated_reasons", []):
-        return escalate(root, state, gate, feature, entry, fingerprint, "max_blocks",
+        return escalate(root, state, gate, feature, entry, progress, "max_blocks",
                         f"Agent Workbench: the stop gate held {feature} {entry['blocks']} times (limit {config['max_blocks']}) and the gate still fails. "
                         f"Decide: continue fixing, replan, or waive with {waive}.")
     since = parse_time(item.get("at"))
@@ -278,12 +301,12 @@ def decide(root: Path, payload: dict) -> dict:
         tokens[name] += value
     spent = cost_usd(tokens, config["prices"])
     if spent >= config["budget"]:
-        return escalate(root, state, gate, feature, entry, fingerprint, "budget",
+        return escalate(root, state, gate, feature, entry, progress, "budget",
                         f"Agent Workbench: {feature} reached its estimated cost budget (US$ {spent:.2f} of {config['budget']:.2f}) and the gate still fails. "
                         f"Decide: raise the budget (layout.json overrides.stop_gate.max_usd_per_feature), replan, or waive with {waive}.")
 
     entry["blocks"] = int(entry.get("blocks", 0)) + 1
-    entry["last_fp"] = fingerprint
+    entry["last_fp"] = progress
     state["stop_gate"] = gate
     save_state(root, state)
     record(root, "STOP_GATE_BLOCKED", f"stop blocked for {feature}", f"block {entry['blocks']}/{config['max_blocks']}, US$ {spent:.2f}", feature, "orchestrator")

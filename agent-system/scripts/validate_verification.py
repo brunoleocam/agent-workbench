@@ -31,7 +31,7 @@ from artifacts import (  # noqa: E402
     truthy,
     workspace_fingerprint,
 )
-from lib import redact, system_dir  # noqa: E402
+from lib import redact, system_dir, timeline_dir  # noqa: E402
 
 REVIEW_STATUS = {"PASS", "PASS_WITH_WARNINGS", "FAIL"}
 BLOCKING = {"blocker", "critical", "high"}
@@ -138,6 +138,31 @@ def check_mutation_scores(bundle: Bundle, tests: list, digest: str, report: Repo
         report.ok("mutation", f"Mutation score {data.get('score')} meets {threshold} ({data.get('killed')}/{data.get('mutants')} killed{note}).")
 
 
+def classified_only_by_gate(root: Path, feature: str) -> bool:
+    """True when the Stop gate had to ask for a classification before this feature was classified.
+
+    It means the change had already grown to an M+ floor when classification and spec work began, so the spec
+    followed the code. The timeline order is the evidence; a feature with no events, or a different order, is not flagged."""
+    path = timeline_dir(root) / "events.jsonl"
+    try:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines() if path.is_file() else []
+    except OSError:
+        return False
+    asked = classified = None
+    for index, line in enumerate(lines):
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(event, dict):
+            continue
+        if asked is None and event.get("event") == "STOP_GATE_BLOCKED" and str(event.get("summary", "")).startswith("stop blocked: unclassified"):
+            asked = index
+        if classified is None and event.get("event") == "CLASSIFICATION_RECORDED" and event.get("feature") == feature:
+            classified = index
+    return asked is not None and classified is not None and asked < classified
+
+
 def validate(bundle: Bundle, review: Document | None, security: Document | None, report: Report) -> None:
     spec = bundle.spec
     meta = spec.frontmatter
@@ -207,6 +232,8 @@ def validate(bundle: Bundle, review: Document | None, security: Document | None,
     check_report_doc(review, "Review", "FIND", review_required, current["digest"], report)
     security_required = risk in {"HIGH", "CRITICAL"}
     check_report_doc(security, "Security review", "SEC", security_required, current["digest"], report)
+    if classified_only_by_gate(bundle.root, bundle.slug):
+        report.warn("spec-after-code", "The feature was classified only after the Stop gate found an unclassified M+ change: the spec and tasks followed the code. The reviewer should check that the spec was not written to fit the code.")
     report.data["policy"] = {"complexity": complexity or None, "security_risk": risk or None, "review_required": review_required, "security_review_required": security_required}
 
 

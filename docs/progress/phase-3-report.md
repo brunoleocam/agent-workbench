@@ -43,3 +43,10 @@ Not fixed on purpose: skills never used, the 3-4x overhead. Those are findings f
 ## Costs
 
 Pilot (2 runs, kept in `benchmark/runs-pilot`, not in the table): about US$ 0.38. Round: 6 runs, about US$ 1.5 list-price equivalent.
+
+## Applied after approval
+
+- P1 done: `stop_gate.py` progress now includes a digest of the feature's spec, tasks, review, security assessment, and proof file. Regression test `test_stop_counts_gate_documents_as_progress` fails on the old code.
+- P2 done, narrower than proposed: the timeline does not record Bash-written files, so "production file edited before the spec" cannot be detected reliably. The warning `spec-after-code` fires on a deterministic signal instead: the Stop gate had to ask for the classification before the feature was classified. Test `test_verification_warns_when_the_gate_forced_the_classification` fails on the old code. Warning only.
+- P3: no code change needed. The hook already exits 0 with `decision: block`; "Stop hook error" is Claude Code's own label for any blocking Stop hook. Documented in `agent-system/docs/cli.md`.
+- Suite 209 passed, evals 14/14.
