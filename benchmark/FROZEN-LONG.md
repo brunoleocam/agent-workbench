@@ -1,4 +1,4 @@
-# Frozen inputs of the long task (pending approval)
+# Frozen inputs of the long task (approved by the user)
 
 The stage 1 inputs are the medium task's (`FROZEN.md`): `prompt.txt`, `policy.json`, `hidden/common.py`, `hidden/medium/test_acceptance.py`; `specs/long-1.md` is a copy of `specs/medium.md`. Changing any file below after the first paid long run invalidates the comparison.
 

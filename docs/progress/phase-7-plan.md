@@ -1,6 +1,6 @@
 # Phase 7 plan: the long task (three sessions)
 
-Status: built and tested without cost. **Nothing paid has run.** Waiting for approval of the specs, hidden tests and caps.
+Status: approved and frozen by the user. Nothing paid has run yet; the pilot comes first.
 
 ## What it measures that the medium task did not
 
