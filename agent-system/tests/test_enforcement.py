@@ -228,6 +228,26 @@ def write_tool(project: Path, relative: str, env_extra: dict | None = None) -> d
                  "tool_input": {"file_path": str(project / relative), "content": "x = 1"}}, project, env_extra)
 
 
+def bash_tool(project: Path, command: str) -> dict:
+    return hook({"hook_event_name": "PreToolUse", "tool_name": "Bash", "session_id": "s1", "cwd": str(project),
+                 "tool_input": {"command": command}}, project)
+
+
+def test_spec_first_sees_code_written_through_the_shell() -> None:
+    """The agents create most files with redirects in Bash, so the check must read the command."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp) / "p"
+        root.mkdir()
+        opt_in(root)
+        assert bash_tool(root, "python -m pytest -q 2>&1 | tail -3") == {}
+        assert bash_tool(root, "cat > docs/specs/feat.md <<'E'\n# spec\nE") == {}  # a spec is never asked about
+        assert bash_tool(root, "cat > tests/test_api.py <<'E'\nx = 1\nE") == {}
+        denied = bash_tool(root, "mkdir -p app && cat > app/main.py <<'E'\nx = 1\nE")
+        assert denied["hookSpecificOutput"]["permissionDecision"] == "deny", denied
+        assert bash_tool(root, "echo 'x = 1' | tee -a app/db.py")["hookSpecificOutput"]["permissionDecision"] == "deny"
+        assert bash_tool(root, "sed -i 's/a/b/' app/db.py") == {}  # asked twice: never a trap
+
+
 def test_spec_first_asks_before_production_code_and_then_lets_go() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp) / "p"

@@ -16,7 +16,7 @@ Proof of arm, per run (`arm_proof.json`): the `init` message of the first stream
 
 ## Arm D, `lean` (medium round only)
 
-Same project init as `workbench`, but the plugin copy has only: rules 00 to 08 (no token-economy rule), the verification and gate scripts, the `reviewer` agent, and the `Stop` hook. No skills, no other agents, no other hooks. The arm proof requires zero plugin skills and exactly the reviewer agent. Limit: the rules text still mentions skills that do not exist in this arm.
+Same project init as `workbench`, but the plugin copy has only: rules 00 to 08 (no token-economy rule), the verification and gate scripts, the `reviewer` agent, and the `Stop` hook (from round 2 also the `PreToolUse` spec-first check). No skills, no other agents, no other hooks. The arm proof requires zero plugin skills and exactly the reviewer agent. Limit: the rules text still mentions skills that do not exist in this arm.
 
 ## Projects (frozen)
 

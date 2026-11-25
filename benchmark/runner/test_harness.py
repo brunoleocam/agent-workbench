@@ -42,7 +42,7 @@ class Lib(unittest.TestCase):
             run.make_plugin_copy(plug, lean=True)
             self.assertFalse((plug / "skills").exists())
             self.assertEqual([p.name for p in (plug / "agents").iterdir()], ["reviewer.md"])
-            self.assertEqual(list(json.loads((plug / "hooks" / "claude-hooks.json").read_text())["hooks"]), ["Stop"])
+            self.assertEqual(list(json.loads((plug / "hooks" / "claude-hooks.json").read_text())["hooks"]), ["Stop", "PreToolUse"])
             self.assertEqual(sorted(p.name[:2] for p in (plug / "rules").iterdir()), [f"0{i}" for i in range(9)])
 
     def test_needs_reply_and_policy(self):
