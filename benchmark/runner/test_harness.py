@@ -10,6 +10,7 @@ HERE = Path(__file__).resolve().parent
 BENCH = HERE.parent
 sys.path.insert(0, str(HERE))
 import bench_lib as B  # noqa: E402
+import run as R  # noqa: E402
 
 POLICY = json.loads((BENCH / "policy.json").read_text())
 
@@ -95,6 +96,34 @@ class Pipeline(unittest.TestCase):
             rep = subprocess.run([sys.executable, str(HERE / "report.py"), "--project", "simple", "--runs-dir", t],
                                  capture_output=True, text=True)
             self.assertIn("hidden_pass_rate", rep.stdout)
+
+    def test_long_task_pipeline_with_stub(self):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as t:
+            stub = HERE / "claude_stub.cmd" if sys.platform == "win32" else HERE / "claude_stub.sh"
+            r = subprocess.run([sys.executable, str(HERE / "run_long.py"), "--arm", "workbench", "--round", "1",
+                                "--backend", "local", "--runs-dir", t, "--claude-bin", str(stub)], capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            rd = Path(t) / "long-workbench-r1"
+            run = json.loads((rd / "run.json").read_text())
+            self.assertTrue(run["valid"], run)
+            self.assertEqual(run["stop_reason"], "finished")
+            self.assertEqual([s["stage"] for s in run["stages"]], [1, 2, 3])
+            # each session saw exactly its own version of SPEC.md, never a later one
+            seen = list(dict.fromkeys((rd / "ws" / "stub_specs_seen.txt").read_text().splitlines()))  # a resumed turn sees the same spec
+            self.assertEqual(seen, ["# Event registration API", "# Event registration API (version 2)",
+                                    "# Event registration API (version 3)"])
+            for k in (1, 2, 3):
+                self.assertEqual(json.loads((rd / f"s{k}" / "run.json").read_text())["project"], f"long-s{k}")
+                self.assertTrue((rd / f"s{k}" / "ws" / "app" / "main.py").exists())
+            self.assertIn("(version 3)", (rd / "ws" / "SPEC.md").read_text().splitlines()[0])
+            self.assertFalse(list((rd / "ws").rglob("test_stage*.py")))  # hidden tests are never in the workspace
+
+    def test_stage_one_workspace_has_only_the_first_spec(self):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as t:
+            ws = Path(t) / "ws"
+            R.prepare_workspace("long-1", "baseline", ws, None)
+            self.assertEqual((ws / "SPEC.md").read_text().splitlines()[0], "# Event registration API")
+            self.assertEqual(sorted(p.name for p in ws.iterdir() if p.name != ".git"), ["SPEC.md"])
 
     def test_refuses_overwrite(self):
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as t:
