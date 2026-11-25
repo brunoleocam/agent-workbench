@@ -201,6 +201,28 @@ def test_stop_counts_gate_documents_as_progress() -> None:
         assert "decision" not in reply and events(root)[-1]["result"] == "no_progress"
 
 
+def test_stop_does_not_escalate_while_a_subagent_runs() -> None:
+    """A reviewer still running is progress that has not landed: no_progress waits until it stops."""
+    from datetime import datetime, timezone
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = failing_feature(Path(tmp) / "p")
+        assert stop(root).get("decision") == "block"
+        log = root / ".agent-system" / "timeline" / "events.jsonl"
+
+        def add(name: str) -> None:
+            stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            with log.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps({"timestamp": stamp, "event": name, "agent": "agent-workbench:reviewer"}) + "\n")
+
+        add("SUBAGENT_STARTED")
+        assert stop(root, active=True).get("decision") == "block"  # nothing changed, but the reviewer is running
+        assert [e for e in events(root) if e["event"] == "STOP_GATE_ESCALATED"] == []
+        add("SUBAGENT_STOPPED")
+        reply = stop(root, active=True)
+        assert "decision" not in reply and events(root)[-1]["result"] == "no_progress"
+
+
 def verification_codes(root: Path) -> list[str]:
     done = run("validate_verification.py", ["--root", str(root), "--feature", "feat", "--json", "--no-record"])
     return [item.get("code") for item in json.loads(done.stdout)["results"]]

@@ -119,6 +119,28 @@ def subagent_usage(root: Path, since: datetime | None) -> dict:
     return totals
 
 
+def subagent_in_flight(root: Path, since: datetime | None) -> bool:
+    """True when a subagent started after `since` has not stopped yet: its work is progress that has not landed."""
+    path = timeline_dir(root) / "events.jsonl"
+    try:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines() if path.is_file() else []
+    except OSError:
+        return False
+    running = 0
+    for line in lines:
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(event, dict) or event.get("event") not in ("SUBAGENT_STARTED", "SUBAGENT_STOPPED"):
+            continue
+        stamp = parse_time(event.get("timestamp"))
+        if since and stamp and stamp < since:
+            continue
+        running = running + 1 if event["event"] == "SUBAGENT_STARTED" else max(0, running - 1)
+    return running > 0
+
+
 def cost_usd(tokens: dict, prices: dict) -> float:
     return sum(tokens.get(name, 0) * prices[name] for name in prices) / 1_000_000
 
@@ -287,7 +309,7 @@ def decide(root: Path, payload: dict) -> dict:
     waive = (f"`python .agent-system/scripts/record_event.py --event STOP_GATE_WAIVED --feature {feature} --summary \"<the user's words>\"`"
              " (only when the user says so)")
     progress = f"{fingerprint}:{artifact_digest(root, feature)}"
-    if entry.get("last_fp") == progress:
+    if entry.get("last_fp") == progress and not subagent_in_flight(root, parse_time(item.get("at"))):
         return escalate(root, state, gate, feature, entry, progress, "no_progress",
                         f"Agent Workbench: {feature} stopped again without passing the gate and without changing the code since the last reminder. "
                         f"Decide: continue, replan, or waive with {waive}.")

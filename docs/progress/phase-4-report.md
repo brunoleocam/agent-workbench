@@ -98,7 +98,7 @@ Cut or make opt-in:
 Reinforce:
 - **Concurrency proof.** The one real failure was a race the agent could not see. A rule that asks for a multi-process test of any shared-state code (WAL pragma, locks, token stores) is the only change the data points to.
 - **Spec before code.** Make the first code write blocked until `docs/specs/<feature>.md` exists for M, by a PreToolUse check, not by an end-of-turn gate.
-- **`no_progress` with a subagent in flight** (finding 4).
+- **`no_progress` with a subagent in flight** (finding 4): fixed after approval, see below.
 
 ## Limits
 
@@ -108,3 +108,7 @@ n = 3 per arm and project. One model (Sonnet 5.5), one domain family (HTTP API o
 
 - No push or merge. Branches: `phase-2` holds Phases 2-4. The medium report and `.gitignore` change are committed together with this file.
 - The fix in finding 4 is a proposal. Nothing was changed in the Workbench after the freeze (`workbench-frozen`).
+
+## Applied after approval
+
+Finding 4 is fixed in `agent-system/scripts/stop_gate.py`: `no_progress` no longer escalates while a `SUBAGENT_STARTED` has no matching `SUBAGENT_STOPPED` since the gate item began. `max_blocks` still caps the loop. New test `test_stop_does_not_escalate_while_a_subagent_runs`. Suite 210/210, evals 14/14. This changes the Workbench after the `workbench-frozen` tag, so the medium-round numbers above were taken without it and were not re-run.
