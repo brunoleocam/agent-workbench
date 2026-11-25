@@ -110,6 +110,9 @@ def from_claude(payload: dict) -> dict:
     elif name == "PreToolUse" and payload.get("tool_name") in CLAUDE_FILE_TOOLS:
         out["hook_event_name"] = "preToolUse"
         out["file_path"] = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
+    elif name == "PreToolUse" and payload.get("tool_name") == "Bash":
+        out["hook_event_name"] = "preToolUse"
+        out["command"] = tool_input.get("command") or ""
     elif name == "PostToolUse" and payload.get("tool_name") in CLAUDE_FILE_TOOLS:
         out["hook_event_name"] = "afterFileEdit"
         out["file_path"] = tool_input.get("file_path") or tool_input.get("notebook_path") or ""

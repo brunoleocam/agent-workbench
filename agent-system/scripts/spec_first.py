@@ -10,6 +10,7 @@ write as soon as a classification is recorded or any spec exists, and any error 
 from __future__ import annotations
 
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -22,6 +23,15 @@ ENV_SWITCH = "AGENT_WORKBENCH_SPEC_FIRST"
 MAX_ASKS = 2
 CODE_SUFFIXES = {".py", ".js", ".jsx", ".ts", ".tsx", ".go", ".rs", ".java", ".kt", ".rb", ".php", ".cs", ".c", ".cpp", ".h", ".swift", ".sql", ".sh"}
 SKIP_DIRS = {"docs", "doc", "tests", "test", "__tests__", "spec", "specs", "node_modules", "scripts", "examples", ".agent-system", ".claude", ".cursor", ".git", "design"}
+
+
+# Shell writes: redirects (`> app/main.py`, `>> x.py`, `cat > x.py <<EOF`), `tee`, `sed -i`. The agents create most files this way.
+PATH = r"([\w./-]+)"
+SHELL_WRITE = [re.compile(r">>?\s*" + PATH), re.compile(r"tee\s+(?:-a\s+)?" + PATH), re.compile(r"sed\s+-i\S*\s+(?:-\S+\s+)*(?:'[^']*'|\"[^\"]*\"|\S+)\s+" + PATH)]
+
+
+def shell_targets(command: str) -> list[str]:
+    return [found for pattern in SHELL_WRITE for found in pattern.findall(command or "")]
 
 
 def is_production_code(root: Path, raw: str) -> bool:
@@ -49,7 +59,8 @@ def decide(root: Path, payload: dict) -> dict:
     """The PreToolUse reply for one project: {} to allow, or a deny with the reason."""
     if os.environ.get(ENV_SWITCH, "").strip().lower() in {"off", "0", "false", "no"}:
         return {}
-    if not is_production_code(root, str(payload.get("file_path") or "")):
+    targets = [str(payload.get("file_path") or "")] + shell_targets(str(payload.get("command") or ""))
+    if not any(is_production_code(root, target if os.path.isabs(target) else str(root / target)) for target in targets):
         return {}
     state = load_state(root)
     if state.get("classification") or state.get("classifications") or has_spec(root):

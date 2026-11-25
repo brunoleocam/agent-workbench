@@ -15,6 +15,8 @@ Versions before 0.7.0 are summarized under "New in" in the README.
 
 ### Fixed
 
+- The spec-first check now also reads `Bash` commands that write production code (`>`, `>>`, `tee`, `sed -i`). The first version only saw `Edit`, `Write` and `MultiEdit`, and the benchmark's agents create files with shell redirects, so it never fired in round 2.
+
 - The Stop gate no longer escalates `no_progress` while the agent is writing the spec, tasks, review, or proofs after a block. Its progress check now includes those documents, which the workspace fingerprint leaves out on purpose. Found in the benchmark's simple round (3 of 3 runs).
 - The Stop gate no longer escalates `no_progress` while a subagent (for example the reviewer) has started and not yet stopped. Its work is progress that has not landed. `max_blocks` still caps the loop. Found in the benchmark's medium round.
 

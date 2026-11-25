@@ -53,7 +53,7 @@ def make_plugin_copy(dest, lean=False):
         if economy.exists():
             economy.unlink()
         hooks = json.loads((ROOT / "hooks" / "claude-hooks.json").read_text(encoding="utf-8"))
-        hooks["hooks"] = {"Stop": hooks["hooks"]["Stop"]}
+        hooks["hooks"] = {key: hooks["hooks"][key] for key in ("Stop", "PreToolUse")}
         (dest / "hooks" / "claude-hooks.json").write_text(json.dumps(hooks, indent=2), encoding="utf-8")
     head = git(ROOT, "rev-parse", "HEAD").stdout.strip()
     dirty = bool(git(ROOT, "status", "--porcelain", "--", *PLUGIN_PARTS).stdout.strip())
