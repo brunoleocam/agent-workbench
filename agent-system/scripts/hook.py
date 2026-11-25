@@ -107,6 +107,9 @@ def from_claude(payload: dict) -> dict:
         out["summary"] = f"{payload.get('agent_type') or 'subagent'} stopped"
         if payload.get("agent_transcript_path"):
             out["agent_transcript_path"] = str(payload["agent_transcript_path"])
+    elif name == "PreToolUse" and payload.get("tool_name") in CLAUDE_FILE_TOOLS:
+        out["hook_event_name"] = "preToolUse"
+        out["file_path"] = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
     elif name == "PostToolUse" and payload.get("tool_name") in CLAUDE_FILE_TOOLS:
         out["hook_event_name"] = "afterFileEdit"
         out["file_path"] = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
@@ -170,6 +173,8 @@ def to_claude(event: str, reply: dict) -> dict:
     """Claude Code reply for a Cursor-shaped result: SessionStart context, PostToolUse lint, and the Stop gate."""
     if event == "Stop":
         return reply.get("stop_gate") or {}
+    if event == "PreToolUse":
+        return reply.get("spec_first") or {}
     context = reply.get("additional_context")
     if event == "SessionStart" and context:
         return {"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": context}}
@@ -492,6 +497,19 @@ def handle(payload: dict) -> dict:
                 reply = stop_reply(root, payload)
                 if reply:
                     return {"stop_gate": reply}
+        return {}
+
+    if name == "preToolUse":
+        if payload.get("host") == "claude":
+            for root in roots:
+                try:
+                    import spec_first
+
+                    reply = spec_first.decide(root, payload)
+                except Exception:
+                    reply = {}
+                if reply:
+                    return {"spec_first": reply}
         return {}
 
     if name == "stop":

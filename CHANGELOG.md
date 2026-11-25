@@ -4,6 +4,15 @@ Versions before 0.7.0 are summarized under "New in" in the README.
 
 ## Unreleased
 
+### Changed
+
+- Rule 03 asks for a test with two or more processes on the same store for code that keeps shared state, including startup initialization. Found in the benchmark's medium round (a start race in 2 of 9 runs).
+- `architecture-discovery`, `architecture-options` and `architecture-review` are explicit commands (`disable-model-invocation`), like the other stage-style skills. The `architecture` pipeline still links them. Their descriptions no longer load in every session. The remaining skills are unchanged: the benchmark saw 0 of 42 used, but agents and rules refer to the others by name, so cutting them needs a separate decision.
+
+### Added (spec first)
+
+- `PreToolUse` check (`spec_first.py`): before the first production code file of a project with no spec and no recorded classification, the write is denied once or twice with the reason (classify small work, or write the spec first). It allows the write after a classification or any spec exists, never denies more than twice, and `AGENT_WORKBENCH_SPEC_FIRST=off` turns it off. Found in the benchmark: the spec followed the code in 6 of 6 plugin runs.
+
 ### Fixed
 
 - The Stop gate no longer escalates `no_progress` while the agent is writing the spec, tasks, review, or proofs after a block. Its progress check now includes those documents, which the workspace fingerprint leaves out on purpose. Found in the benchmark's simple round (3 of 3 runs).

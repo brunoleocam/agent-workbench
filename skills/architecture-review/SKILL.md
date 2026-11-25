@@ -1,6 +1,7 @@
 ---
 name: architecture-review
 description: Reviews code and infrastructure against ARCHITECTURE.md and its ADRs with a fixed checklist and the infrastructure lint, and reports findings without fixing them. Use after a change to infrastructure files or a new database, cache, queue, or service (revisão de arquitetura, revisar Dockerfile).
+disable-model-invocation: true
 ---
 
 # Architecture review

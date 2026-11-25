@@ -20,3 +20,7 @@ Do not mark the work complete while a required test or eval fails. After the tar
 Evidence is a real exit code. For a feature with `TEST-NNN`, run `check_proofs.py --feature <slug>`: it records stdout, stderr, exit code, and the workspace fingerprint. A test result captured by the shell hook is only inferred from text and does not count as proof. A proof from a different state of the code is stale. The TEST `Command` calls the project's runner or a test file, not inline code; `--allow-inline` and `--allow-shell` only with the user's authorization.
 
 The verification strategy lives in `docs/tests/` when the project uses the spec-driven tree. Executable test code lives in the project's test tree, not in `docs/`.
+
+## Shared state used by more than one process
+
+When code keeps state that several processes or workers touch (a database file, a lock, a token or session store, a cache, a queue, a counter), a single-process test does not prove it. Add a test that starts the service the way it runs in production (two or more workers or processes on the same store) and exercises: startup, concurrent writes, and a value created by one process and read by another. Startup is part of it: initialization that runs in every worker (schema creation, `PRAGMA journal_mode=WAL`, migrations) can fail only when two workers start together. A lock or cache held in process memory does not count as shared. Found in the benchmark: a server that passed its own tests failed to start about 1 time in 10 with two workers.

@@ -223,6 +223,42 @@ def test_stop_does_not_escalate_while_a_subagent_runs() -> None:
         assert "decision" not in reply and events(root)[-1]["result"] == "no_progress"
 
 
+def write_tool(project: Path, relative: str, env_extra: dict | None = None) -> dict:
+    return hook({"hook_event_name": "PreToolUse", "tool_name": "Write", "session_id": "s1", "cwd": str(project),
+                 "tool_input": {"file_path": str(project / relative), "content": "x = 1"}}, project, env_extra)
+
+
+def test_spec_first_asks_before_production_code_and_then_lets_go() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp) / "p"
+        root.mkdir()
+        opt_in(root)
+        assert write_tool(root, "docs/specs/feat.md") == {}  # a document is never asked about
+        assert write_tool(root, "tests/test_feat.py") == {}  # nor a test
+        first = write_tool(root, "app/main.py")
+        assert first["hookSpecificOutput"]["permissionDecision"] == "deny", first
+        assert write_tool(root, "app/main.py")["hookSpecificOutput"]["permissionDecision"] == "deny"
+        assert write_tool(root, "app/main.py") == {}  # asked twice: never a trap
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp) / "spec"
+        root.mkdir()
+        opt_in(root)
+        write(root, "docs/specs/feat.md", "# Spec")
+        assert write_tool(root, "app/main.py") == {}  # a spec exists
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp) / "small"
+        root.mkdir()
+        opt_in(root)
+        done = run("classify_floor.py", ["--root", str(root), "--feature", "feat", "--declared", "S"])
+        assert done.returncode == 0, done.stdout + done.stderr
+        assert write_tool(root, "app/main.py") == {}  # classified small
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp) / "off"
+        root.mkdir()
+        opt_in(root)
+        assert write_tool(root, "app/main.py", {"AGENT_WORKBENCH_SPEC_FIRST": "off"}) == {}
+
+
 def verification_codes(root: Path) -> list[str]:
     done = run("validate_verification.py", ["--root", str(root), "--feature", "feat", "--json", "--no-record"])
     return [item.get("code") for item in json.loads(done.stdout)["results"]]

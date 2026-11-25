@@ -1,6 +1,7 @@
 ---
 name: architecture-discovery
 description: Short architecture interview that turns "I want it to scale" into an approved architecture/brief.md with load, consistency, latency, budget, infrastructure target, and a capacity estimate. Use at the start of a system with no brief (entrevista de arquitetura, requisitos não funcionais).
+disable-model-invocation: true
 ---
 
 # Architecture discovery
