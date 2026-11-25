@@ -1,0 +1,11 @@
+{
+  "_comment": "Pre-written auto-answers for human nodes. Same file for both arms. Every reply counts as one intervention. The first matching rule wins; match is a case-insensitive regex on the last paragraph of the agent's final message.",
+  "max_interventions": 6,
+  "rules": [
+    {"node": "approve_spec", "match": "approve.*(spec|requirement)|(spec|requirement).*approv|confirm.*(spec|scope)", "answer": "Approved. Proceed with the specification as written. SPEC.md is final; do not ask again."},
+    {"node": "approve_architecture", "match": "adr|architect|which (option|approach|design)|choose (between|an option)", "answer": "Approved. Choose the simplest option that satisfies SPEC.md and proceed."},
+    {"node": "accept_risk", "match": "accept.*risk|risk.*accept|waive|waiver", "answer": "I do not accept the risk and I do not waive anything. Fix it or reduce scope within SPEC.md, then proceed."},
+    {"node": "escalate", "match": "escalat|stuck|cannot (continue|proceed)|attempt limit|cost budget", "answer": "Continue with your best judgment. Do the smallest change that makes the checks pass. If it still cannot pass, stop and say what is missing."}
+  ],
+  "default": {"node": "generic", "answer": "Proceed with your best judgment. SPEC.md is final. Do not ask further questions; state any assumption in the README and continue."}
+}

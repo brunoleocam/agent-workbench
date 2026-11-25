@@ -1,0 +1,1 @@
+Implement the project specified in SPEC.md, in the current directory. SPEC.md is the only requirements document and it is final. Deliver a complete, correct, production-quality implementation with your own automated tests. Put every dependency you need in requirements.txt. When the work is complete and verified, stop.
