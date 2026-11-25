@@ -1,6 +1,7 @@
 ---
 name: architecture-options
 description: Turns an approved architecture brief into 2 or 3 candidate architectures with a diagram and a trade-off table, recommends the simplest that meets it, and stops for the user to choose. Use after architecture-discovery (opções de arquitetura, monólito ou microsserviços).
+disable-model-invocation: true
 ---
 
 # Architecture options

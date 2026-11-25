@@ -13,6 +13,12 @@
     "SubagentStop": [
       { "hooks": [{ "type": "command", "command": "python -I -S \"${CLAUDE_PLUGIN_ROOT}/agent-system/scripts/hook.py\"", "timeout": 20 }] }
     ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [{ "type": "command", "command": "python -I -S \"${CLAUDE_PLUGIN_ROOT}/agent-system/scripts/hook.py\"", "timeout": 20 }]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash|Skill",
