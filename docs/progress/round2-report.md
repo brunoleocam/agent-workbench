@@ -27,3 +27,26 @@ The PR 20 changes were not shown to help. The spec-first check did not run, so t
 
 1. Make the spec-first check also look at `Bash` commands that write a production code file (`>`, `>>`, `tee`, `sed -i`), with the same limits (at most two denials, off switch, never after a classification or a spec). Add the hook to the lean copy so the arm tests it. Re-run workbench and lean, n = 3.
 2. Do not conclude anything about the multi-process rule from this round. If the race matters, a deterministic check is more likely to work than a rule text: for example `check_proofs.py` starting the declared server with two workers.
+
+# Round 3: spec-first check extended to Bash
+
+Same task, model, prompt and caps. Workbench and lean, 3 runs each, commit `2055418` (the check reads `Bash` writes; lean now has the hook). Raw runs in `benchmark/runs-v3/` (gitignored). The hook denied the first production code write once in every run (6 of 6); the agent then recorded a classification (M in 5 runs, S then M in 1) and continued.
+
+| run | first allowed code write | first spec write | hidden tests | cost US$ | minutes |
+| --- | --- | --- | --- | --- | --- |
+| workbench r1, r2, r3 | 6, 10, 5 | 14, 7, 4 | 47, 47, 47 | 0.64, 0.45, 0.65 | 3.9, 2.5, 3.5 |
+| lean r1, r2, r3 | 5, 4, 6 | 4, 16, 5 | 47, 47, 47 | 0.42, 0.95, 0.67 | 2.5, 7.0, 3.9 |
+
+Mean cost per run, US$: workbench 0.35 (round 1), 0.54 (round 2), 0.58 (round 3); lean 0.47, 0.35, 0.68; baseline 0.15.
+
+## What the data say
+
+- **The check works as a mechanism**: it fired in 6 of 6 runs and made the agent classify before writing code. Before it, the classification came at the end of the turn or never.
+- **It only partly changes the order.** The spec came before the first allowed code write in 3 of 6 runs (lean r1, lean r3, workbench r3). In the other 3 the agent classified and wrote code first (code at 4, 6 or 10, spec at 7, 14 or 16). The check asks for a spec or a classification, so a classification satisfies it.
+- **Hidden tests: 6 of 6 at 47/47**, against 4 of 6 in rounds 1 and 2 each (the start race failed 2 runs in each). This is the best round so far, but with n = 3 per arm it is inside the noise: 8 of 12 earlier runs against 6 of 6 now is not a result I would call significant. I cannot say whether the multi-process rule, the spec-first check or chance removed the start race.
+- **Cost went up**, about +60% against round 1 for workbench (0.35 to 0.58) and +45% for lean. Part is the extra turn after the denial; part is the reviewer subagent (used in 4 of 6 runs here, 1 to 3 times in lean r2).
+- Baseline remains 47/47 at US$ 0.15 and about 1 minute.
+
+## Verdict
+
+Mechanically the fix works and the medium task passed in all 6 runs. It does not change the H0 reading: the baseline is still 100% at a quarter to a fifth of the cost. The result is promising for reliability of the plugin arms, not evidence of a gain over the baseline.
