@@ -10,6 +10,7 @@ foreach ($round in $rounds) {
     $arms = if ($round % 2 -eq 1) { "baseline", "workbench", "lean" } else { "workbench", "lean", "baseline" }
     if ($Pilot) { $arms = "baseline", "workbench" }
     foreach ($arm in $arms) {
+        if (Test-Path "benchmark/runs-long/long-$arm-r$round") { Write-Host "skip long-$arm-r$round (already run)"; continue }
         python benchmark/runner/run_long.py --arm $arm --round $round
         foreach ($k in 1, 2, 3) {
             $scoreArgs = @("--run", "benchmark/runs-long/long-$arm-r$round/s$k")
