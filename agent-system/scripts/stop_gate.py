@@ -19,6 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import classify_floor  # noqa: E402
+import reentry  # noqa: E402
 import workflow  # noqa: E402
 from artifacts import load_layout, proofs_file, record, resolve_layout, workspace_fingerprint  # noqa: E402
 from lib import load_state, read_json, save_state, timeline_dir  # noqa: E402
@@ -268,6 +269,24 @@ def unclassified(root: Path, state: dict, gate: dict, fingerprint: str) -> dict:
     )}
 
 
+def reopened(root: Path, state: dict, gate: dict, fingerprint: str) -> dict:
+    """Ask once per workspace state when the code moved after the newest closed feature passed and its spec did not."""
+    found = reentry.drifted(root, classify_floor.classifications(state))
+    if not found or gate.get("reopen_fp") == fingerprint:
+        return {}
+    feature, change = found
+    gate["reopen_fp"] = fingerprint
+    state["stop_gate"] = gate
+    save_state(root, state)
+    record(root, "STOP_GATE_BLOCKED", "stop blocked: closed feature changed", reentry.describe(feature, change), feature, "orchestrator")
+    return {"decision": "block", "reason": (
+        f"Agent Workbench: {reentry.describe(feature, change)}. The spec, tasks and proofs now describe an older version. "
+        f"Update docs for {feature} (or start a new feature) and reclassify with "
+        f"`python .agent-system/scripts/classify_floor.py --feature <slug> --declared <XS|S|M|L|XL>`, which reopens the gate. "
+        "If the documented behaviour really did not change, say so and stop."
+    )}
+
+
 def decide(root: Path, payload: dict) -> dict:
     """Claude Code reply for a Stop event: {} to let it stop, a block, or a message for the user.
 
@@ -280,7 +299,7 @@ def decide(root: Path, payload: dict) -> dict:
     fingerprint = workspace_fingerprint(root)["digest"]
     candidates = open_features(root, state, gate)
     if not candidates:
-        return unclassified(root, state, gate, fingerprint)
+        return reopened(root, state, gate, fingerprint) or unclassified(root, state, gate, fingerprint)
 
     failing = None
     changed = False
@@ -290,7 +309,7 @@ def decide(root: Path, payload: dict) -> dict:
             return {}  # the gate could not run in time: fail open, change nothing
         if code == 0:
             kept = classify_floor.classifications(state)
-            kept[feature] = {**item, "closed": True}
+            kept[feature] = reentry.mark_closed(root, item, feature)
             state["classifications"] = kept
             gate["features"].pop(feature, None)
             changed = True

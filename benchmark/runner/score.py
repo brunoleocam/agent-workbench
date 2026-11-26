@@ -17,6 +17,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 BENCH = ROOT / "benchmark"
 IMAGE = "agent-workbench-bench:1"
+# The long task is scored per stage: each stage runs the earlier suites too (regression) plus its own new tests.
+TARGETS = {"long-s1": ["medium"],
+           "long-s2": ["medium", "long/test_stage2.py"],
+           "long-s3": ["medium", "long/test_stage2.py", "long/test_stage3.py"]}
+
+
+def targets_of(project):
+    return TARGETS.get(project, [project])
 
 
 def sh(args, timeout=None):
@@ -37,7 +45,8 @@ class Env:
             sh(["docker", "start", self.name])
             sh(["docker", "cp", str(self.ws) + "/.", f"{self.name}:/work"])
             sh(["docker", "exec", "-u", "root", self.name, "mkdir", "-p", "/hidden"])
-            sh(["docker", "cp", str(BENCH / "hidden" / project) + "/.", f"{self.name}:/hidden/{project}"])
+            for top in sorted({target.split("/")[0] for target in targets_of(project)}):
+                sh(["docker", "cp", str(BENCH / "hidden" / top) + "/.", f"{self.name}:/hidden/{top}"])
             sh(["docker", "cp", str(BENCH / "hidden" / "common.py"), f"{self.name}:/hidden/common.py"])
             sh(["docker", "cp", str(BENCH / "runner" / "mutation.py"), f"{self.name}:/hidden/mutation.py"])
             sh(["docker", "exec", "-u", "root", self.name, "chown", "-R", "bench", "/work", "/hidden"])
@@ -98,7 +107,7 @@ def main():
     run = json.loads((rd / "run.json").read_text(encoding="utf-8")) if (rd / "run.json").exists() else {}
     project = run.get("project") or rd.name.split("-")[0]
     ws = rd / "ws"
-    env = Env(a.backend, ws, f"bench-score-{rd.name}")
+    env = Env(a.backend, ws, f"bench-score-{rd.parent.name}-{rd.name}")
     env.start(project)
     score = {"run_id": rd.name, "project": project}
     try:
@@ -107,11 +116,12 @@ def main():
             score["pip_install_ok"] = r.returncode == 0
         py = sys.executable if a.backend == "local" else "python"
         junit = "/tmp/hidden.xml" if a.backend == "docker" else str(rd / "hidden.xml")
-        total_r = env.run([py, "-m", "pytest", f"{env.hidden}/{project}", "--collect-only", "-q", "-p", "no:cacheprovider"],
+        paths = [f"{env.hidden}/{target}" for target in targets_of(project)]
+        total_r = env.run([py, "-m", "pytest", *paths, "--collect-only", "-q", "-p", "no:cacheprovider"],
                           300, {"APP_DIR": env.work})
         m = re.search(r"(\d+) tests? collected", total_r.stdout)
         expected = int(m.group(1)) if m else None
-        r = env.run([py, "-m", "pytest", f"{env.hidden}/{project}", "-q", "-p", "no:cacheprovider",
+        r = env.run([py, "-m", "pytest", *paths, "-q", "-p", "no:cacheprovider",
                      f"--junitxml={junit}"], 1500, {"APP_DIR": env.work})
         if a.backend == "docker":
             env.pull(junit, rd / "hidden.xml")

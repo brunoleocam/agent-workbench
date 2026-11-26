@@ -163,6 +163,34 @@ def test_stop_blocks_while_gate_fails_and_releases_when_it_passes() -> None:
         assert stop(root) == {}
 
 
+def test_closed_feature_reopens_when_code_moves_and_its_spec_does_not() -> None:
+    """Benchmark long task: a later session changed the code of a closed feature and its spec stayed at version 1."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = failing_feature(Path(tmp) / "p")
+        pass_gate(root)
+        assert stop(root) == {}  # the gate passes and the feature closes
+        assert state(root)["classifications"]["feat"].get("closed_tree")
+        write(root, "src/extra.py", "".join(f"LINE_{i} = {i}\n" for i in range(40)))  # a later session's change
+        start = hook({"hook_event_name": "SessionStart", "session_id": "s2", "cwd": str(root)}, root)
+        assert "feat was closed" in json.dumps(start), start
+        reply = stop(root)
+        assert reply.get("decision") == "block" and "feat was closed" in reply["reason"], reply
+        assert stop(root, active=True) == {}  # asked once for this workspace state
+        spec = root / "docs" / "specs" / "feat.md"
+        spec.write_text(spec.read_text(encoding="utf-8") + "\nUpdated for the new behaviour.\n", encoding="utf-8")
+        write(root, "src/extra.py", "".join(f"LINE_{i} = {i + 1}\n" for i in range(40)))
+        assert "feat was closed" not in json.dumps(stop(root))  # the spec moved too: nothing to ask
+
+
+def test_small_change_after_close_does_not_reopen() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = failing_feature(Path(tmp) / "p")
+        pass_gate(root)
+        assert stop(root) == {}
+        write(root, "src/module_0.py", "VALUE = 100\n")  # XS: one file, one line
+        assert stop(root) == {}
+
+
 def test_stop_asks_for_classification_once_per_state() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = repo(Path(tmp) / "p")

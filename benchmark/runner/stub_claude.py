@@ -14,7 +14,9 @@ resume = "--resume" in argv
 plugin = "--plugin-dir" in argv
 prompt = argv[argv.index("-p") + 1]
 spec = Path("SPEC.md").read_text()
-project = "simple" if "Warehouse" in spec else "medium"
+project = "simple" if "Warehouse" in spec else ("long" if "(version" in spec else "medium")
+with open("stub_specs_seen.txt", "a") as seen:
+    seen.write(spec.splitlines()[0] + "\n")
 sid = "stub-session"
 print(json.dumps({"type": "system", "subtype": "init", "session_id": sid,
                   "plugins": ([{"name": "agent-workbench", "path": argv[argv.index("--plugin-dir") + 1]}] if plugin else []),

@@ -15,6 +15,7 @@ Versions before 0.7.0 are summarized under "New in" in the README.
 
 ### Fixed
 
+- The Stop gate reopens a closed feature: when the code moved at least to the S floor after the feature's gate passed and its spec did not, it asks once per workspace state to update the spec, tasks and proofs (or start a new feature) and reclassify. `SessionStart` puts the same warning in the session context. The snapshot at close is a git tree written through a temporary index (`reentry.py`); the user's index and history do not change. Found in the benchmark's long task: the Workbench's own spec still described version 1 after three sessions in 6 of 6 plugin runs.
 - The spec-first check now also reads `Bash` commands that write production code (`>`, `>>`, `tee`, `sed -i`). The first version only saw `Edit`, `Write` and `MultiEdit`, and the benchmark's agents create files with shell redirects, so it never fired in round 2.
 
 - The Stop gate no longer escalates `no_progress` while the agent is writing the spec, tasks, review, or proofs after a block. Its progress check now includes those documents, which the workspace fingerprint leaves out on purpose. Found in the benchmark's simple round (3 of 3 runs).
