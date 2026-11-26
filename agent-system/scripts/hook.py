@@ -377,6 +377,18 @@ def repeated_skill(root: Path, payload: dict, skill: str) -> bool:
         return False
 
 
+def closed_feature_drift(root: Path, state: dict) -> str:
+    """One line for the session context when code moved after the newest closed feature while its spec did not."""
+    try:
+        import classify_floor
+        import reentry
+
+        found = reentry.drifted(root, classify_floor.classifications(state))
+        return f"Warning: {reentry.describe(*found)}; update its spec before building on it" if found else ""
+    except Exception:
+        return ""
+
+
 def stop_reply(root: Path, payload: dict) -> dict:
     """The stop gate's reply for one project; {} on any error, so a broken gate never traps the session."""
     try:
@@ -433,6 +445,9 @@ def handle(payload: dict) -> dict:
             lessons = confirmed_lessons(root)
             if lessons:
                 context += f". {lessons}"
+            drift = closed_feature_drift(root, state)
+            if drift:
+                context += f". {drift}"
         if context:
             return {"additional_context": redact(context, 900)}
         return {}
